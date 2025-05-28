@@ -21,7 +21,7 @@ export function RightSidebar() {
 
                 <Card className="mb-4">
                     <CardHeader className="pb-2">
-                        <h3 className="text-lg font-bold">What's happening</h3>
+                        <h3 className="text-lg font-bold">Whats happening</h3>
                     </CardHeader>
                     <CardContent className="pb-3">
                         <TrendingTopics />

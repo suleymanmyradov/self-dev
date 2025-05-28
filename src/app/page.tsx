@@ -32,7 +32,7 @@ export default function HomePage() {
                     </Avatar>
                     <div className="flex-1">
                         <div className="mb-2 rounded-full border bg-muted/40 px-4 py-2 text-muted-foreground">
-                            What's on your mind today?
+                            Whats on your mind today?
                         </div>
                         <div className="flex justify-between">
                             <div className="flex gap-2">
