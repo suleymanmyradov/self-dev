@@ -1,7 +1,5 @@
-import { X } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { GoalCard } from '@/components/home/goal-card';
 import { HabitTracker } from '@/components/home/habit-tracker';
 import { FeedPost } from '@/components/home/feed-post';
@@ -9,7 +7,7 @@ import { FeedPost } from '@/components/home/feed-post';
 export default function HomePage() {
     return (
         <>
-            <div className="sticky top-16 z-10 border-b bg-background/95 backdrop-blur">
+            {/* <div className="sticky top-16 z-10 border-b bg-background/95 backdrop-blur">
                 <div className="flex items-center justify-between p-4">
                     <h1 className="text-xl font-bold">Home</h1>
                     <Button variant="ghost" size="icon">
@@ -22,7 +20,7 @@ export default function HomePage() {
                         <TabsTrigger value="following">Following</TabsTrigger>
                     </TabsList>
                 </Tabs>
-            </div>
+            </div> */}
 
             <div className="p-4 max-w-[600px] mx-auto w-full">
                 <div className="mb-4 flex items-start gap-3">

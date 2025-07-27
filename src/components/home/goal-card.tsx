@@ -23,7 +23,7 @@ export function GoalCard() {
                             <span className="text-sm text-muted-foreground">8/20</span>
                         </div>
                         <Progress value={40} className="h-2" />
-                        <p className="mt-1 text-xs text-primary">You're 20% ahead of schedule!</p>
+                        <p className="mt-1 text-xs text-primary">Youre 20% ahead of schedule!</p>
                     </div>
                     <div>
                         <div className="mb-1 flex items-center justify-between">

@@ -9,11 +9,11 @@ import { SuggestedUsers } from '../shared/suggested-users';
 export function RightSidebar() {
     return (
         <div className="hidden w-80 mr-2 lg:block flex-shrink-0">
-            <div className="sticky top-16 h-[calc(100vh-4rem)] overflow-y-auto p-4">
+            <div className="sticky top-0 h-[calc(100vh)] overflow-y-auto p-4">
                 <div className="mb-4">
                     <div className="relative">
                         <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                        <Input placeholder="Search" className="pl-9" />
+                        <Input placeholder="Search Growth..." className="pl-9" />
                     </div>
                 </div>
 
