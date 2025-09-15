@@ -1,5 +1,5 @@
 import type React from 'react';
-import '@/app/globals.css';
+import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 
 import { SidebarNav } from '@/components/root-layout/sidebar-nav';
@@ -8,14 +8,14 @@ import { RightSidebar } from '@/components/root-layout/right-sidebar';
 
 const inter = Inter({ subsets: ['latin'] });
 
-export const metadata = {
-    title: 'Growth - Self-Development Platform',
-    description: 'A platform for personal growth and self-development',
+export const metadata: Metadata = {
+    title: 'Self Dev AI - Personal Development Assistant',
+    description: 'AI-powered personal development with coaching, therapy, and habit tracking',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html>
             <body className={inter.className}>
                 <ThemeProvider
                     attribute="class"

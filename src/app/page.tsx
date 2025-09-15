@@ -1,10 +1,4 @@
-import { X } from 'lucide-react';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { GoalCard } from '@/components/home/goal-card';
-import { HabitTracker } from '@/components/home/habit-tracker';
-import { FeedPost } from '@/components/home/feed-post';
+import { ContentFeed } from '@/components/home/content-feed';
 
 export default function HomePage() {
     return (

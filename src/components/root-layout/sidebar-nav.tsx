@@ -71,3 +71,57 @@ export function SidebarNav() {
         </div>
     );
 }
+
+export function NavMain({
+    items,
+}: {
+    items: {
+        label: string;
+        href: string;
+        icon?: LucideIcon;
+    }[];
+}) {
+    const pathname = usePathname();
+    const { state } = useSidebar();
+
+    return (
+        <SidebarMenu>
+            {items.map(item => {
+                const isActive =
+                    pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
+
+                return (
+                    <SidebarMenuItem key={item.label}>
+                        <SidebarMenuButton
+                            asChild
+                            isActive={isActive}
+                            tooltip={
+                                state === 'collapsed'
+                                    ? { children: item.label, side: 'right' }
+                                    : undefined
+                            }
+                            className={cn(
+                                state === 'collapsed'
+                                    ? 'flex justify-center items-center p-0'
+                                    : 'flex items-center',
+                            )}
+                        >
+                            <Link
+                                href={item.href}
+                                className={cn(
+                                    'flex items-center w-full h-full',
+                                    state === 'collapsed' ? 'justify-center' : 'justify-start',
+                                )}
+                            >
+                                {item.icon && <item.icon className="h-5 w-5 flex-shrink-0" />}
+                                {state !== 'collapsed' && (
+                                    <span className="ml-2 truncate">{item.label}</span>
+                                )}
+                            </Link>
+                        </SidebarMenuButton>
+                    </SidebarMenuItem>
+                );
+            })}
+        </SidebarMenu>
+    );
+}

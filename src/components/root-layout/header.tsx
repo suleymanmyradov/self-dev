@@ -1,20 +1,9 @@
-import { Bell, MessageSquare, Search } from 'lucide-react';
-import Link from 'next/link';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Button } from '@/components/ui/button';
+'use client';
+
+import { Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 
-import {
-    DropdownMenu,
-    DropdownMenuContent,
-    DropdownMenuItem,
-    DropdownMenuLabel,
-    DropdownMenuSeparator,
-    DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { ModeToggle } from '../shared/mode-toggle';
-
-export function Header() {
+export function SearchHeader() {
     return (
         <header className="fixed top-0 z-50 w-full border-b bg-background/95 backdrop-blur">
             <div className="container flex h-16 items-center justify-between px-4 max-w-full">
