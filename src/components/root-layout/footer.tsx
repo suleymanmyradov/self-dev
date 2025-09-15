@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button';
 
 export function Footer() {
     return (
-        <footer className="border-t bg-background">
+        <footer className="border-t bg-background relative z-20 md:pl-[var(--sidebar-width)]">
             <div className="container flex flex-col items-center justify-between gap-4 py-6 md:h-16 md:flex-row md:py-0 max-w-[1500px]">
                 <div className="flex flex-col items-center gap-4 md:flex-row md:gap-2">
                     <Link href="/" className="flex items-center gap-1">

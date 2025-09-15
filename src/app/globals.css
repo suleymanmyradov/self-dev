@@ -116,7 +116,16 @@
     * {
         @apply border-border outline-ring/50;
     }
-    body {
-        @apply bg-background text-foreground;
+    html, body {
+        @apply bg-background text-foreground h-full overflow-hidden;
     }
+}
+
+/* Hide scrollbar visually but keep scroll functionality */
+.no-scrollbar {
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
+}
+.no-scrollbar::-webkit-scrollbar {
+    display: none; /* Chrome, Safari, Opera */
 }

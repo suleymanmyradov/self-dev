@@ -2,6 +2,7 @@ import { Heart, MessageCircle, Repeat, Share } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader } from '@/components/ui/card';
+import Image from 'next/image';
 
 interface FeedPostProps {
     user: {
@@ -38,10 +39,13 @@ export function FeedPost({ user, content, image, time, likes, comments, reposts 
             {image && (
                 <CardContent className="pb-2 pt-0">
                     <div className="overflow-hidden rounded-xl">
-                        <img
+                        <Image
                             src={image || '/placeholder.svg'}
                             alt="Post image"
-                            className="w-full object-cover"
+                            width={0}
+                            height={0}
+                            sizes="(max-width: 640px) 100vw, 600px"
+                            className="h-auto w-full object-cover"
                         />
                     </div>
                 </CardContent>

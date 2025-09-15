@@ -8,49 +8,10 @@ import { FeedPost } from '@/components/home/feed-post';
 
 export default function HomePage() {
     return (
-        <>
-            <div className="sticky top-16 z-10 border-b bg-background/95 backdrop-blur">
-                <div className="flex items-center justify-between p-4">
-                    <h1 className="text-xl font-bold">Home</h1>
-                    <Button variant="ghost" size="icon">
-                        <X className="h-5 w-5" />
-                    </Button>
-                </div>
-                <Tabs defaultValue="for-you" className="w-full p-2">
-                    <TabsList className="grid w-full grid-cols-2">
-                        <TabsTrigger value="for-you">For You</TabsTrigger>
-                        <TabsTrigger value="following">Following</TabsTrigger>
-                    </TabsList>
-                </Tabs>
-            </div>
+        <div className="h-full flex flex-col overflow-hidden">
+            <div className="flex-1 overflow-y-auto no-scrollbar">
 
-            <div className="p-4 max-w-[600px] mx-auto w-full">
-                <div className="mb-4 flex items-start gap-3">
-                    <Avatar>
-                        <AvatarImage src="/placeholder.svg?height=40&width=40" alt="@username" />
-                        <AvatarFallback>UN</AvatarFallback>
-                    </Avatar>
-                    <div className="flex-1">
-                        <div className="mb-2 rounded-full border bg-muted/40 px-4 py-2 text-muted-foreground">
-                            Whats on your mind today?
-                        </div>
-                        <div className="flex justify-between">
-                            <div className="flex gap-2">
-                                <Button variant="ghost" size="sm">
-                                    Goals
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                    Habits
-                                </Button>
-                                <Button variant="ghost" size="sm">
-                                    Mood
-                                </Button>
-                            </div>
-                            <Button size="sm">Share</Button>
-                        </div>
-                    </div>
-                </div>
-
+                <div className="p-4 max-w-[600px] mx-auto w-full">
                 <div className="space-y-4">
                     <GoalCard />
                     <HabitTracker />
@@ -92,7 +53,8 @@ export default function HomePage() {
                         reposts={98}
                     />
                 </div>
+                </div>
             </div>
-        </>
+        </div>
     );
 }

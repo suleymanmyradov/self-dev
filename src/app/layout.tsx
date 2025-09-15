@@ -2,9 +2,6 @@ import type React from 'react';
 import '@/app/globals.css';
 import { Inter } from 'next/font/google';
 
-import { SidebarProvider, SidebarTrigger } from '@/components/ui/sidebar';
-import { Header } from '@/components/root-layout/header';
-import { Footer } from '@/components/root-layout/footer';
 import { SidebarNav } from '@/components/root-layout/sidebar-nav';
 import { ThemeProvider } from '@/components/theme-provider';
 import { RightSidebar } from '@/components/root-layout/right-sidebar';
@@ -26,24 +23,24 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <SidebarProvider>
-                        <div className="flex min-h-screen min-w-screen flex-col">
-                            <Header />
-                            <div className="flex flex-1 mx-auto w-full ">
+                    <div className="flex min-h-screen w-full flex-col">
+                        <div className="w-full flex-1 min-h-0 overflow-hidden md:pl-56 lg:pr-80">
+                            {/* Fixed Left Sidebar */}
+                            <aside className="fixed left-0 top-0 z-30 hidden h-screen w-56 md:block">
                                 <SidebarNav />
-                                <div className="flex flex-1">
-                                    <main className="flex-1 min-w-0 border-r">
-                                        <div className="flex items-center p-4 md:hidden">
-                                            <SidebarTrigger />
-                                        </div>
-                                        {children}
-                                    </main>
-                                    <RightSidebar />
-                                </div>
-                            </div>
-                            <Footer />
+                            </aside>
+
+                            {/* Fixed Right Sidebar */}
+                            <aside className="fixed right-0 top-0 z-30 hidden h-screen w-80 lg:block">
+                                <RightSidebar />
+                            </aside>
+
+                            {/* Main Content (page will manage its own scrolling) */}
+                            <main className="min-w-0 h-screen overflow-hidden">
+                                {children}
+                            </main>
                         </div>
-                    </SidebarProvider>
+                    </div>
                 </ThemeProvider>
             </body>
         </html>
