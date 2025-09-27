@@ -4,7 +4,7 @@ import type React from 'react';
 import { useEffect } from 'react';
 import { useUI } from '@/store/uiStore';
 
-export default function AICoachLayout({ children }: { children: React.ReactNode }) {
+export default function AITherapistLayout({ children }: { children: React.ReactNode }) {
     const { isMobile, setSidebarCollapsed } = useUI();
 
     useEffect(() => {

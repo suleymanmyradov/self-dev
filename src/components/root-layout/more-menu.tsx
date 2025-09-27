@@ -26,15 +26,21 @@ const items: Array<
   { type: "item", label: "Logout", href: "/logout" },
 ];
 
-export function MoreMenu() {
+export function MoreMenu({ collapsed = false }: { collapsed?: boolean }) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        <Button variant="ghost" size="sm" className="w-full justify-start">
-          <MoreHorizontal className="mr-2 h-4 w-4" /> More
-        </Button>
+        {collapsed ? (
+          <Button variant="ghost" size="icon" className="w-full justify-center" title="More">
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button variant="ghost" size="sm" className="w-full justify-start">
+            <MoreHorizontal className="mr-2 h-4 w-4" /> More
+          </Button>
+        )}
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="w-56">
+      <DropdownMenuContent side={collapsed ? "right" : "top"} align={collapsed ? "end" : "start"} className="w-56">
         <DropdownMenuLabel>Menu</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {items.map((it, idx) =>

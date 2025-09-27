@@ -1,10 +1,14 @@
 import type React from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
+import './globals.css';
 
-import { SidebarNav } from '@/components/root-layout/sidebar-nav';
+import { LayoutFrame } from '@/components/root-layout/layout-frame';
 import { ThemeProvider } from '@/components/theme-provider';
-import { RightSidebar } from '@/components/root-layout/right-sidebar';
+import { UIStoreProvider } from '@/store/uiStore';
+import { ViewportWatcher } from '@/components/shared/viewport-watcher';
+import { MobileTopBar } from '@/components/shared/mobile-topbar';
+import { BottomTabBar } from '@/components/shared/bottom-tab-bar';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -15,32 +19,24 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html>
-            <body className={inter.className}>
+        <html lang="en" suppressHydrationWarning>
+            <body className={inter.className} suppressHydrationWarning>
                 <ThemeProvider
                     attribute="class"
-                    defaultTheme="light"
+                    defaultTheme="system"
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <div className="flex min-h-screen w-full flex-col">
-                        <div className="w-full flex-1 min-h-0 overflow-hidden md:pl-56 lg:pr-80">
-                            {/* Fixed Left Sidebar */}
-                            <aside className="fixed left-0 top-0 z-30 hidden h-screen w-56 md:block">
-                                <SidebarNav />
-                            </aside>
-
-                            {/* Fixed Right Sidebar */}
-                            <aside className="fixed right-0 top-0 z-30 hidden h-screen w-80 lg:block">
-                                <RightSidebar />
-                            </aside>
-
-                            {/* Main Content (page will manage its own scrolling) */}
-                            <main className="min-w-0 h-screen overflow-hidden">
+                    <UIStoreProvider>
+                        <ViewportWatcher />
+                        <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
+                            <MobileTopBar />
+                            <LayoutFrame>
                                 {children}
-                            </main>
+                            </LayoutFrame>
+                            <BottomTabBar />
                         </div>
-                    </div>
+                    </UIStoreProvider>
                 </ThemeProvider>
             </body>
         </html>
