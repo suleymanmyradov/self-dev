@@ -6,9 +6,7 @@ import { Thread } from "@/components/ai-conversation/thread";
 import { ThreadList } from "@/components/ai-conversation/thread-list";
 
 export const Assistant = () => {
-  const runtime = useChatRuntime({
-    api: "/api/chat",
-  });
+  const runtime = useChatRuntime();
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>

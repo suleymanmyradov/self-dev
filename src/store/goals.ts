@@ -23,17 +23,17 @@ export type GoalsState = {
 
 export const useGoals = create<GoalsState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       goals: [],
       hasHydrated: false,
       add: (g) =>
         set((state) => ({
           goals: [
             {
+              ...g,
               id: `g_${Date.now()}`,
               completed: g.completed ?? false,
               progress: Math.max(0, Math.min(100, g.progress ?? 0)),
-              ...g,
             },
             ...state.goals,
           ],

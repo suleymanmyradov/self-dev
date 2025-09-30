@@ -1,4 +1,5 @@
 import type React from 'react';
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Inter } from 'next/font/google';
 import './globals.css';
@@ -9,6 +10,7 @@ import { UIStoreProvider } from '@/store/uiStore';
 import { ViewportWatcher } from '@/components/shared/viewport-watcher';
 import { MobileTopBar } from '@/components/shared/mobile-topbar';
 import { BottomTabBar } from '@/components/shared/bottom-tab-bar';
+import Loading from './loading';
 
 const inter = Inter({ subsets: ['latin'] });
 
@@ -32,7 +34,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
                             <MobileTopBar />
                             <LayoutFrame>
-                                {children}
+                                <Suspense fallback={<Loading />}>
+                                    {children}
+                                </Suspense>
                             </LayoutFrame>
                             <BottomTabBar />
                         </div>

@@ -1,5 +1,6 @@
+ 'use client';
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
 import type { Habit } from "@/lib/types-data";
 
 export type HabitCategory = "productivity" | "health" | "mindfulness" | string;
@@ -16,7 +17,7 @@ export type HabitsState = {
 
 export const useHabits = create<HabitsState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       habits: [],
       hasHydrated: false,
       add: (habit) =>
@@ -54,6 +55,7 @@ export const useHabits = create<HabitsState>()(
     }),
     {
       name: "habits",
+      storage: createJSONStorage(() => localStorage),
       onRehydrateStorage: () => (state, error) => {
         // called after hydration (or error)
         if (!error) {

@@ -9,7 +9,7 @@ import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GoalCard } from "@/components/goals/goal-card";
-import { useGoals, type Goal } from "@/store/goals";
+import { useGoals } from "@/store/goals";
 import { articles } from "@/lib/articles";
 import Link from "next/link";
 import { Plus } from "lucide-react";

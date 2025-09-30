@@ -1,18 +1,15 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Habit } from "@/lib/types-data";
-import { cn } from "@/lib/utils";
-import { Check, Flame, Plus, RotateCcw, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { Plus, RotateCcw } from "lucide-react";
 import { z } from "zod";
 import { useHabits } from "@/store/habits";
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { HabitCard } from "@/components/habits/habit-card";
 import { HabitFormDialog, type HabitFormValues } from "@/components/habits/habit-form-dialog";
 
@@ -84,7 +81,6 @@ export default function HabitsPage() {
     streak: 0,
     completed: false,
   });
-  const [editError, setEditError] = useState<string | null>(null);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
@@ -93,13 +89,11 @@ export default function HabitsPage() {
     setEditingId(h.id);
     setEditForm({ name: h.name, description: h.description, category: h.category, streak: h.streak, completed: h.completed });
     setEditOpen(true);
-    setEditError(null);
   };
 
   const saveEdit = () => {
     const parsed = NewHabitSchema.safeParse(editForm);
     if (!parsed.success) {
-      setEditError(parsed.error.issues[0]?.message ?? "Invalid input");
       return;
     }
     if (editingId) {
@@ -168,7 +162,12 @@ export default function HabitsPage() {
           <select
             className="rounded-md border bg-background px-2 py-1"
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value as any)}
+            onChange={(e) => {
+              const value = e.target.value;
+              if (value === "streak" || value === "name") {
+                setSortBy(value);
+              }
+            }}
           >
             <option value="streak">Streak</option>
             <option value="name">Name</option>
