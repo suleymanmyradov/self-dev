@@ -1,7 +1,6 @@
 'use client';
 
 import Link from 'next/link';
-import { Button } from '@/components/ui/button';
 import { MoreMenu } from './more-menu';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
@@ -34,24 +33,24 @@ const menuItems = [
 ];
 
 export function SidebarNav() {
-    const { isSidebarCollapsed, openLeftPanel, isMobile, closeLeftPanel, isLeftPanelOpen, leftPanelType } = useUI();
+    const { openLeftPanel, isMobile, closeLeftPanel, isLeftPanelOpen, leftPanelType } = useUI();
 
     return (
-        <div className="flex h-full w-full flex-col border-r bg-background">
+        <div className="flex h-full w-full flex-col bg-background overflow-hidden">
             {/* Brand/Header */}
-            <div className="px-3 py-4">
-                <div className={cn('flex items-center', isSidebarCollapsed ? 'justify-center' : 'justify-start') }>
-                    <Link href="/" className={cn('flex items-center gap-3', isSidebarCollapsed && 'gap-0') }>
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
+            <div className="px-3 h-[72px] flex items-center shrink-0">
+                <div className="flex items-center w-full justify-center group-hover:justify-start transition-all duration-200">
+                    <Link href="/" className="flex items-center gap-3">
+                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary flex-shrink-0">
                             <span className="text-base font-bold text-primary-foreground">G</span>
                         </div>
-                        {!isSidebarCollapsed && <span className="text-lg font-bold">Growth</span>}
+                        <span className="text-lg font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-0 group-hover:w-auto overflow-hidden">Growth</span>
                     </Link>
                 </div>
             </div>
 
             {/* Navigation */}
-            <nav className="flex-1 space-y-1 px-2 py-2 overflow-y-auto no-scrollbar">
+            <nav className="flex-1 flex flex-col items-center justify-center gap-2 px-3 py-2 overflow-y-auto no-scrollbar">
                 {menuItems.map(item => {
                     const Icon = item.icon;
                     return (
@@ -60,7 +59,6 @@ export function SidebarNav() {
                             href={item.href}
                             onClick={e => {
                                 if (item.href === '/search') {
-                                    // Desktop: open/toggle the left panel; Mobile: navigate to page
                                     if (!isMobile) {
                                         e.preventDefault();
                                         if (isLeftPanelOpen && leftPanelType === 'search') {
@@ -72,7 +70,6 @@ export function SidebarNav() {
                                     }
                                 }
                                 if (item.href === '/notifications') {
-                                    // Desktop: open/toggle the left panel; Mobile: navigate to page (if created later)
                                     if (!isMobile) {
                                         e.preventDefault();
                                         if (isLeftPanelOpen && leftPanelType === 'notifications') {
@@ -83,38 +80,32 @@ export function SidebarNav() {
                                         return;
                                     }
                                 }
-                                // For all other items (e.g., Home), close any open left nested panel
                                 closeLeftPanel();
                             }}
-                            className={cn(
-                                'flex items-center rounded-md px-3 py-2 text-sm hover:bg-accent',
-                                isSidebarCollapsed ? 'justify-center gap-0' : 'gap-3',
-                            )}
-                            title={isSidebarCollapsed ? item.label : undefined}
+                            className="flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-4 rounded-lg px-3 py-3 text-sm hover:bg-accent transition-all duration-200 w-full"
+                            title={item.label}
                         >
-                            <Icon className="h-5 w-5" />
-                            {!isSidebarCollapsed && <span className="font-medium">{item.label}</span>}
+                            <Icon className="h-6 w-6 flex-shrink-0" strokeWidth={1.8} />
+                            <span className="font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-0 group-hover:w-auto overflow-hidden">{item.label}</span>
                         </Link>
                     );
                 })}
             </nav>
+            
             {/* Footer */}
-            <div className="border-t px-3 py-3">
+            <div className="px-3 py-3 mt-auto shrink-0">
                 <div className="flex flex-col gap-2">
-                    {isSidebarCollapsed ? (
-                        <Button asChild className="w-full justify-center" variant="secondary" size="icon" title="Profile">
-                            <Link href="/profile">
-                                <User className="h-4 w-4" />
-                            </Link>
-                        </Button>
-                    ) : (
-                        <Button asChild className="w-full justify-start" variant="secondary" size="sm">
-                            <Link href="/profile">
-                                <User className="mr-2 h-4 w-4" /> Profile
-                            </Link>
-                        </Button>
-                    )}
-                    <MoreMenu collapsed={isSidebarCollapsed} />
+                    <Link 
+                        href="/profile"
+                        className="flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-4 rounded-lg px-3 py-3 text-sm hover:bg-accent transition-all duration-200 w-full"
+                        title="Profile"
+                    >
+                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
+                            <User className="h-4 w-4" />
+                        </div>
+                        <span className="font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-0 group-hover:w-auto overflow-hidden">Profile</span>
+                    </Link>
+                    <MoreMenu />
                 </div>
             </div>
         </div>

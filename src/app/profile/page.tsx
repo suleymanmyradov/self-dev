@@ -1,0 +1,238 @@
+"use client";
+
+import { useEffect, useMemo, useState } from "react";
+import { z } from "zod";
+import { useProfile } from "@/store/profile";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+
+const ProfileSchema = z.object({
+  fullName: z.string().min(2, "Full name must be at least 2 characters"),
+  username: z
+    .string()
+    .min(3, "Username must be at least 3 characters")
+    .regex(/^[a-z0-9_\.\-]+$/i, "Letters, numbers, dot, hyphen, underscore only"),
+  bio: z.string().max(280, "Max 280 characters").optional().default(""),
+  location: z.string().max(60).optional().default(""),
+  website: z
+    .string()
+    .url("Must be a valid URL")
+    .or(z.string().length(0))
+    .optional()
+    .default(""),
+  interests: z
+    .string()
+    .optional()
+    .default("")
+    .transform((s) => s?.split(",").map((v) => v.trim()).filter(Boolean) ?? []),
+  avatarUrl: z
+    .string()
+    .url("Must be a valid image URL")
+    .or(z.string().length(0))
+    .optional()
+    .default(""),
+});
+
+type FormState = {
+  fullName: string;
+  username: string;
+  bio: string;
+  location: string;
+  website: string;
+  interests: string; // comma-separated entry in the form UI
+  avatarUrl: string;
+};
+
+export default function ProfilePage() {
+  const { profile, hasHydrated, setProfile, updateProfile, clearProfile } = useProfile();
+
+  const [form, setForm] = useState<FormState>({
+    fullName: "",
+    username: "",
+    bio: "",
+    location: "",
+    website: "",
+    interests: "",
+    avatarUrl: "",
+  });
+  const [error, setError] = useState<string | null>(null);
+  const [saving, setSaving] = useState(false);
+
+  // Initialize form from store when hydrated
+  useEffect(() => {
+    if (!hasHydrated) return;
+    if (profile) {
+      setForm({
+        fullName: profile.fullName ?? "",
+        username: profile.username ?? "",
+        bio: profile.bio ?? "",
+        location: profile.location ?? "",
+        website: profile.website ?? "",
+        interests: (profile.interests ?? []).join(", "),
+        avatarUrl: profile.avatarUrl ?? "",
+      });
+    }
+  }, [hasHydrated, profile?.id]);
+
+  const initials = useMemo(() => {
+    const parts = form.fullName.trim().split(/\s+/).filter(Boolean);
+    return parts.slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "U";
+  }, [form.fullName]);
+
+  const handleSubmit = () => {
+    setError(null);
+    const parsed = ProfileSchema.safeParse({
+      ...form,
+    });
+    if (!parsed.success) {
+      setError(parsed.error.issues[0]?.message ?? "Invalid input");
+      return;
+    }
+
+    setSaving(true);
+    const data = parsed.data;
+    const payload = {
+      fullName: data.fullName.trim(),
+      username: data.username.trim(),
+      bio: (form.bio || "").trim(),
+      location: (form.location || "").trim(),
+      website: (form.website || "").trim(),
+      interests: data.interests as string[],
+      avatarUrl: (form.avatarUrl || "").trim(),
+    };
+
+    if (!profile) {
+      setProfile(payload as any);
+    } else {
+      updateProfile(payload);
+    }
+
+    // simulate brief save
+    setTimeout(() => setSaving(false), 200);
+  };
+
+  if (!hasHydrated) {
+    return (
+      <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
+        Loading profile...
+      </div>
+    );
+  }
+
+  return (
+    <div className="h-full flex flex-col">
+      <div className="flex-1 overflow-y-auto no-scrollbar">
+        <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-8">
+          <header className="mb-4">
+            <h1 className="text-2xl font-bold tracking-tight">{profile ? "Edit Profile" : "Create Profile"}</h1>
+            <p className="text-sm text-muted-foreground">
+              Add details about yourself to personalize your experience.
+            </p>
+          </header>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Profile details</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid gap-4">
+                <div className="flex items-center gap-4">
+                  <Avatar className="h-16 w-16">
+                    <AvatarImage src={form.avatarUrl || undefined} alt={form.fullName || "Avatar"} />
+                    <AvatarFallback>{initials}</AvatarFallback>
+                  </Avatar>
+                  <div className="flex-1 grid gap-1">
+                    <label className="text-sm font-medium">Avatar URL</label>
+                    <Input
+                      placeholder="https://..."
+                      value={form.avatarUrl}
+                      onChange={(e) => setForm((f) => ({ ...f, avatarUrl: e.target.value }))}
+                    />
+                    <p className="text-xs text-muted-foreground">Paste an image URL for your avatar.</p>
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <label className="text-sm font-medium">Full name</label>
+                  <Input
+                    placeholder="Your name"
+                    value={form.fullName}
+                    onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                  />
+                </div>
+
+                <div className="grid gap-1">
+                  <label className="text-sm font-medium">Username</label>
+                  <Input
+                    placeholder="username"
+                    value={form.username}
+                    onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+                  />
+                </div>
+
+                <div className="grid gap-1">
+                  <label className="text-sm font-medium">Bio</label>
+                  <Textarea
+                    placeholder="Tell us about yourself (max 280 characters)"
+                    rows={4}
+                    value={form.bio}
+                    onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                  />
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid gap-1">
+                    <label className="text-sm font-medium">Location</label>
+                    <Input
+                      placeholder="City, Country"
+                      value={form.location}
+                      onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                    />
+                  </div>
+                  <div className="grid gap-1">
+                    <label className="text-sm font-medium">Website</label>
+                    <Input
+                      placeholder="https://example.com"
+                      value={form.website}
+                      onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+                    />
+                  </div>
+                </div>
+
+                <div className="grid gap-1">
+                  <label className="text-sm font-medium">Interests</label>
+                  <Input
+                    placeholder="e.g., productivity, health, mindfulness"
+                    value={form.interests}
+                    onChange={(e) => setForm((f) => ({ ...f, interests: e.target.value }))}
+                  />
+                  <p className="text-xs text-muted-foreground">Comma-separated list.</p>
+                </div>
+
+                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+              </div>
+            </CardContent>
+            <CardFooter className="flex items-center justify-between">
+              <div className="text-xs text-muted-foreground">
+                {profile ? "Your profile is stored locally." : "Create your profile to personalize the app."}
+              </div>
+              <div className="flex items-center gap-2">
+                {profile && (
+                  <Button variant="outline" onClick={() => clearProfile()}>
+                    Clear
+                  </Button>
+                )}
+                <Button onClick={handleSubmit} disabled={saving}>
+                  {saving ? "Saving..." : profile ? "Save Changes" : "Create Profile"}
+                </Button>
+              </div>
+            </CardFooter>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}

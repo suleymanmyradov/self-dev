@@ -2,6 +2,7 @@
 import { create } from "zustand";
 import { persist, createJSONStorage } from "zustand/middleware";
 import type { Habit } from "@/lib/types-data";
+import { getSafeStorage } from "@/lib/safe-storage";
 
 export type HabitCategory = "productivity" | "health" | "mindfulness" | string;
 
@@ -21,17 +22,22 @@ export const useHabits = create<HabitsState>()(
       habits: [],
       hasHydrated: false,
       add: (habit) =>
-        set((state) => ({
-          habits: [
-            {
-              id: `h_${Date.now()}`,
-              streak: habit.streak ?? 0,
-              completed: habit.completed ?? false,
-              ...habit,
-            },
-            ...state.habits,
-          ],
-        })),
+        set((state) => {
+          const id = typeof crypto !== "undefined" && typeof crypto.randomUUID === "function"
+            ? crypto.randomUUID()
+            : `h_${Date.now()}_${Math.random().toString(36).slice(2, 8)}`;
+          return {
+            habits: [
+              {
+                id,
+                streak: habit.streak ?? 0,
+                completed: habit.completed ?? false,
+                ...habit,
+              },
+              ...state.habits,
+            ],
+          };
+        }),
       toggle: (id) =>
         set((state) => ({
           habits: state.habits.map((h) =>
@@ -55,7 +61,7 @@ export const useHabits = create<HabitsState>()(
     }),
     {
       name: "habits",
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(getSafeStorage),
       onRehydrateStorage: () => (state, error) => {
         // called after hydration (or error)
         if (!error) {

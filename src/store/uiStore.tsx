@@ -23,7 +23,7 @@ interface UIState {
 }
 
 const useUIStore = create<UIState>(set => ({
-    isSidebarCollapsed: false,
+    isSidebarCollapsed: true,
     isRightPanelOpen: false,
     rightPanelType: null,
     isMobile: false,
@@ -36,9 +36,9 @@ const useUIStore = create<UIState>(set => ({
     setIsMobile: mobile => set({ isMobile: mobile }),
     setShowChatHistory: show => set({ showChatHistory: show }),
     openLeftPanel: type =>
-        set({ isLeftPanelOpen: true, leftPanelType: type, isSidebarCollapsed: true }),
+        set({ isLeftPanelOpen: true, leftPanelType: type }),
     closeLeftPanel: () =>
-        set({ isLeftPanelOpen: false, leftPanelType: null, isSidebarCollapsed: false }),
+        set({ isLeftPanelOpen: false, leftPanelType: null }),
     setSidebarCollapsed: collapsed => set({ isSidebarCollapsed: collapsed }),
 }));
 

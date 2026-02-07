@@ -1,5 +1,8 @@
+"use client";
+
 import { create } from "zustand";
-import { persist } from "zustand/middleware";
+import { persist, createJSONStorage } from "zustand/middleware";
+import { getSafeStorage } from "@/lib/safe-storage";
 
 export type Goal = {
   id: string;
@@ -27,17 +30,30 @@ export const useGoals = create<GoalsState>()(
       goals: [],
       hasHydrated: false,
       add: (g) =>
-        set((state) => ({
-          goals: [
-            {
-              ...g,
-              id: `g_${Date.now()}`,
-              completed: g.completed ?? false,
-              progress: Math.max(0, Math.min(100, g.progress ?? 0)),
-            },
-            ...state.goals,
-          ],
-        })),
+        set((state) => {
+          const id =
+            typeof crypto !== "undefined" && "randomUUID" in crypto
+              ? (crypto as Crypto).randomUUID()
+              : `g_${Date.now()}_${Math.random().toString(36).slice(2, 11)}_${Math.random().toString(36).slice(2, 11)}`;
+          
+          // Check if ID already exists (shouldn't happen, but safeguard)
+          if (state.goals.some(goal => goal.id === id)) {
+            console.warn(`Duplicate goal ID detected: ${id}`);
+            return state;
+          }
+          
+          return {
+            goals: [
+              {
+                ...g,
+                id,
+                completed: g.completed ?? false,
+                progress: Math.max(0, Math.min(100, g.progress ?? 0)),
+              },
+              ...state.goals,
+            ],
+          };
+        }),
       update: (id, patch) =>
         set((state) => ({ goals: state.goals.map((x) => (x.id === id ? { ...x, ...patch } : x)) })),
       remove: (id) => set((state) => ({ goals: state.goals.filter((x) => x.id !== id) })),
@@ -50,7 +66,25 @@ export const useGoals = create<GoalsState>()(
     }),
     {
       name: "goals",
-      onRehydrateStorage: () => () => {
+      storage: createJSONStorage(getSafeStorage),
+      onRehydrateStorage: () => (state) => {
+        // Deduplicate goals by ID in case of corrupted storage
+        if (state?.goals) {
+          const seenIds = new Set<string>();
+          const uniqueGoals = state.goals.filter((goal) => {
+            if (seenIds.has(goal.id)) {
+              console.warn(`Removing duplicate goal with ID: ${goal.id}`);
+              return false;
+            }
+            seenIds.add(goal.id);
+            return true;
+          });
+          
+          if (uniqueGoals.length !== state.goals.length) {
+            useGoals.setState({ goals: uniqueGoals });
+          }
+        }
+        
         Promise.resolve().then(() => {
           useGoals.setState({ hasHydrated: true });
         });

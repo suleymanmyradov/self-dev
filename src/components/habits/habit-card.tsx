@@ -5,7 +5,7 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { Habit } from "@/lib/types-data";
+import type { Habit } from "@/api/growthapiComponents";
 import { Check, Flame, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
 
 export type HabitCardProps = {

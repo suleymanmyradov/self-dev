@@ -6,9 +6,10 @@ import { mockConversations } from "@/lib/mock-data"
 import { useUI } from "@/store/uiStore"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
+import { X } from "lucide-react"
 
 export function LeftNestedPanel() {
-  const { isLeftPanelOpen, leftPanelType, closeLeftPanel, isSidebarCollapsed } = useUI()
+  const { isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUI()
   const [shouldRender, setShouldRender] = React.useState(false)
   const [show, setShow] = React.useState(false)
 
@@ -31,11 +32,11 @@ export function LeftNestedPanel() {
   return (
     <aside
       className={cn(
-        "fixed top-0 z-30 hidden h-screen w-80 border-r bg-background lg:block",
+        "fixed top-0 z-50 hidden h-screen w-[250px] bg-background lg:block",
         "transition-all duration-200 ease-out",
-        show ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-2"
+        show ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-full"
       )}
-      style={{ left: isSidebarCollapsed ? '4rem' : '14rem' }}
+      style={{ left: 0 }}
     >
       <div className="flex h-full w-full flex-col">
         <div className="border-b p-4">
@@ -45,9 +46,10 @@ export function LeftNestedPanel() {
             </h3>
             <button
               onClick={closeLeftPanel}
-              className="text-xs text-muted-foreground hover:underline"
+              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-accent transition-colors"
+              aria-label="Close"
             >
-              Close
+              <X className="h-5 w-5" />
             </button>
           </div>
           {leftPanelType === "search" && (

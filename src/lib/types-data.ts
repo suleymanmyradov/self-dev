@@ -39,3 +39,15 @@ export interface ContentPost {
     readTime: number;
     image: string;
 }
+
+export interface Profile {
+    id: string;
+    fullName: string;
+    username: string;
+    email?: string;
+    bio?: string;
+    location?: string;
+    website?: string;
+    interests?: string[];
+    avatarUrl?: string;
+}

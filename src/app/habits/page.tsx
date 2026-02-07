@@ -1,30 +1,63 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { Habit } from "@/lib/types-data";
+import type { Habit } from "@/api/growthapiComponents";
+import { listHabits, createHabit as apiCreateHabit, updateHabit as apiUpdateHabit, deleteHabit as apiDeleteHabit, toggleHabit as apiToggleHabit, resetTodayHabits as apiResetTodayHabits } from "@/api/growthapi";
 import { Plus, RotateCcw } from "lucide-react";
 import { z } from "zod";
-import { useHabits } from "@/store/habits";
 import { HabitCard } from "@/components/habits/habit-card";
 import { HabitFormDialog, type HabitFormValues } from "@/components/habits/habit-form-dialog";
 
 export default function HabitsPage() {
-  const { habits, add, toggle, update, remove, resetToday, hasHydrated } = useHabits();
+  const queryClient = useQueryClient();
+  const { data, isLoading } = useQuery({
+    queryKey: ["habits"],
+    queryFn: () => listHabits({ page: 1, limit: 100 }),
+  });
 
-  // Seed demo data if empty (after hydration only)
-  useEffect(() => {
-    if (!hasHydrated) return;
-    if (habits.length === 0) {
-      add({ name: "Morning Walk", description: "15-minute walk to start the day fresh", category: "health", completed: false, streak: 4 });
-      add({ name: "Read 10 pages", description: "Focus on non-fiction personal growth", category: "productivity", completed: true, streak: 12 });
-      add({ name: "Meditate", description: "5–10 minutes of mindfulness", category: "mindfulness", completed: false, streak: 2 });
-    }
-  }, [hasHydrated, habits.length, add]);
+  const habits = data?.data ?? [];
+
+  const createHabitMutation = useMutation({
+    mutationFn: apiCreateHabit,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
+
+  const updateHabitMutation = useMutation({
+    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof apiUpdateHabit>[0] }) =>
+      apiUpdateHabit(payload, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
+
+  const deleteHabitMutation = useMutation({
+    mutationFn: (id: string) => apiDeleteHabit({}, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
+
+  const toggleHabitMutation = useMutation({
+    mutationFn: (id: string) => apiToggleHabit({}, id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
+
+  const resetTodayMutation = useMutation({
+    mutationFn: apiResetTodayHabits,
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["habits"] });
+    },
+  });
 
   const completionPct = useMemo(() => {
     if (habits.length === 0) return 0;
@@ -60,12 +93,10 @@ export default function HabitsPage() {
       // handled in HabitFormDialog locally; keep as safety no-op here
       return;
     }
-    add({
+    createHabitMutation.mutate({
       name: form.name.trim(),
       description: form.description.trim(),
       category: form.category.trim(),
-      completed: false,
-      streak: 0,
     });
     setOpen(false);
     setForm({ name: "", description: "", category: "productivity" });
@@ -97,18 +128,19 @@ export default function HabitsPage() {
       return;
     }
     if (editingId) {
-      update(editingId, {
-        name: editForm.name.trim(),
-        description: editForm.description.trim(),
-        category: editForm.category.trim(),
-        streak: Math.max(0, Math.floor(Number(editForm.streak) || 0)),
-        completed: !!editForm.completed,
+      updateHabitMutation.mutate({
+        id: editingId,
+        payload: {
+          name: editForm.name.trim(),
+          description: editForm.description.trim(),
+          category: editForm.category.trim(),
+        },
       });
     }
     setEditOpen(false);
   };
 
-  if (!hasHydrated) {
+  if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
         Loading habits...
@@ -120,83 +152,83 @@ export default function HabitsPage() {
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto no-scrollbar">
         <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
-      <header className="mb-4 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Habits</h1>
-          <p className="text-sm text-muted-foreground">Track, build, and maintain small wins every day.</p>
-        </div>
-        <div className="flex items-center gap-2">
-          <Button variant="outline" size="sm" onClick={resetToday}>
-            <RotateCcw className="mr-2 h-4 w-4" /> Reset Today
-          </Button>
-          <HabitFormDialog
-            open={open}
-            title="Create a new habit"
-            onOpenChange={setOpen}
-            initialValues={form}
-            onSubmit={(vals) => { setForm(vals); createHabit(); }}
-          />
-          <Button size="sm" variant="default" onClick={() => setOpen(true)}>
-            <Plus className="mr-2 h-4 w-4" /> New Habit
-          </Button>
-        </div>
-      </header>
+          <header className="mb-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Habits</h1>
+              <p className="text-sm text-muted-foreground">Track, build, and maintain small wins every day.</p>
+            </div>
+            <div className="flex items-center gap-2">
+              <Button variant="outline" size="sm" onClick={() => resetTodayMutation.mutate()}>
+                <RotateCcw className="mr-2 h-4 w-4" /> Reset Today
+              </Button>
+              <HabitFormDialog
+                open={open}
+                title="Create a new habit"
+                onOpenChange={setOpen}
+                initialValues={form}
+                onSubmit={(vals) => { setForm(vals); createHabit(); }}
+              />
+              <Button size="sm" variant="default" onClick={() => setOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" /> New Habit
+              </Button>
+            </div>
+          </header>
 
-      {/* Filters */}
-      <section className="mb-4 flex items-center gap-3 text-sm">
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">Filter:</span>
-          <select
-            className="rounded-md border bg-background px-2 py-1"
-            value={categoryFilter}
-            onChange={(e) => setCategoryFilter(e.target.value)}
-          >
-            <option value="all">All</option>
-            <option value="productivity">Productivity</option>
-            <option value="health">Health</option>
-            <option value="mindfulness">Mindfulness</option>
-          </select>
-        </div>
-        <div className="flex items-center gap-2">
-          <span className="text-muted-foreground">Sort:</span>
-          <select
-            className="rounded-md border bg-background px-2 py-1"
-            value={sortBy}
-            onChange={(e) => {
-              const value = e.target.value;
-              if (value === "streak" || value === "name") {
-                setSortBy(value);
-              }
-            }}
-          >
-            <option value="streak">Streak</option>
-            <option value="name">Name</option>
-          </select>
-        </div>
-      </section>
+          {/* Filters */}
+          <section className="mb-4 flex items-center gap-3 text-sm">
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Filter:</span>
+              <select
+                className="rounded-md border bg-background px-2 py-1"
+                value={categoryFilter}
+                onChange={(e) => setCategoryFilter(e.target.value)}
+              >
+                <option value="all">All</option>
+                <option value="productivity">Productivity</option>
+                <option value="health">Health</option>
+                <option value="mindfulness">Mindfulness</option>
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <span className="text-muted-foreground">Sort:</span>
+              <select
+                className="rounded-md border bg-background px-2 py-1"
+                value={sortBy}
+                onChange={(e) => {
+                  const value = e.target.value;
+                  if (value === "streak" || value === "name") {
+                    setSortBy(value);
+                  }
+                }}
+              >
+                <option value="streak">Streak</option>
+                <option value="name">Name</option>
+              </select>
+            </div>
+          </section>
 
-      <section className="mb-6">
-        <div className="mb-2 flex items-center gap-2">
-          <span className="text-sm text-muted-foreground">Today</span>
-          <Badge variant="secondary" className="rounded-full">{completionPct}% complete</Badge>
-        </div>
-        <Progress value={completionPct} className="h-2" />
-      </section>
+          <section className="mb-6">
+            <div className="mb-2 flex items-center gap-2">
+              <span className="text-sm text-muted-foreground">Today</span>
+              <Badge variant="secondary" className="rounded-full">{completionPct}% complete</Badge>
+            </div>
+            <Progress value={completionPct} className="h-2" />
+          </section>
 
-      <Separator className="my-4" />
+          <Separator className="my-4" />
 
-      <section className="grid grid-cols-1 gap-3">
-        {visibleHabits.map((h) => (
-          <HabitCard
-            key={h.id}
-            habit={h}
-            deleting={deletingIds.has(h.id)}
-            onToggle={toggle}
-            onEdit={openEdit}
-            onDelete={(id) => { setConfirmDeleteId(id); setConfirmOpen(true); }}
-          />
-        ))}
-      </section>
+          <section className="grid grid-cols-1 gap-3">
+            {visibleHabits.map((h) => (
+              <HabitCard
+                key={h.id}
+                habit={h}
+                deleting={deletingIds.has(h.id)}
+                onToggle={(id) => toggleHabitMutation.mutate(id)}
+                onEdit={openEdit}
+                onDelete={(id) => { setConfirmDeleteId(id); setConfirmOpen(true); }}
+              />
+            ))}
+          </section>
         </div>
       </div>
       {/* Edit Habit Dialog */}
@@ -225,14 +257,15 @@ export default function HabitsPage() {
                   setDeletingIds((prev) => new Set(prev).add(confirmDeleteId));
                   setConfirmOpen(false);
                   const toRemove = confirmDeleteId;
-                  setTimeout(() => {
-                    remove(toRemove);
-                    setDeletingIds((prev) => {
-                      const s = new Set(prev);
-                      s.delete(toRemove);
-                      return s;
-                    });
-                  }, 200);
+                  deleteHabitMutation.mutate(toRemove, {
+                    onSettled: () => {
+                      setDeletingIds((prev) => {
+                        const s = new Set(prev);
+                        s.delete(toRemove);
+                        return s;
+                      });
+                    },
+                  });
                 }
               }}
             >

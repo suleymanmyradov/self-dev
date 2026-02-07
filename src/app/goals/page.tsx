@@ -16,16 +16,19 @@ import { Plus } from "lucide-react";
 
 export default function GoalsPage() {
   const { goals, add, update, remove, toggle, hasHydrated } = useGoals();
+  const [seeded, setSeeded] = useState(false);
 
-  // Seed demo data after hydration only
+  // Seed demo data after hydration only, and only once
   useEffect(() => {
-    if (!hasHydrated) return;
+    if (!hasHydrated || seeded) return;
     if (goals.length === 0) {
-      add({ title: "Run 5K in under 30 minutes", description: "Build endurance with 3x weekly runs.", category: "health", progress: 25 });
-      add({ title: "Read 12 books this year", description: "One book per month; take notes.", category: "productivity", progress: 40 });
-      add({ title: "Daily meditation", description: "5-10 minutes to reduce stress.", category: "mindfulness", progress: 60 });
+      setSeeded(true);
+      // Add goals sequentially with small delays to ensure unique IDs
+      setTimeout(() => add({ title: "Run 5K in under 30 minutes", description: "Build endurance with 3x weekly runs.", category: "health", progress: 25 }), 0);
+      setTimeout(() => add({ title: "Read 12 books this year", description: "One book per month; take notes.", category: "productivity", progress: 40 }), 10);
+      setTimeout(() => add({ title: "Daily meditation", description: "5-10 minutes to reduce stress.", category: "mindfulness", progress: 60 }), 20);
     }
-  }, [hasHydrated, goals.length, add]);
+  }, [hasHydrated, seeded, goals.length, add]);
 
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<{ title: string; description: string; category: string; dueDate?: string }>({

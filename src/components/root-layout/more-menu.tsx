@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { Button } from "@/components/ui/button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -10,37 +9,33 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { MoreHorizontal } from "lucide-react";
+import { Menu } from "lucide-react";
 
 const items: Array<
   | { type: "item"; label: string; href: string }
   | { type: "separator" }
 > = [
   { type: "item", label: "Settings", href: "/settings" },
-  { type: "item", label: "Your activity", href: "/activity" },
   { type: "item", label: "Saved", href: "/saved" },
   { type: "separator" },
-  { type: "item", label: "Switch appearance", href: "/appearance" },
-  { type: "item", label: "Report", href: "/report" },
+  { type: "item", label: "Report a problem", href: "/report" },
   { type: "separator" },
-  { type: "item", label: "Logout", href: "/logout" },
+  { type: "item", label: "Log out", href: "/logout" },
 ];
 
-export function MoreMenu({ collapsed = false }: { collapsed?: boolean }) {
+export function MoreMenu() {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
-        {collapsed ? (
-          <Button variant="ghost" size="icon" className="w-full justify-center" title="More">
-            <MoreHorizontal className="h-4 w-4" />
-          </Button>
-        ) : (
-          <Button variant="ghost" size="sm" className="w-full justify-start">
-            <MoreHorizontal className="mr-2 h-4 w-4" /> More
-          </Button>
-        )}
+        <button
+          className="w-full flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-4 rounded-lg px-3 py-3 text-sm hover:bg-accent transition-all duration-200"
+          title="More"
+        >
+          <Menu className="h-6 w-6 flex-shrink-0" strokeWidth={1.8} />
+          <span className="font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-0 group-hover:w-auto overflow-hidden">More</span>
+        </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side={collapsed ? "right" : "top"} align={collapsed ? "end" : "start"} className="w-56">
+      <DropdownMenuContent side="top" align="start" className="w-56">
         <DropdownMenuLabel>Menu</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {items.map((it, idx) =>
