@@ -18,7 +18,6 @@ export function HomeClient() {
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
       <div className="pointer-events-none absolute inset-0">
-        <div className="absolute -top-36 -left-24 h-72 w-72 rounded-full bg-[radial-gradient(circle_at_center,var(--brand-2)_0%,transparent_70%)] opacity-40 blur-3xl" />
         <div className="absolute top-24 -right-24 h-80 w-80 rounded-full bg-[radial-gradient(circle_at_center,var(--brand-1)_0%,transparent_68%)] opacity-35 blur-3xl" />
         <div className="absolute bottom-0 left-1/3 h-64 w-64 rounded-full bg-[radial-gradient(circle_at_center,var(--brand-3)_0%,transparent_70%)] opacity-30 blur-3xl" />
       </div>

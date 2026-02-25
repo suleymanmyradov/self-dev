@@ -8,11 +8,19 @@ import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import type { Habit } from "@/api/growthapiComponents";
-import { listHabits, createHabit as apiCreateHabit, updateHabit as apiUpdateHabit, deleteHabit as apiDeleteHabit, toggleHabit as apiToggleHabit, resetTodayHabits as apiResetTodayHabits } from "@/api/growthapi";
+import {
+  listHabits,
+  createHabit as apiCreateHabit,
+  updateHabit as apiUpdateHabit,
+  deleteHabit as apiDeleteHabit,
+  toggleHabit as apiToggleHabit,
+  resetTodayHabits as apiResetTodayHabits,
+} from "@/api/growthapi";
+import { HABIT_CATEGORIES } from "@/lib/constants";
+import { CreateHabitSchema, type HabitFormValues } from "@/lib/validators/habit";
 import { Plus, RotateCcw } from "lucide-react";
-import { z } from "zod";
 import { HabitCard } from "@/components/habits/habit-card";
-import { HabitFormDialog, type HabitFormValues } from "@/components/habits/habit-form-dialog";
+import { HabitFormDialog } from "@/components/habits/habit-form-dialog";
 
 export default function HabitsPage() {
   const queryClient = useQueryClient();
@@ -78,25 +86,19 @@ export default function HabitsPage() {
     return sorted;
   }, [habits, categoryFilter, sortBy]);
 
-  // New Habit dialog & validation
-  const NewHabitSchema = z.object({
-    name: z.string().min(2, "Name must be at least 2 characters"),
-    description: z.string().optional(),
-    category: z.string().min(2, "Category is required"),
-  });
+  // New Habit dialog
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<HabitFormValues>({ name: "", description: "", category: "productivity" });
 
   const createHabit = () => {
-    const parsed = NewHabitSchema.safeParse(form);
+    const parsed = CreateHabitSchema.safeParse(form);
     if (!parsed.success) {
-      // handled in HabitFormDialog locally; keep as safety no-op here
       return;
     }
     createHabitMutation.mutate({
       name: form.name.trim(),
       description: form.description.trim(),
-      category: form.category.trim(),
+      category: form.category,
     });
     setOpen(false);
     setForm({ name: "", description: "", category: "productivity" });
@@ -118,12 +120,18 @@ export default function HabitsPage() {
 
   const openEdit = (h: Habit) => {
     setEditingId(h.id);
-    setEditForm({ name: h.name, description: h.description, category: h.category, streak: h.streak, completed: h.completed });
+    setEditForm({
+      name: h.name,
+      description: h.description,
+      category: h.category as HabitFormValues["category"],
+      streak: h.streak,
+      completed: h.completed,
+    });
     setEditOpen(true);
   };
 
   const saveEdit = () => {
-    const parsed = NewHabitSchema.safeParse(editForm);
+    const parsed = CreateHabitSchema.safeParse(editForm);
     if (!parsed.success) {
       return;
     }
@@ -133,7 +141,7 @@ export default function HabitsPage() {
         payload: {
           name: editForm.name.trim(),
           description: editForm.description.trim(),
-          category: editForm.category.trim(),
+          category: editForm.category,
         },
       });
     }
@@ -184,9 +192,11 @@ export default function HabitsPage() {
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
                 <option value="all">All</option>
-                <option value="productivity">Productivity</option>
-                <option value="health">Health</option>
-                <option value="mindfulness">Mindfulness</option>
+                {HABIT_CATEGORIES.map((c) => (
+                  <option key={c} value={c} className="capitalize">
+                    {c}
+                  </option>
+                ))}
               </select>
             </div>
             <div className="flex items-center gap-2">

@@ -16,13 +16,11 @@ export function LeftNestedPanel() {
   React.useEffect(() => {
     if (isLeftPanelOpen) {
       setShouldRender(true)
-      // next tick to allow CSS transition
       const id = requestAnimationFrame(() => setShow(true))
       return () => cancelAnimationFrame(id)
     } else {
-      // start exit animation
       setShow(false)
-      const t = setTimeout(() => setShouldRender(false), 180)
+      const t = setTimeout(() => setShouldRender(false), 200)
       return () => clearTimeout(t)
     }
   }, [isLeftPanelOpen])
@@ -32,33 +30,35 @@ export function LeftNestedPanel() {
   return (
     <aside
       className={cn(
-        "fixed top-0 z-50 hidden h-screen w-[250px] bg-background lg:block",
-        "transition-all duration-200 ease-out",
-        show ? "opacity-100 translate-x-0" : "opacity-0 -translate-x-full"
+        "fixed top-0 z-30 hidden h-screen w-[280px] border-r border-border/40 bg-background shadow-lg lg:block",
+        "transition-transform duration-200 ease-out",
+        show ? "translate-x-0" : "-translate-x-full"
       )}
-      style={{ left: 0 }}
+      style={{ left: 72 }}
     >
       <div className="flex h-full w-full flex-col">
-        <div className="border-b p-4">
-          <div className="flex items-center justify-between">
-            <h3 className="text-base font-semibold capitalize">
-              {leftPanelType ?? ""}
-            </h3>
-            <button
-              onClick={closeLeftPanel}
-              className="flex h-8 w-8 items-center justify-center rounded-full hover:bg-accent transition-colors"
-              aria-label="Close"
-            >
-              <X className="h-5 w-5" />
-            </button>
-          </div>
-          {leftPanelType === "search" && (
-            <div className="mt-3">
-              <Input placeholder="Search accounts..." />
-            </div>
-          )}
+        {/* Header */}
+        <div className="flex h-[72px] items-center justify-between px-4 shrink-0 border-b border-border/40">
+          <h3 className="text-sm font-semibold capitalize tracking-wide">
+            {leftPanelType ?? ""}
+          </h3>
+          <button
+            onClick={closeLeftPanel}
+            className="flex h-8 w-8 items-center justify-center rounded-lg hover:bg-accent transition-colors"
+            aria-label="Close"
+          >
+            <X className="h-4 w-4" />
+          </button>
         </div>
 
+        {/* Search input */}
+        {leftPanelType === "search" && (
+          <div className="px-4 py-3 shrink-0">
+            <Input placeholder="Search accounts..." className="h-9" />
+          </div>
+        )}
+
+        {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto p-2">
           {leftPanelType === "messages" && <MessagesList />}
           {leftPanelType === "notifications" && <NotificationsList />}

@@ -10,9 +10,13 @@ export const Assistant = () => {
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
-      <div className="grid h-dvh grid-cols-[200px_1fr] gap-x-2 px-4 py-4">
-        <ThreadList />
-        <Thread />
+      <div className="flex h-full">
+        <div className="w-[220px] shrink-0 border-r border-border/40 overflow-y-auto p-3">
+          <ThreadList />
+        </div>
+        <div className="flex-1 min-w-0">
+          <Thread />
+        </div>
       </div>
     </AssistantRuntimeProvider>
   );

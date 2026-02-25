@@ -28,11 +28,10 @@ export function MoreMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="w-full flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-4 rounded-lg px-3 py-3 text-sm hover:bg-accent transition-all duration-200"
+          className="flex h-11 w-11 items-center justify-center rounded-xl text-muted-foreground hover:bg-accent/60 hover:text-foreground transition-colors"
           title="More"
         >
-          <Menu className="h-6 w-6 flex-shrink-0" strokeWidth={1.8} />
-          <span className="font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-0 group-hover:w-auto overflow-hidden">More</span>
+          <Menu className="h-[22px] w-[22px]" strokeWidth={1.7} />
         </button>
       </DropdownMenuTrigger>
       <DropdownMenuContent side="top" align="start" className="w-56">

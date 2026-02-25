@@ -5,8 +5,13 @@ import { MoreMenu } from './more-menu';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { SidebarMenu, SidebarMenuItem, SidebarMenuButton } from '@/components/ui/sidebar';
 import { useUI } from '@/store/uiStore';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipProvider,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import {
     Home,
     Search,
@@ -20,10 +25,19 @@ import {
     User,
 } from 'lucide-react';
 
-const menuItems = [
+type PanelType = 'search' | 'notifications' | 'messages';
+
+interface MenuItem {
+    href: string;
+    label: string;
+    icon: LucideIcon;
+    panel?: PanelType;
+}
+
+const menuItems: MenuItem[] = [
     { href: '/', label: 'Feed', icon: Home },
-    { href: '/search', label: 'Search', icon: Search },
-    { href: '/notifications', label: 'Notifications', icon: Bell },
+    { href: '/search', label: 'Search', icon: Search, panel: 'search' },
+    { href: '/notifications', label: 'Notifications', icon: Bell, panel: 'notifications' },
     { href: '/ai-coach', label: 'Coach AI', icon: MessageSquare },
     { href: '/ai-therapist', label: 'Therapist AI', icon: HeartHandshake },
     { href: '/habits', label: 'Habits', icon: ListTodo },
@@ -33,133 +47,94 @@ const menuItems = [
 ];
 
 export function SidebarNav() {
+    const pathname = usePathname();
     const { openLeftPanel, isMobile, closeLeftPanel, isLeftPanelOpen, leftPanelType } = useUI();
 
-    return (
-        <div className="flex h-full w-full flex-col bg-background overflow-hidden">
-            {/* Brand/Header */}
-            <div className="px-3 h-[72px] flex items-center shrink-0">
-                <div className="flex items-center w-full justify-center group-hover:justify-start transition-all duration-200">
-                    <Link href="/" className="flex items-center gap-3">
-                        <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary flex-shrink-0">
-                            <span className="text-base font-bold text-primary-foreground">G</span>
-                        </div>
-                        <span className="text-lg font-bold whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-0 group-hover:w-auto overflow-hidden">Growth</span>
-                    </Link>
-                </div>
-            </div>
+    const handleClick = (e: React.MouseEvent, item: MenuItem) => {
+        if (item.panel && !isMobile) {
+            e.preventDefault();
+            if (isLeftPanelOpen && leftPanelType === item.panel) {
+                closeLeftPanel();
+            } else {
+                openLeftPanel(item.panel);
+            }
+            return;
+        }
+        closeLeftPanel();
+    };
 
-            {/* Navigation */}
-            <nav className="flex-1 flex flex-col items-center justify-center gap-2 px-3 py-2 overflow-y-auto no-scrollbar">
-                {menuItems.map(item => {
-                    const Icon = item.icon;
-                    return (
-                        <Link
-                            key={item.href}
-                            href={item.href}
-                            onClick={e => {
-                                if (item.href === '/search') {
-                                    if (!isMobile) {
-                                        e.preventDefault();
-                                        if (isLeftPanelOpen && leftPanelType === 'search') {
-                                            closeLeftPanel();
-                                        } else {
-                                            openLeftPanel('search');
-                                        }
-                                        return;
-                                    }
-                                }
-                                if (item.href === '/notifications') {
-                                    if (!isMobile) {
-                                        e.preventDefault();
-                                        if (isLeftPanelOpen && leftPanelType === 'notifications') {
-                                            closeLeftPanel();
-                                        } else {
-                                            openLeftPanel('notifications');
-                                        }
-                                        return;
-                                    }
-                                }
-                                closeLeftPanel();
-                            }}
-                            className="flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-4 rounded-lg px-3 py-3 text-sm hover:bg-accent transition-all duration-200 w-full"
-                            title={item.label}
-                        >
-                            <Icon className="h-6 w-6 flex-shrink-0" strokeWidth={1.8} />
-                            <span className="font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-0 group-hover:w-auto overflow-hidden">{item.label}</span>
-                        </Link>
-                    );
-                })}
-            </nav>
-            
-            {/* Footer */}
-            <div className="px-3 py-3 mt-auto shrink-0">
-                <div className="flex flex-col gap-2">
-                    <Link 
-                        href="/profile"
-                        className="flex items-center justify-center group-hover:justify-start gap-0 group-hover:gap-4 rounded-lg px-3 py-3 text-sm hover:bg-accent transition-all duration-200 w-full"
-                        title="Profile"
-                    >
-                        <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center flex-shrink-0 overflow-hidden">
-                            <User className="h-4 w-4" />
-                        </div>
-                        <span className="font-medium whitespace-nowrap opacity-0 group-hover:opacity-100 transition-opacity duration-200 w-0 group-hover:w-auto overflow-hidden">Profile</span>
-                    </Link>
+    return (
+        <TooltipProvider delayDuration={0}>
+            <div className="flex h-full w-full flex-col overflow-hidden">
+                {/* Brand */}
+                <div className="flex h-[72px] items-center justify-center shrink-0">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Link href="/" onClick={() => closeLeftPanel()}>
+                                <div className="flex h-9 w-9 items-center justify-center rounded-full bg-primary">
+                                    <span className="text-base font-bold text-primary-foreground">G</span>
+                                </div>
+                            </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" sideOffset={12}>Growth</TooltipContent>
+                    </Tooltip>
+                </div>
+
+                {/* Navigation */}
+                <nav className="flex-1 flex flex-col items-center justify-center gap-1 px-2 py-2 overflow-y-auto no-scrollbar">
+                    {menuItems.map(item => {
+                        const Icon = item.icon;
+                        const isActive =
+                            (!item.panel && (pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href)))) ||
+                            (item.panel && isLeftPanelOpen && leftPanelType === item.panel);
+
+                        return (
+                            <Tooltip key={item.href}>
+                                <TooltipTrigger asChild>
+                                    <Link
+                                        href={item.href}
+                                        onClick={e => handleClick(e, item)}
+                                        className={cn(
+                                            'flex h-11 w-11 items-center justify-center rounded-xl transition-colors',
+                                            isActive
+                                                ? 'bg-accent text-accent-foreground'
+                                                : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+                                        )}
+                                    >
+                                        <Icon className="h-[22px] w-[22px]" strokeWidth={isActive ? 2.2 : 1.7} />
+                                    </Link>
+                                </TooltipTrigger>
+                                <TooltipContent side="right" sideOffset={12}>{item.label}</TooltipContent>
+                            </Tooltip>
+                        );
+                    })}
+                </nav>
+
+                {/* Footer */}
+                <div className="flex flex-col items-center gap-1 px-2 py-3 shrink-0">
+                    <Tooltip>
+                        <TooltipTrigger asChild>
+                            <Link
+                                href="/profile"
+                                onClick={() => closeLeftPanel()}
+                                className={cn(
+                                    'flex h-11 w-11 items-center justify-center rounded-xl transition-colors',
+                                    pathname === '/profile'
+                                        ? 'bg-accent text-accent-foreground'
+                                        : 'text-muted-foreground hover:bg-accent/60 hover:text-foreground'
+                                )}
+                            >
+                                <div className="h-6 w-6 rounded-full bg-muted flex items-center justify-center overflow-hidden">
+                                    <User className="h-4 w-4" />
+                                </div>
+                            </Link>
+                        </TooltipTrigger>
+                        <TooltipContent side="right" sideOffset={12}>Profile</TooltipContent>
+                    </Tooltip>
                     <MoreMenu />
                 </div>
             </div>
-        </div>
+        </TooltipProvider>
     );
 }
 
-export function NavMain({
-    items,
-}: {
-    items: {
-        label: string;
-        href: string;
-        icon?: LucideIcon;
-    }[];
-}) {
-    const pathname = usePathname();
-    const { isSidebarCollapsed } = useUI();
-
-    return (
-        <SidebarMenu>
-            {items.map(item => {
-                const isActive =
-                    pathname === item.href || (item.href !== '/' && pathname.startsWith(item.href));
-
-                return (
-                    <SidebarMenuItem key={item.label}>
-                        <SidebarMenuButton
-                            asChild
-                            isActive={isActive}
-                            tooltip={
-                                isSidebarCollapsed
-                                    ? { children: item.label, side: 'right' }
-                                    : undefined
-                            }
-                            className={cn(
-                                isSidebarCollapsed ? 'flex justify-center items-center p-0' : 'flex items-center',
-                            )}
-                        >
-                            <Link
-                                href={item.href}
-                                className={cn(
-                                    'flex items-center w-full h-full',
-                                    isSidebarCollapsed ? 'justify-center' : 'justify-start',
-                                )}
-                            >
-                                {item.icon && <item.icon className="h-5 w-5 flex-shrink-0" />}
-                                {!isSidebarCollapsed && (
-                                    <span className="ml-2 truncate">{item.label}</span>
-                                )}
-                            </Link>
-                        </SidebarMenuButton>
-                    </SidebarMenuItem>
-                );
-            })}
-        </SidebarMenu>
-    );
-}

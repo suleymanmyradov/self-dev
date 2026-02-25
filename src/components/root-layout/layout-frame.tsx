@@ -20,28 +20,34 @@ export function LayoutFrame({ children }: { children: React.ReactNode }) {
 
   return (
     <div className="w-full flex-1 min-h-0 overflow-hidden">
-      {/* Main Sidebar - hidden when left panel is open */}
-      {!isLeftPanelOpen && (
-        <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[72px] lg:block group hover:w-[250px] transition-[width] duration-200 ease-out bg-background">
-          <SidebarNav />
-        </aside>
-      )}
+      {/* Sidebar rail – always visible */}
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[var(--sidebar-width)] border-r border-border/40 bg-background lg:block">
+        <SidebarNav />
+      </aside>
 
-      {/* Left Panel - full width panel that replaces sidebar */}
-      {isLeftPanelOpen && <LeftNestedPanel />}
+      {/* Left nested panel – slides out beside the sidebar */}
+      <LeftNestedPanel />
+
+      {/* Scrim – click to close left panel */}
+      {isLeftPanelOpen && (
+        <div
+          className="fixed inset-0 z-20 hidden bg-black/20 lg:block"
+          style={{ left: `calc(var(--sidebar-width) + var(--left-panel-width))` }}
+          onClick={closeLeftPanel}
+        />
+      )}
 
       {/* Fixed Right Sidebar (home page only) */}
       {isHome && (
-        <aside className="fixed right-0 top-0 z-30 hidden h-screen w-80 lg:block">
+        <aside className="fixed right-0 top-0 z-30 hidden h-screen w-[var(--right-sidebar-width)] lg:block">
           <RightSidebar />
         </aside>
       )}
 
-      {/* Main Content - padding adjusts based on what's open */}
+      {/* Main Content */}
       <main className={cn(
-        "min-w-0 h-screen overflow-hidden overflow-x-hidden pt-14 pb-16 md:pt-0 md:pb-0 transition-[padding] duration-200 ease-out",
-        isLeftPanelOpen ? 'pl-[250px]' : 'pl-[72px]',
-        isHome ? 'lg:pr-80' : 'lg:pr-0'
+        "min-w-0 h-screen overflow-hidden overflow-x-hidden pt-14 pb-16 md:pt-0 md:pb-0 transition-[padding] duration-200 ease-out lg:pl-[var(--sidebar-width)]",
+        isHome ? "lg:pr-[var(--right-sidebar-width)]" : "lg:pr-0"
       )}>
         {children}
       </main>

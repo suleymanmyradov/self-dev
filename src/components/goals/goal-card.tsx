@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import type { Goal } from "@/store/goals";
+import type { Goal } from "@/api/growthapiComponents";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { CalendarDays, CheckCircle2, EllipsisVertical, MessageSquare, HeartHandshake } from "lucide-react";
@@ -15,12 +15,16 @@ export type GoalCardProps = {
   onToggle: (id: string) => void;
   onEdit: (goal: Goal) => void;
   onDelete: (id: string) => void;
+  deleting?: boolean;
 };
 
-export function GoalCard({ goal, onToggle, onEdit, onDelete }: GoalCardProps) {
+export function GoalCard({ goal, onToggle, onEdit, onDelete, deleting }: GoalCardProps) {
   const due = goal.dueDate ? new Date(goal.dueDate).toLocaleDateString() : undefined;
   return (
-    <Card className="p-4">
+    <Card
+      data-deleting={deleting || undefined}
+      className="p-4 transition-all duration-200 data-[deleting=true]:opacity-0 data-[deleting=true]:-translate-y-1 data-[deleting=true]:scale-[0.98]"
+    >
       <div className="flex items-start justify-between gap-3">
         <div className="min-w-0">
           <div className="flex items-center gap-2">
