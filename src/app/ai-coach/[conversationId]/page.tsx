@@ -5,6 +5,6 @@ export default async function AICoachConversationPage({
 }: {
     params: Promise<{ conversationId: string }>;
 }) {
-    await params; // conversationId currently unused; Assistant manages its own threads
-    return <Assistant />;
+    const { conversationId } = await params;
+    return <Assistant key={conversationId} />;
 }

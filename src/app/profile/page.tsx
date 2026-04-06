@@ -2,12 +2,15 @@
 
 import { useEffect, useMemo, useState } from "react";
 import { z } from "zod";
-import { useProfile } from "@/store/profile";
+import { useQueryClient } from "@tanstack/react-query";
+import { getCurrentUser, updateProfile } from "@/api";
+import type { Profile, UpdateProfileRequest } from "@/api";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
+import { toast } from "@/components/ui/sonner";
 
 const ProfileSchema = z.object({
   fullName: z.string().min(2, "Full name must be at least 2 characters"),
@@ -42,13 +45,14 @@ type FormState = {
   bio: string;
   location: string;
   website: string;
-  interests: string; // comma-separated entry in the form UI
+  interests: string;
   avatarUrl: string;
 };
 
 export default function ProfilePage() {
-  const { profile, hasHydrated, setProfile, updateProfile, clearProfile } = useProfile();
-
+  const queryClient = useQueryClient();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
   const [form, setForm] = useState<FormState>({
     fullName: "",
     username: "",
@@ -61,28 +65,36 @@ export default function ProfilePage() {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Initialize form from store when hydrated
   useEffect(() => {
-    if (!hasHydrated) return;
-    if (profile) {
-      setForm({
-        fullName: profile.fullName ?? "",
-        username: profile.username ?? "",
-        bio: profile.bio ?? "",
-        location: profile.location ?? "",
-        website: profile.website ?? "",
-        interests: (profile.interests ?? []).join(", "),
-        avatarUrl: profile.avatarUrl ?? "",
-      });
+    async function fetchProfile() {
+      try {
+        const response = await getCurrentUser();
+        const p = response.data;
+        setProfile(p);
+        setForm({
+          fullName: p.fullName ?? "",
+          username: p.username ?? "",
+          bio: p.bio ?? "",
+          location: p.location ?? "",
+          website: p.website ?? "",
+          interests: (p.interests ?? []).join(", "),
+          avatarUrl: p.avatarUrl ?? "",
+        });
+      } catch {
+        toast.error("Failed to load profile");
+      } finally {
+        setIsLoading(false);
+      }
     }
-  }, [hasHydrated, profile?.id]);
+    fetchProfile();
+  }, []);
 
   const initials = useMemo(() => {
     const parts = form.fullName.trim().split(/\s+/).filter(Boolean);
     return parts.slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "U";
   }, [form.fullName]);
 
-  const handleSubmit = () => {
+  const handleSubmit = async () => {
     setError(null);
     const parsed = ProfileSchema.safeParse({
       ...form,
@@ -94,9 +106,8 @@ export default function ProfilePage() {
 
     setSaving(true);
     const data = parsed.data;
-    const payload = {
+    const payload: UpdateProfileRequest = {
       fullName: data.fullName.trim(),
-      username: data.username.trim(),
       bio: (form.bio || "").trim(),
       location: (form.location || "").trim(),
       website: (form.website || "").trim(),
@@ -104,17 +115,19 @@ export default function ProfilePage() {
       avatarUrl: (form.avatarUrl || "").trim(),
     };
 
-    if (!profile) {
-      setProfile(payload as any);
-    } else {
-      updateProfile(payload);
+    try {
+      const response = await updateProfile(payload);
+      setProfile(response.data);
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Profile updated successfully");
+    } catch {
+      toast.error("Failed to update profile");
+    } finally {
+      setSaving(false);
     }
-
-    // simulate brief save
-    setTimeout(() => setSaving(false), 200);
   };
 
-  if (!hasHydrated) {
+  if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
         Loading profile...
@@ -217,14 +230,9 @@ export default function ProfilePage() {
             </CardContent>
             <CardFooter className="flex items-center justify-between">
               <div className="text-xs text-muted-foreground">
-                {profile ? "Your profile is stored locally." : "Create your profile to personalize the app."}
+                {profile ? "Your profile is synced with the server." : "Create your profile to personalize the app."}
               </div>
               <div className="flex items-center gap-2">
-                {profile && (
-                  <Button variant="outline" onClick={() => clearProfile()}>
-                    Clear
-                  </Button>
-                )}
                 <Button onClick={handleSubmit} disabled={saving}>
                   {saving ? "Saving..." : profile ? "Save Changes" : "Create Profile"}
                 </Button>

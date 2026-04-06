@@ -1,10 +1,10 @@
 import { Assistant } from '@/app/assistant';
 
-export default async function TherapistConversationPage({
+export default async function AITherapistConversationPage({
     params,
 }: {
     params: Promise<{ conversationId: string }>;
 }) {
-    await params; // conversationId currently unused; Assistant manages its own threads
-    return <Assistant />;
+    const { conversationId } = await params;
+    return <Assistant key={conversationId} />;
 }

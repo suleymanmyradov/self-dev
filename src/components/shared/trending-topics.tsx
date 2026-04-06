@@ -25,16 +25,16 @@ export function TrendingTopics() {
     ];
 
     return (
-        <div className="space-y-4">
+        <div className="space-y-3">
             {topics.map((topic, i) => (
-                <div key={i} className="space-y-1">
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                <div key={i} className="rounded-2xl border border-border/50 bg-card/60 p-3 transition-colors hover:bg-card/80">
+                    <div className="flex items-center gap-1 text-[0.68rem] uppercase tracking-[0.14em] text-muted-foreground">
                         <span>{topic.category}</span>
-                        <span>·</span>
+                        <span>•</span>
                         <span>Trending</span>
                     </div>
-                    <p className="font-semibold">{topic.title}</p>
-                    <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                    <p className="mt-1 font-medium leading-snug text-foreground">{topic.title}</p>
+                    <div className="mt-1 flex items-center gap-1 text-xs text-muted-foreground">
                         <span>{topic.posts}</span>
                         {i === 0 && (
                             <>

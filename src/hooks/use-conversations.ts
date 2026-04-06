@@ -1,0 +1,67 @@
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { listConversations, startConversation, getConversation, getMessages, sendMessage } from '@/api/conversations';
+import type { StartConversationRequest, SendMessageRequest, ListConversationsParams, PageParams } from '@/api';
+
+/**
+ * Hook to fetch conversations
+ */
+export function useConversations(params: ListConversationsParams = { page: 1, limit: 20 }) {
+  return useQuery({
+    queryKey: ['conversations', params],
+    queryFn: () => listConversations(params),
+    select: (data) => data.data,
+  });
+}
+
+/**
+ * Hook to fetch a single conversation
+ */
+export function useConversation(id: string) {
+  return useQuery({
+    queryKey: ['conversations', id],
+    queryFn: () => getConversation(id),
+    select: (data) => data.data,
+    enabled: !!id,
+  });
+}
+
+/**
+ * Hook to fetch conversation messages
+ */
+export function useMessages(conversationId: string, params: PageParams = { page: 1, limit: 50 }) {
+  return useQuery({
+    queryKey: ['conversations', conversationId, 'messages', params],
+    queryFn: () => getMessages(conversationId, params),
+    select: (data) => data.data,
+    enabled: !!conversationId,
+  });
+}
+
+/**
+ * Hook to start a new conversation
+ */
+export function useStartConversation() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: (data: StartConversationRequest) => startConversation(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}
+
+/**
+ * Hook to send a message
+ */
+export function useSendMessage() {
+  const queryClient = useQueryClient();
+  
+  return useMutation({
+    mutationFn: ({ conversationId, data }: { conversationId: string; data: SendMessageRequest }) =>
+      sendMessage(conversationId, data),
+    onSuccess: (_, { conversationId }) => {
+      queryClient.invalidateQueries({ queryKey: ['conversations', conversationId, 'messages'] });
+    },
+  });
+}

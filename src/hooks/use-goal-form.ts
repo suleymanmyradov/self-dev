@@ -1,0 +1,78 @@
+import { useState, useCallback } from 'react';
+import { CreateGoalSchema, type GoalFormValues } from '@/lib/validators/goal';
+import type { Goal } from '@/api';
+
+const DEFAULT_FORM: GoalFormValues = {
+  title: '',
+  description: '',
+  category: 'productivity',
+};
+
+export function useGoalForm(initial?: Partial<GoalFormValues>) {
+  const [form, setForm] = useState<GoalFormValues>({
+    ...DEFAULT_FORM,
+    ...initial,
+  });
+  const [error, setError] = useState<string | null>(null);
+
+  const setTitle = useCallback((title: string) => {
+    setForm((f) => ({ ...f, title }));
+  }, []);
+
+  const setDescription = useCallback((description: string) => {
+    setForm((f) => ({ ...f, description }));
+  }, []);
+
+  const setCategory = useCallback((category: GoalFormValues['category']) => {
+    setForm((f) => ({ ...f, category }));
+  }, []);
+
+  const setDueDate = useCallback((dueDate: string | undefined) => {
+    setForm((f) => ({ ...f, dueDate }));
+  }, []);
+
+  const reset = useCallback((initial?: Partial<GoalFormValues>) => {
+    setForm({ ...DEFAULT_FORM, ...initial });
+    setError(null);
+  }, []);
+
+  const loadGoal = useCallback((goal: Goal) => {
+    setForm({
+      title: goal.title,
+      description: goal.description,
+      category: goal.category as GoalFormValues['category'],
+      dueDate: goal.dueDate,
+    });
+    setError(null);
+  }, []);
+
+  const validate = useCallback(() => {
+    const parsed = CreateGoalSchema.safeParse(form);
+    if (!parsed.success) {
+      const message = parsed.error.issues[0]?.message ?? 'Invalid input';
+      setError(message);
+      return null;
+    }
+    setError(null);
+    return {
+      title: form.title.trim(),
+      description: form.description.trim(),
+      category: form.category,
+      dueDate: form.dueDate,
+    };
+  }, [form]);
+
+  return {
+    form,
+    error,
+    setTitle,
+    setDescription,
+    setCategory,
+    setDueDate,
+    reset,
+    loadGoal,
+    validate,
+    setForm,
+    setError,
+  };
+}

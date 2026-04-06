@@ -6,7 +6,17 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 
-const secondaryColors = [
+// =============================================================================
+// Constants
+// =============================================================================
+
+interface SecondaryColor {
+  name: string;
+  value: string;
+  darkValue: string;
+}
+
+const SECONDARY_COLORS: SecondaryColor[] = [
   { name: "Gray", value: "oklch(0.96 0 0)", darkValue: "oklch(0.22 0 0)" },
   { name: "Green", value: "oklch(0.96 0.02 140)", darkValue: "oklch(0.28 0.02 260)" },
   { name: "Blue", value: "oklch(0.96 0.02 240)", darkValue: "oklch(0.28 0.02 260)" },
@@ -15,58 +25,67 @@ const secondaryColors = [
   { name: "Rose", value: "oklch(0.96 0.02 340)", darkValue: "oklch(0.28 0.02 340)" },
 ];
 
+const STORAGE_KEY = "secondary-color";
+const DEFAULT_COLOR = "gray";
+
+// =============================================================================
+// Helper Functions
+// =============================================================================
+
+function getStoredColor(): string {
+  if (typeof localStorage?.getItem !== "function") return DEFAULT_COLOR;
+  return localStorage.getItem(STORAGE_KEY) || DEFAULT_COLOR;
+}
+
+function setStoredColor(color: string): void {
+  if (typeof localStorage?.setItem !== "function") return;
+  localStorage.setItem(STORAGE_KEY, color);
+}
+
+function applyColorToRoot(color: SecondaryColor, isDark: boolean): void {
+  const root = document.documentElement;
+  root.style.setProperty("--secondary", isDark ? color.darkValue : color.value);
+  root.style.setProperty("--secondary-foreground", isDark ? "oklch(0.98 0 0)" : "oklch(0.22 0.02 260)");
+}
+
+// =============================================================================
+// Component
+// =============================================================================
+
 export default function AppearancePage() {
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [secondaryColor, setSecondaryColor] = useState("gray");
-  
+  const [secondaryColor, setSecondaryColor] = useState(DEFAULT_COLOR);
+
+  // Mount effect
   useEffect(() => setMounted(true), []);
-  
-  const applySecondaryColor = useCallback((colorName: string) => {
-    const color = secondaryColors.find((c) => c.name.toLowerCase() === colorName.toLowerCase());
+
+  // Load stored color on mount
+  useEffect(() => {
+    if (!mounted) return;
+    const stored = getStoredColor();
+    setSecondaryColor(stored);
+  }, [mounted]);
+
+  // Apply secondary color when theme or color changes
+  useEffect(() => {
+    if (!mounted) return;
+    const color = SECONDARY_COLORS.find((c) => c.name.toLowerCase() === secondaryColor);
     if (!color) return;
-    
-    const root = document.documentElement;
     const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark");
-    root.style.setProperty("--secondary", isDark ? color.darkValue : color.value);
-    root.style.setProperty("--secondary-foreground", isDark ? "oklch(0.98 0 0)" : "oklch(0.22 0.02 260)");
-  }, [theme, systemTheme]);
+    applyColorToRoot(color, isDark);
+  }, [mounted, theme, systemTheme, secondaryColor]);
 
-  useEffect(() => {
-    if (mounted) {
-      const stored = localStorage.getItem("secondary-color") || "gray";
-      setSecondaryColor(stored);
-      applySecondaryColor(stored);
-    }
-  }, [mounted, applySecondaryColor]);
-
-  useEffect(() => {
-    const handleStorage = () => {
-      const stored = localStorage.getItem("secondary-color") || "gray";
-      setSecondaryColor(stored);
-      applySecondaryColor(stored);
-    };
-    window.addEventListener("storage", handleStorage);
-    return () => window.removeEventListener("storage", handleStorage);
-  }, [applySecondaryColor]);
-
-  const handleSecondaryColorChange = (colorName: string) => {
+  const handleSecondaryColorChange = useCallback((colorName: string) => {
     setSecondaryColor(colorName);
-    localStorage.setItem("secondary-color", colorName);
-    applySecondaryColor(colorName);
-  };
+    setStoredColor(colorName);
+  }, []);
 
-  useEffect(() => {
-    applySecondaryColor(secondaryColor);
-  }, [theme, systemTheme, applySecondaryColor, secondaryColor]);
+  const isThemeActive = (value: string): boolean =>
+    theme === value || (!theme && value === "system");
 
-  const active = (val: string) => (theme === val || (!theme && val === "system"))
-    ? "bg-primary text-primary-foreground"
-    : "";
-
-  const activeSecondary = (name: string) => secondaryColor === name.toLowerCase()
-    ? "ring-2 ring-primary ring-offset-2"
-    : "";
+  const isColorActive = (name: string): boolean =>
+    secondaryColor === name.toLowerCase();
 
   return (
     <div className="h-full flex flex-col">
@@ -77,39 +96,52 @@ export default function AppearancePage() {
             <p className="text-sm text-muted-foreground">Choose how the app looks to you.</p>
           </header>
 
+          {/* Theme Selection */}
           <Card className="mb-4">
             <CardHeader>
               <CardTitle>Theme</CardTitle>
             </CardHeader>
             <CardContent>
               <div className="flex items-center gap-2">
-                <Button variant="outline" onClick={() => setTheme("light")} className={active("light")}>Light</Button>
-                <Button variant="outline" onClick={() => setTheme("dark")} className={active("dark")}>Dark</Button>
-                <Button variant="outline" onClick={() => setTheme("system")} className={active("system")}>System</Button>
+                {(["light", "dark", "system"] as const).map((t) => (
+                  <Button
+                    key={t}
+                    variant="outline"
+                    onClick={() => setTheme(t)}
+                    className={isThemeActive(t) ? "bg-primary text-primary-foreground" : ""}
+                  >
+                    {t.charAt(0).toUpperCase() + t.slice(1)}
+                  </Button>
+                ))}
               </div>
               <Separator className="my-4" />
               <p className="text-xs text-muted-foreground">
-                {mounted ? (
-                  theme === "system" || !theme ? `Following system: ${systemTheme ?? "light"}` : `Current theme: ${theme}`
-                ) : (
-                  "Detecting current theme..."
-                )}
+                {mounted
+                  ? theme === "system" || !theme
+                    ? `Following system: ${systemTheme ?? "light"}`
+                    : `Current theme: ${theme}`
+                  : "Detecting current theme..."}
               </p>
             </CardContent>
           </Card>
 
+          {/* Secondary Color Selection */}
           <Card>
             <CardHeader>
               <CardTitle>Secondary Color</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground mb-4">Choose the accent color for secondary elements.</p>
+              <p className="text-sm text-muted-foreground mb-4">
+                Choose the accent color for secondary elements.
+              </p>
               <div className="flex flex-wrap gap-3">
-                {secondaryColors.map((color) => (
+                {SECONDARY_COLORS.map((color) => (
                   <button
                     key={color.name}
                     onClick={() => handleSecondaryColorChange(color.name.toLowerCase())}
-                    className={`w-10 h-10 rounded-full border-2 transition-transform hover:scale-105 ${activeSecondary(color.name)}`}
+                    className={`w-10 h-10 rounded-full border-2 transition-transform hover:scale-105 ${
+                      isColorActive(color.name) ? "ring-2 ring-primary ring-offset-2" : ""
+                    }`}
                     style={{ backgroundColor: color.value }}
                     title={color.name}
                   />

@@ -3,22 +3,26 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { useAuth } from "@/store/auth";
+import { logout as apiLogout } from "@/api";
 
 export default function LogoutPage() {
   const router = useRouter();
+  const { logout } = useAuth();
 
   useEffect(() => {
-    try {
-      // Clear known persisted stores
-      localStorage.removeItem("habits");
-      localStorage.removeItem("goals");
-      localStorage.removeItem("profile");
-      // Optionally clear other app keys if any exist later
-    } catch {}
-    // Small delay to show feedback then redirect home
-    const t = setTimeout(() => router.replace("/"), 300);
-    return () => clearTimeout(t);
-  }, [router]);
+    const performLogout = async () => {
+      try {
+        await apiLogout();
+      } catch {
+        // API call may fail if token is already expired — that's fine
+      }
+      logout();
+      // Small delay to show feedback then redirect home
+      setTimeout(() => router.replace("/"), 300);
+    };
+    performLogout();
+  }, [router, logout]);
 
   return (
     <div className="h-full flex flex-col">

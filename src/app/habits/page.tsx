@@ -1,214 +1,165 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Separator } from "@/components/ui/separator";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
-import type { Habit } from "@/api/growthapiComponents";
-import {
-  listHabits,
-  createHabit as apiCreateHabit,
-  updateHabit as apiUpdateHabit,
-  deleteHabit as apiDeleteHabit,
-  toggleHabit as apiToggleHabit,
-  resetTodayHabits as apiResetTodayHabits,
-} from "@/api/growthapi";
 import { HABIT_CATEGORIES } from "@/lib/constants";
-import { CreateHabitSchema, type HabitFormValues } from "@/lib/validators/habit";
-import { Plus, RotateCcw } from "lucide-react";
+import { Plus, RotateCcw, Target, TrendingUp } from "lucide-react";
+import { cn } from "@/lib/utils";
 import { HabitCard } from "@/components/habits/habit-card";
 import { HabitFormDialog } from "@/components/habits/habit-form-dialog";
+import {
+  useHabits,
+  useCreateHabit,
+  useUpdateHabit,
+  useDeleteHabit,
+  useToggleHabit,
+  useResetTodayHabits,
+  useHabitFilters,
+  useHabitForm,
+  useHabitEditForm,
+  useConfirmDelete,
+} from "@/hooks";
 
 export default function HabitsPage() {
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["habits"],
-    queryFn: () => listHabits({ page: 1, limit: 100 }),
-  });
+  // Fetch habits
+  const { data: habits = [], isLoading } = useHabits({ page: 1, limit: 100 });
 
-  const habits = data?.data ?? [];
+  // Mutations
+  const createMutation = useCreateHabit();
+  const updateMutation = useUpdateHabit();
+  const deleteMutation = useDeleteHabit();
+  const toggleMutation = useToggleHabit();
+  const resetMutation = useResetTodayHabits();
 
-  const createHabitMutation = useMutation({
-    mutationFn: apiCreateHabit,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["habits"] });
-    },
-  });
+  // Filters
+  const { categoryFilter, setCategoryFilter, sortBy, setSortBy, visibleHabits, completionPct } = 
+    useHabitFilters(habits);
 
-  const updateHabitMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof apiUpdateHabit>[0] }) =>
-      apiUpdateHabit(payload, id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["habits"] });
-    },
-  });
-
-  const deleteHabitMutation = useMutation({
-    mutationFn: (id: string) => apiDeleteHabit({}, id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["habits"] });
-    },
-  });
-
-  const toggleHabitMutation = useMutation({
-    mutationFn: (id: string) => apiToggleHabit({}, id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["habits"] });
-    },
-  });
-
-  const resetTodayMutation = useMutation({
-    mutationFn: apiResetTodayHabits,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["habits"] });
-    },
-  });
-
-  const completionPct = useMemo(() => {
-    if (habits.length === 0) return 0;
-    const done = habits.filter((h) => h.completed).length;
-    return Math.round((done / habits.length) * 100);
-  }, [habits]);
-
-  // Filter & sort controls
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [sortBy, setSortBy] = useState<"streak" | "name">("streak");
-
-  const visibleHabits = useMemo(() => {
-    const filtered = categoryFilter === "all" ? habits : habits.filter(h => h.category === categoryFilter);
-    const sorted = [...filtered].sort((a, b) => {
-      if (sortBy === "streak") return b.streak - a.streak;
-      return a.name.localeCompare(b.name);
-    });
-    return sorted;
-  }, [habits, categoryFilter, sortBy]);
-
-  // New Habit dialog
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<HabitFormValues>({ name: "", description: "", category: "productivity" });
-
-  const createHabit = () => {
-    const parsed = CreateHabitSchema.safeParse(form);
-    if (!parsed.success) {
-      return;
+  // Create form
+  const createForm = useHabitForm();
+  const handleCreate = () => {
+    const validated = createForm.validate();
+    if (validated) {
+      createMutation.mutate({
+        name: validated.name.trim(),
+        description: validated.description.trim(),
+        category: validated.category,
+      });
+      createForm.reset();
     }
-    createHabitMutation.mutate({
-      name: form.name.trim(),
-      description: form.description.trim(),
-      category: form.category,
-    });
-    setOpen(false);
-    setForm({ name: "", description: "", category: "productivity" });
   };
 
-  // Edit Habit dialog state
-  const [editOpen, setEditOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<HabitFormValues & { streak: number; completed: boolean }>({
-    name: "",
-    description: "",
-    category: "productivity",
-    streak: 0,
-    completed: false,
-  });
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
-
-  const openEdit = (h: Habit) => {
-    setEditingId(h.id);
-    setEditForm({
-      name: h.name,
-      description: h.description,
-      category: h.category as HabitFormValues["category"],
-      streak: h.streak,
-      completed: h.completed,
-    });
-    setEditOpen(true);
-  };
-
-  const saveEdit = () => {
-    const parsed = CreateHabitSchema.safeParse(editForm);
-    if (!parsed.success) {
-      return;
-    }
-    if (editingId) {
-      updateHabitMutation.mutate({
-        id: editingId,
-        payload: {
-          name: editForm.name.trim(),
-          description: editForm.description.trim(),
-          category: editForm.category,
+  // Edit form
+  const editForm = useHabitEditForm();
+  const handleEdit = () => {
+    const validated = editForm.validate();
+    if (validated && editForm.editingId) {
+      updateMutation.mutate({
+        id: editForm.editingId,
+        data: {
+          name: validated.name.trim(),
+          description: validated.description.trim(),
+          category: validated.category,
         },
       });
+      editForm.reset();
     }
-    setEditOpen(false);
   };
 
+  // Delete confirmation
+  const deleteConfirm = useConfirmDelete<string>();
+  const handleDelete = () => {
+    const id = deleteConfirm.startDeleting();
+    if (id) {
+      deleteMutation.mutate(id, {
+        onSettled: () => deleteConfirm.stopDeleting(id),
+      });
+    }
+  };
+
+  // Loading state
   if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-        Loading habits...
-      </div>
-    );
+    return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Loading habits...</div>;
   }
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+    <div className="h-full flex flex-col relative">
+      {/* Ambient background */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-20 -left-20 h-80 w-80 rounded-full bg-ambient-growth opacity-30 blur-3xl" />
+        <div className="absolute bottom-20 -right-20 h-64 w-64 rounded-full bg-ambient-calm opacity-20 blur-3xl" />
+      </div>
+
+      <div className="relative flex-1 overflow-y-auto no-scrollbar">
         <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
-          <header className="mb-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Habits</h1>
-              <p className="text-sm text-muted-foreground">Track, build, and maintain small wins every day.</p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button variant="outline" size="sm" onClick={() => resetTodayMutation.mutate()}>
-                <RotateCcw className="mr-2 h-4 w-4" /> Reset Today
-              </Button>
-              <HabitFormDialog
-                open={open}
-                title="Create a new habit"
-                onOpenChange={setOpen}
-                initialValues={form}
-                onSubmit={(vals) => { setForm(vals); createHabit(); }}
-              />
-              <Button size="sm" variant="default" onClick={() => setOpen(true)}>
-                <Plus className="mr-2 h-4 w-4" /> New Habit
-              </Button>
+          {/* Header */}
+          <header className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">Habits</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Small steps, lasting change.</p>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => resetMutation.mutate()}>
+                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
+                </Button>
+                <Button size="sm" variant="growth" onClick={() => createForm.setOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> New Habit
+                </Button>
+              </div>
             </div>
           </header>
+
+          {/* Progress Card */}
+          <div className="card-elevated mb-6 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-growth" />
+                <span className="text-sm font-medium">Today's Progress</span>
+              </div>
+              <Badge className={cn(
+                "rounded-full",
+                completionPct === 100 ? "bg-growth text-growth-foreground" : "bg-secondary"
+              )}>
+                {completionPct}% complete
+              </Badge>
+            </div>
+            <Progress
+              value={completionPct}
+              className={cn("h-2 bg-muted", completionPct === 100 && "[&>div]:bg-growth")}
+            />
+            {completionPct === 100 && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-growth">
+                <TrendingUp className="h-4 w-4" />
+                <span>All habits completed! Keep the momentum going.</span>
+              </div>
+            )}
+          </div>
 
           {/* Filters */}
           <section className="mb-4 flex items-center gap-3 text-sm">
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">Filter:</span>
               <select
-                className="rounded-md border bg-background px-2 py-1"
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
                 value={categoryFilter}
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
                 <option value="all">All</option>
                 {HABIT_CATEGORIES.map((c) => (
-                  <option key={c} value={c} className="capitalize">
-                    {c}
-                  </option>
+                  <option key={c} value={c} className="capitalize">{c}</option>
                 ))}
               </select>
             </div>
             <div className="flex items-center gap-2">
               <span className="text-muted-foreground">Sort:</span>
               <select
-                className="rounded-md border bg-background px-2 py-1"
+                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
                 value={sortBy}
                 onChange={(e) => {
-                  const value = e.target.value;
-                  if (value === "streak" || value === "name") {
-                    setSortBy(value);
-                  }
+                  if (e.target.value === "streak" || e.target.value === "name") setSortBy(e.target.value);
                 }}
               >
                 <option value="streak">Streak</option>
@@ -217,70 +168,53 @@ export default function HabitsPage() {
             </div>
           </section>
 
-          <section className="mb-6">
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Today</span>
-              <Badge variant="secondary" className="rounded-full">{completionPct}% complete</Badge>
-            </div>
-            <Progress value={completionPct} className="h-2" />
-          </section>
-
-          <Separator className="my-4" />
-
-          <section className="grid grid-cols-1 gap-3">
+          {/* Habits List */}
+          <section className="grid grid-cols-1 gap-4">
             {visibleHabits.map((h) => (
               <HabitCard
                 key={h.id}
                 habit={h}
-                deleting={deletingIds.has(h.id)}
-                onToggle={(id) => toggleHabitMutation.mutate(id)}
-                onEdit={openEdit}
-                onDelete={(id) => { setConfirmDeleteId(id); setConfirmOpen(true); }}
+                deleting={deleteConfirm.isDeleting(h.id)}
+                onToggle={(id) => toggleMutation.mutate(id)}
+                onEdit={editForm.openEdit}
+                onDelete={deleteConfirm.confirmDelete}
               />
             ))}
           </section>
         </div>
       </div>
+
+      {/* Create Habit Dialog */}
+      <HabitFormDialog
+        open={createForm.open}
+        title="New habit"
+        onOpenChange={createForm.setOpen}
+        initialValues={createForm.form}
+        onSubmit={(vals) => { createForm.setForm(vals); handleCreate(); }}
+      />
+
       {/* Edit Habit Dialog */}
       <HabitFormDialog
-        open={editOpen}
+        open={editForm.open}
         title="Edit habit"
-        onOpenChange={setEditOpen}
-        initialValues={editForm}
-        onSubmit={(vals) => { setEditForm({ ...editForm, ...vals }); saveEdit(); }}
+        onOpenChange={editForm.setOpen}
+        initialValues={editForm.form}
+        onSubmit={(vals) => { editForm.setForm({ ...editForm.form, ...vals }); handleEdit(); }}
         showAdvanced
       />
 
       {/* Delete Confirmation */}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog open={deleteConfirm.open} onOpenChange={deleteConfirm.setOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete habit</DialogTitle>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">Are you sure you want to delete this habit? This action cannot be undone.</p>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete this habit? This action cannot be undone.
+          </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>Cancel</Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (confirmDeleteId) {
-                  setDeletingIds((prev) => new Set(prev).add(confirmDeleteId));
-                  setConfirmOpen(false);
-                  const toRemove = confirmDeleteId;
-                  deleteHabitMutation.mutate(toRemove, {
-                    onSettled: () => {
-                      setDeletingIds((prev) => {
-                        const s = new Set(prev);
-                        s.delete(toRemove);
-                        return s;
-                      });
-                    },
-                  });
-                }
-              }}
-            >
-              Delete
-            </Button>
+            <Button variant="outline" onClick={() => deleteConfirm.setOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

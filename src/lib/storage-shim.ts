@@ -28,8 +28,9 @@ const createMemoryStorage = (): StorageLike => {
 const isValidStorage = (value: unknown): value is StorageLike => {
   if (!value) return false;
 
+  const storage = value as Record<string, unknown>;
   return ["getItem", "setItem", "removeItem", "clear", "key"].every(
-    (method) => typeof (value as Record<string, unknown>)[method] === "function",
+    (method) => typeof storage[method] === "function",
   );
 };
 

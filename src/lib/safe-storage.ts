@@ -7,23 +7,26 @@ const noopStorage: StateStorage = {
 };
 
 export const getSafeStorage = (): StateStorage => {
-  if (typeof window === "undefined") {
+  // Check for both window and globalThis (for SSR shim compatibility)
+  const globalScope = typeof window !== "undefined" ? window : typeof globalThis !== "undefined" ? globalThis : null;
+
+  if (!globalScope) {
     return noopStorage;
   }
 
   try {
-    const storage = window.localStorage;
+    const storage = (globalScope as Record<string, unknown>).localStorage;
 
     if (
       !storage ||
-      typeof storage.getItem !== "function" ||
-      typeof storage.setItem !== "function" ||
-      typeof storage.removeItem !== "function"
+      typeof (storage as Record<string, unknown>).getItem !== "function" ||
+      typeof (storage as Record<string, unknown>).setItem !== "function" ||
+      typeof (storage as Record<string, unknown>).removeItem !== "function"
     ) {
       return noopStorage;
     }
 
-    return storage;
+    return storage as StateStorage;
   } catch {
     return noopStorage;
   }

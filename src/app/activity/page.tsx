@@ -3,45 +3,69 @@
 import { useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
-
-type ActivityItem = { id: string; title: string; detail: string; when: string };
-
-const mockActivity: ActivityItem[] = [
-  { id: "a1", title: "Created a habit", detail: "Morning Walk", when: "2h ago" },
-  { id: "a2", title: "Completed a habit", detail: "Meditate", when: "6h ago" },
-  { id: "a3", title: "Added a goal", detail: "Ship a side project", when: "1d ago" },
-];
+import { Button } from "@/components/ui/button";
+import { RefreshCw, Activity as ActivityIcon } from "lucide-react";
+import { useActivities } from "@/hooks/use-activities";
+import { ActivityItem, ActivityEmptyState, ActivityFilterBar } from "@/components/activity";
+import type { ActivityType } from "@/api";
 
 export default function ActivityPage() {
-  const [items] = useState<ActivityItem[]>(mockActivity);
+  const [filter, setFilter] = useState<ActivityType | 'all'>('all');
+  const { data: activities, isLoading, isError, error, refetch, isRefetching } = useActivities();
+
+  const filteredActivities = filter === 'all'
+    ? activities
+    : activities?.filter(a => a.type === filter);
 
   return (
     <div className="h-full flex flex-col">
       <div className="flex-1 overflow-y-auto no-scrollbar">
         <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-8">
-          <header className="mb-4">
-            <h1 className="text-2xl font-bold tracking-tight">Your activity</h1>
-            <p className="text-sm text-muted-foreground">A timeline of your recent actions.</p>
+          <header className="mb-4 flex items-center justify-between">
+            <div>
+              <h1 className="text-2xl font-bold tracking-tight">Your activity</h1>
+              <p className="text-sm text-muted-foreground">A timeline of your recent actions.</p>
+            </div>
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => refetch()}
+              disabled={isRefetching}
+              className="shrink-0"
+            >
+              <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+            </Button>
           </header>
 
           <Card>
             <CardHeader>
-              <CardTitle>Recent</CardTitle>
+              <div className="flex items-center justify-between">
+                <CardTitle>Recent</CardTitle>
+                <ActivityFilterBar filter={filter} onFilterChange={setFilter} />
+              </div>
             </CardHeader>
             <CardContent>
-              <ul className="divide-y">
-                {items.map((it) => (
-                  <li key={it.id} className="py-3">
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0">
-                        <p className="truncate text-sm font-medium">{it.title}</p>
-                        <p className="truncate text-xs text-muted-foreground">{it.detail}</p>
-                      </div>
-                      <span className="ml-3 shrink-0 text-xs text-muted-foreground">{it.when}</span>
-                    </div>
-                  </li>
-                ))}
-              </ul>
+              {isLoading ? (
+                <div className="flex items-center justify-center py-12">
+                  <RefreshCw className="h-6 w-6 animate-spin text-muted-foreground" />
+                </div>
+              ) : isError ? (
+                <div className="flex flex-col items-center justify-center py-12 text-center">
+                  <ActivityIcon className="h-12 w-12 text-muted-foreground mb-4" />
+                  <p className="text-sm text-muted-foreground mb-4">{error?.message ?? 'Failed to load activities'}</p>
+                  <Button variant="outline" size="sm" onClick={() => refetch()}>
+                    Try again
+                  </Button>
+                </div>
+              ) : !filteredActivities?.length ? (
+                <ActivityEmptyState filter={filter} />
+              ) : (
+                <ul className="divide-y">
+                  {filteredActivities.map((activity) => (
+                    <ActivityItem key={activity.id} activity={activity} />
+                  ))}
+                </ul>
+              )}
               <Separator className="my-4" />
               <p className="text-xs text-muted-foreground">More detailed analytics coming soon.</p>
             </CardContent>

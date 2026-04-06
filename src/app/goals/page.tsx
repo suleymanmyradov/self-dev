@@ -1,140 +1,88 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { useState } from "react";
+import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { Separator } from "@/components/ui/separator";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GoalCard } from "@/components/goals/goal-card";
-import { articles } from "@/lib/articles";
-import { GOAL_CATEGORIES } from "@/lib/constants";
-import { CreateGoalSchema, type GoalFormValues } from "@/lib/validators/goal";
-import type { Goal } from "@/api/growthapiComponents";
-import {
-  listGoals,
-  createGoal as apiCreateGoal,
-  updateGoal as apiUpdateGoal,
-  deleteGoal as apiDeleteGoal,
-  toggleGoal as apiToggleGoal,
-} from "@/api/growthapi";
+import { GoalFormDialog } from "@/components/goals/goal-form-dialog";
+import { listArticles } from "@/api";
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useGoalForm, useConfirmDelete } from "@/hooks";
+import type { Goal } from "@/api";
 import Link from "next/link";
-import { Plus } from "lucide-react";
+import { Plus, Target, Trophy } from "lucide-react";
+import { cn } from "@/lib/utils";
 
 export default function GoalsPage() {
-  const queryClient = useQueryClient();
-  const { data, isLoading } = useQuery({
-    queryKey: ["goals"],
-    queryFn: () => listGoals({ page: 1, limit: 100 }),
+  // Data fetching
+  const { data: goals = [], isLoading } = useGoals();
+
+  const { data: articlesData } = useQuery({
+    queryKey: ["articles", "recommended"],
+    queryFn: () => listArticles({ limit: 3 }),
+    enabled: goals.length > 0,
   });
 
-  const goals = data?.data ?? [];
+  const articles = articlesData?.data ?? [];
 
-  const createGoalMutation = useMutation({
-    mutationFn: apiCreateGoal,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["goals"] });
-    },
-  });
+  // Mutations
+  const createMutation = useCreateGoal();
+  const updateMutation = useUpdateGoal();
+  const deleteMutation = useDeleteGoal();
+  const toggleMutation = useToggleGoal();
 
-  const updateGoalMutation = useMutation({
-    mutationFn: ({ id, payload }: { id: string; payload: Parameters<typeof apiUpdateGoal>[0] }) =>
-      apiUpdateGoal(payload, id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["goals"] });
-    },
-  });
+  // Create form
+  const createForm = useGoalForm();
+  const [createOpen, setCreateOpen] = useState(false);
 
-  const deleteGoalMutation = useMutation({
-    mutationFn: (id: string) => apiDeleteGoal({}, id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["goals"] });
-    },
-  });
-
-  const toggleGoalMutation = useMutation({
-    mutationFn: (id: string) => apiToggleGoal({}, id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["goals"] });
-    },
-  });
-
-  const [open, setOpen] = useState(false);
-  const [form, setForm] = useState<GoalFormValues>({
-    title: "",
-    description: "",
-    category: "productivity",
-  });
-  const [formError, setFormError] = useState<string | null>(null);
-
-  // Edit dialog state
+  // Edit form
+  const editForm = useGoalForm();
   const [editOpen, setEditOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [editForm, setEditForm] = useState<GoalFormValues & { progress: number }>({
-    title: "",
-    description: "",
-    category: "productivity",
-    progress: 0,
-  });
 
-  // Delete confirmation state
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [confirmDeleteId, setConfirmDeleteId] = useState<string | null>(null);
-  const [deletingIds, setDeletingIds] = useState<Set<string>>(new Set());
+  // Delete confirmation
+  const deleteConfirm = useConfirmDelete<string>();
 
-  const filteredArticles = useMemo(() => {
-    const cat = goals[0]?.category;
-    const list = cat ? articles.filter((a) => a.category === cat) : articles;
-    return list.slice(0, 3);
-  }, [goals]);
-
-  const createGoal = () => {
-    const parsed = CreateGoalSchema.safeParse(form);
-    if (!parsed.success) {
-      setFormError(parsed.error.issues[0]?.message ?? "Invalid input");
-      return;
-    }
-    createGoalMutation.mutate({
-      title: form.title.trim(),
-      description: form.description.trim(),
-      category: form.category,
-      dueDate: form.dueDate,
+  // Handlers
+  const handleCreate = () => {
+    const validated = createForm.validate();
+    if (!validated) return;
+    createMutation.mutate(validated, {
+      onSuccess: () => {
+        setCreateOpen(false);
+        createForm.reset();
+      },
     });
-    setOpen(false);
-    setForm({ title: "", description: "", category: "productivity" });
-    setFormError(null);
   };
 
   const openEdit = (goal: Goal) => {
     setEditingId(goal.id);
-    setEditForm({
-      title: goal.title,
-      description: goal.description,
-      category: goal.category as GoalFormValues["category"],
-      dueDate: goal.dueDate,
-      progress: goal.progress,
-    });
+    editForm.loadGoal(goal);
     setEditOpen(true);
   };
 
-  const saveEdit = () => {
-    if (editingId) {
-      updateGoalMutation.mutate({
-        id: editingId,
-        payload: {
-          title: editForm.title.trim(),
-          description: editForm.description.trim(),
-          category: editForm.category,
-          dueDate: editForm.dueDate,
-        },
-      });
-    }
-    setEditOpen(false);
+  const handleSaveEdit = () => {
+    if (!editingId) return;
+    const validated = editForm.validate();
+    if (!validated) return;
+    updateMutation.mutate(
+      { id: editingId, data: validated },
+      { onSuccess: () => setEditOpen(false) }
+    );
   };
 
+  const handleDelete = () => {
+    const id = deleteConfirm.startDeleting();
+    if (id) {
+      deleteMutation.mutate(id, {
+        onSettled: () => deleteConfirm.stopDeleting(id),
+      });
+    }
+  };
+
+  // Loading state
   if (isLoading) {
     return (
       <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
@@ -148,111 +96,76 @@ export default function GoalsPage() {
     : 0;
 
   return (
-    <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+    <div className="h-full flex flex-col relative">
+      {/* Ambient background */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-20 -right-20 h-80 w-80 rounded-full bg-ambient-energy opacity-25 blur-3xl" />
+        <div className="absolute bottom-20 -left-20 h-64 w-64 rounded-full bg-ambient-growth opacity-30 blur-3xl" />
+      </div>
+
+      <div className="relative flex-1 overflow-y-auto no-scrollbar">
         <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
-          <header className="mb-4 flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold tracking-tight">Goals</h1>
-              <p className="text-sm text-muted-foreground">
-                Set outcomes, get recommendations, and connect habits.
-              </p>
-            </div>
-            <div className="flex items-center gap-2">
-              <Dialog open={open} onOpenChange={setOpen}>
-                <DialogContent className="sm:max-w-md">
-                  <DialogHeader>
-                    <DialogTitle>New goal</DialogTitle>
-                  </DialogHeader>
-                  <div className="grid gap-3 py-2">
-                    <div className="grid gap-1">
-                      <label className="text-sm font-medium">Title</label>
-                      <Input
-                        value={form.title}
-                        onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-                      />
-                    </div>
-                    <div className="grid gap-1">
-                      <label className="text-sm font-medium">Description</label>
-                      <Textarea
-                        value={form.description}
-                        onChange={(e) => setForm((f) => ({ ...f, description: e.target.value }))}
-                        rows={3}
-                      />
-                    </div>
-                    <div className="grid gap-1">
-                      <label className="text-sm font-medium">Category</label>
-                      <select
-                        className="rounded-md border bg-background px-2 py-1.5 text-sm"
-                        value={form.category}
-                        onChange={(e) => setForm((f) => ({ ...f, category: e.target.value as GoalFormValues["category"] }))}
-                      >
-                        {GOAL_CATEGORIES.map((c) => (
-                          <option key={c} value={c} className="capitalize">
-                            {c}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    <div className="grid gap-1">
-                      <label className="text-sm font-medium">Due date</label>
-                      <Input
-                        type="date"
-                        value={form.dueDate ?? ""}
-                        onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                      />
-                    </div>
-                    {formError && <p className="text-sm text-destructive">{formError}</p>}
-                  </div>
-                  <DialogFooter>
-                    <Button variant="outline" onClick={() => setOpen(false)}>
-                      Cancel
-                    </Button>
-                    <Button onClick={createGoal}>Create</Button>
-                  </DialogFooter>
-                </DialogContent>
-              </Dialog>
-              <Button size="sm" variant="default" onClick={() => setOpen(true)}>
+          {/* Header */}
+          <header className="mb-6">
+            <div className="flex items-center justify-between">
+              <div>
+                <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">Goals</h1>
+                <p className="mt-1 text-sm text-muted-foreground">Set outcomes, track progress, achieve growth.</p>
+              </div>
+              <Button size="sm" variant="energy" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> New Goal
               </Button>
             </div>
           </header>
 
-          <section className="mb-6">
-            <div className="mb-2 flex items-center gap-2">
-              <span className="text-sm text-muted-foreground">Overall completion</span>
-              <Badge variant="secondary" className="rounded-full">
-                {completion}%
+          {/* Progress Card */}
+          <div className="card-elevated mb-6 rounded-xl p-5">
+            <div className="flex items-center justify-between mb-3">
+              <div className="flex items-center gap-2">
+                <Target className="h-4 w-4 text-energy" />
+                <span className="text-sm font-medium">Overall Progress</span>
+              </div>
+              <Badge
+                className={cn(
+                  "rounded-full",
+                  completion === 100 ? "bg-growth text-growth-foreground" : "bg-secondary"
+                )}
+              >
+                {completion}% complete
               </Badge>
             </div>
-            <Progress value={completion} className="h-2" />
-          </section>
+            <Progress
+              value={completion}
+              className={cn("h-2 bg-muted", completion === 100 && "[&>div]:bg-growth")}
+            />
+            {completion === 100 && (
+              <div className="mt-3 flex items-center gap-2 text-sm text-growth">
+                <Trophy className="h-4 w-4" />
+                <span>All goals achieved! Time to set new challenges.</span>
+              </div>
+            )}
+          </div>
 
-          <Separator className="my-4" />
-
-          <section className="grid grid-cols-1 gap-3">
+          {/* Goals List */}
+          <section className="grid grid-cols-1 gap-4">
             {goals.map((g) => (
               <GoalCard
                 key={g.id}
                 goal={g}
-                deleting={deletingIds.has(g.id)}
-                onToggle={(id) => toggleGoalMutation.mutate(id)}
+                deleting={deleteConfirm.isDeleting(g.id)}
+                onToggle={(id) => toggleMutation.mutate(id)}
                 onEdit={openEdit}
-                onDelete={(id) => {
-                  setConfirmDeleteId(id);
-                  setConfirmOpen(true);
-                }}
+                onDelete={deleteConfirm.confirmDelete}
               />
             ))}
           </section>
 
-          <Separator className="my-6" />
-
-          <section>
-            <h2 className="text-lg font-semibold">Recommended articles</h2>
-            <p className="text-sm text-muted-foreground">Based on your goals, these may help:</p>
+          {/* Recommended Articles */}
+          <section className="mt-8">
+            <h2 className="text-lg font-semibold">Recommended Reading</h2>
+            <p className="text-sm text-muted-foreground">Articles to help you achieve your goals:</p>
             <ul className="mt-3 space-y-2">
-              {filteredArticles.map((a) => (
+              {articles.map((a) => (
                 <li key={a.id} className="text-sm">
                   <Link href={`/article/${a.id}`} className="underline-offset-2 hover:underline">
                     {a.title}
@@ -263,71 +176,43 @@ export default function GoalsPage() {
             </ul>
           </section>
 
-          <div className="mt-6 text-xs text-muted-foreground">
+          <p className="mt-6 text-xs text-muted-foreground">
             Tip: You can link habits to goals later to track the small daily actions that ladder up
             to your outcomes.
-          </div>
+          </p>
         </div>
       </div>
 
-      {/* Edit Goal Dialog */}
-      <Dialog open={editOpen} onOpenChange={setEditOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Edit goal</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-3 py-2">
-            <div className="grid gap-1">
-              <label className="text-sm font-medium">Title</label>
-              <Input
-                value={editForm.title}
-                onChange={(e) => setEditForm((f) => ({ ...f, title: e.target.value }))}
-              />
-            </div>
-            <div className="grid gap-1">
-              <label className="text-sm font-medium">Description</label>
-              <Textarea
-                value={editForm.description}
-                onChange={(e) => setEditForm((f) => ({ ...f, description: e.target.value }))}
-                rows={3}
-              />
-            </div>
-            <div className="grid gap-1">
-              <label className="text-sm font-medium">Category</label>
-              <select
-                className="rounded-md border bg-background px-2 py-1.5 text-sm"
-                value={editForm.category}
-                onChange={(e) =>
-                  setEditForm((f) => ({ ...f, category: e.target.value as GoalFormValues["category"] }))
-                }
-              >
-                {GOAL_CATEGORIES.map((c) => (
-                  <option key={c} value={c} className="capitalize">
-                    {c}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="grid gap-1">
-              <label className="text-sm font-medium">Due date</label>
-              <Input
-                type="date"
-                value={editForm.dueDate ?? ""}
-                onChange={(e) => setEditForm((f) => ({ ...f, dueDate: e.target.value }))}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setEditOpen(false)}>
-              Cancel
-            </Button>
-            <Button onClick={saveEdit}>Save</Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+      {/* Create Dialog */}
+      <GoalFormDialog
+        open={createOpen}
+        onOpenChange={setCreateOpen}
+        mode="create"
+        form={createForm.form}
+        error={createForm.error}
+        onTitleChange={createForm.setTitle}
+        onDescriptionChange={createForm.setDescription}
+        onCategoryChange={createForm.setCategory}
+        onDueDateChange={createForm.setDueDate}
+        onSubmit={handleCreate}
+      />
+
+      {/* Edit Dialog */}
+      <GoalFormDialog
+        open={editOpen}
+        onOpenChange={setEditOpen}
+        mode="edit"
+        form={editForm.form}
+        error={editForm.error}
+        onTitleChange={editForm.setTitle}
+        onDescriptionChange={editForm.setDescription}
+        onCategoryChange={editForm.setCategory}
+        onDueDateChange={editForm.setDueDate}
+        onSubmit={handleSaveEdit}
+      />
 
       {/* Delete Confirmation */}
-      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+      <Dialog open={deleteConfirm.open} onOpenChange={deleteConfirm.setOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete goal</DialogTitle>
@@ -336,30 +221,8 @@ export default function GoalsPage() {
             Are you sure you want to delete this goal? This action cannot be undone.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => setConfirmOpen(false)}>
-              Cancel
-            </Button>
-            <Button
-              variant="destructive"
-              onClick={() => {
-                if (confirmDeleteId) {
-                  setDeletingIds((prev) => new Set(prev).add(confirmDeleteId));
-                  setConfirmOpen(false);
-                  const toRemove = confirmDeleteId;
-                  deleteGoalMutation.mutate(toRemove, {
-                    onSettled: () => {
-                      setDeletingIds((prev) => {
-                        const s = new Set(prev);
-                        s.delete(toRemove);
-                        return s;
-                      });
-                    },
-                  });
-                }
-              }}
-            >
-              Delete
-            </Button>
+            <Button variant="outline" onClick={() => deleteConfirm.setOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

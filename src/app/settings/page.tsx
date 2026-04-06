@@ -1,23 +1,116 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Separator } from "@/components/ui/separator";
-import { useProfile } from "@/store/profile";
+import { Switch } from "@/components/ui/switch";
+import { toast } from "@/components/ui/sonner";
+import { FormField } from "@/components/form-field";
+import { useQueryClient } from "@tanstack/react-query";
+import { getCurrentUser, updateProfile } from "@/api";
+import { useSettings, useUpdateSettings } from "@/hooks";
+import type { Profile, UpdateProfileRequest } from "@/api";
+
+const accountSchema = z.object({
+  username: z
+    .string()
+    .min(2, "Username must be at least 2 characters")
+    .max(50, "Username must be less than 50 characters")
+    .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores allowed"),
+  email: z.string().email("Invalid email address"),
+});
+
+type AccountFormData = z.infer<typeof accountSchema>;
 
 export default function SettingsPage() {
-  const { profile, hasHydrated, setProfile, updateProfile } = useProfile();
-  const [username, setUsername] = useState("");
-  const [email, setEmail] = useState("");
+  const queryClient = useQueryClient();
+  const { data: settings, isLoading: settingsLoading } = useSettings();
+  const updateSettings = useUpdateSettings();
+  const [profile, setProfile] = useState<Profile | null>(null);
+  const [profileLoading, setProfileLoading] = useState(true);
+  const [formData, setFormData] = useState<AccountFormData>({
+    username: "",
+    email: "",
+  });
+  const [errors, setErrors] = useState<Partial<Record<keyof AccountFormData, string>>>({});
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
-    if (!hasHydrated) return;
-    setUsername(profile?.username ?? "");
-    setEmail(profile?.email ?? "");
-  }, [hasHydrated, profile?.id]);
+    async function fetchProfile() {
+      try {
+        const response = await getCurrentUser();
+        setProfile(response.data);
+        setFormData({
+          username: response.data.username,
+          email: response.data.email,
+        });
+      } catch {
+        toast.error("Failed to load profile");
+      } finally {
+        setProfileLoading(false);
+      }
+    }
+    fetchProfile();
+  }, []);
+
+  const updateField = (field: keyof AccountFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
+    if (errors[field]) {
+      setErrors((prev) => ({ ...prev, [field]: undefined }));
+    }
+  };
+
+  const handleSave = async (e: React.FormEvent) => {
+    e.preventDefault();
+
+    const result = accountSchema.safeParse({
+      username: formData.username.trim(),
+      email: formData.email.trim(),
+    });
+
+    if (!result.success) {
+      const fieldErrors: Partial<Record<keyof AccountFormData, string>> = {};
+      result.error.issues.forEach((issue) => {
+        const field = issue.path[0] as keyof AccountFormData;
+        fieldErrors[field] = issue.message;
+      });
+      setErrors(fieldErrors);
+      return;
+    }
+
+    setSaving(true);
+    const payload = result.data;
+
+    try {
+      const profilePayload: UpdateProfileRequest = {
+        fullName: profile?.fullName || payload.username,
+      };
+      await updateProfile(profilePayload);
+      queryClient.invalidateQueries({ queryKey: ["profile"] });
+      toast.success("Settings saved successfully");
+    } catch {
+      toast.error("Failed to save settings");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleSettingToggle = async (
+    key: "emailNotifications" | "pushNotifications" | "habitReminders" | "goalReminders",
+    value: boolean
+  ) => {
+    if (!settings) return;
+    try {
+      await updateSettings.mutateAsync({ [key]: value });
+      toast.success(`${key.replace(/([A-Z])/g, " $1").trim()} updated`);
+    } catch {
+      toast.error("Failed to update setting");
+    }
+  };
+
+  const isLoading = settingsLoading || profileLoading;
 
   return (
     <div className="h-full flex flex-col">
@@ -28,50 +121,98 @@ export default function SettingsPage() {
             <p className="text-sm text-muted-foreground">Manage your account and preferences.</p>
           </header>
 
-          <Card className="mb-4">
-            <CardHeader>
-              <CardTitle>Account</CardTitle>
-            </CardHeader>
-            <CardContent className="grid gap-4">
-              <div className="grid gap-1">
-                <label className="text-sm font-medium">Username</label>
-                <Input value={username} onChange={(e) => setUsername(e.target.value)} placeholder="yourname" />
-              </div>
-              <div className="grid gap-1">
-                <label className="text-sm font-medium">Email</label>
-                <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} placeholder="you@example.com" />
-              </div>
-            </CardContent>
-            <CardFooter className="justify-end">
-              <Button
-                onClick={() => {
-                  setSaving(true);
-                  const payload = { username: username.trim(), email: email.trim() };
-                  if (!profile) {
-                    setProfile({ fullName: username.trim() || "User", username: payload.username, email: payload.email });
-                  } else {
-                    updateProfile(payload);
-                  }
-                  setTimeout(() => setSaving(false), 200);
-                }}
-                disabled={!hasHydrated || saving}
-              >
-                {saving ? "Saving..." : "Save changes"}
-              </Button>
-            </CardFooter>
-          </Card>
+          <form onSubmit={handleSave}>
+            <Card className="mb-4">
+              <CardHeader>
+                <CardTitle>Account</CardTitle>
+              </CardHeader>
+              <CardContent className="grid gap-4">
+                <FormField
+                  id="username"
+                  label="Username"
+                  value={formData.username}
+                  onChange={updateField("username")}
+                  placeholder="yourname"
+                  error={errors.username}
+                  disabled={isLoading}
+                />
+                <FormField
+                  id="email"
+                  label="Email"
+                  type="email"
+                  value={formData.email}
+                  onChange={updateField("email")}
+                  placeholder="you@example.com"
+                  error={errors.email}
+                  disabled={isLoading}
+                />
+              </CardContent>
+              <CardFooter className="justify-end">
+                <Button type="submit" disabled={isLoading || saving}>
+                  {saving ? "Saving..." : "Save changes"}
+                </Button>
+              </CardFooter>
+            </Card>
+          </form>
 
           <Card>
             <CardHeader>
               <CardTitle>Preferences</CardTitle>
             </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">Theme, notifications and more coming soon.</p>
-              <Separator className="my-4" />
-              <div className="flex items-center justify-between">
-                <span className="text-sm">Notifications</span>
-                <Button disabled size="sm" variant="outline">Configure</Button>
-              </div>
+            <CardContent className="grid gap-6">
+              {isLoading ? (
+                <p className="text-sm text-muted-foreground">Loading preferences...</p>
+              ) : (
+                <>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium">Email Notifications</span>
+                      <p className="text-xs text-muted-foreground">Receive email updates about your activity</p>
+                    </div>
+                    <Switch
+                      checked={settings?.emailNotifications ?? false}
+                      onCheckedChange={(v: boolean) => handleSettingToggle("emailNotifications", v)}
+                      disabled={updateSettings.isPending}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium">Push Notifications</span>
+                      <p className="text-xs text-muted-foreground">Receive push notifications in your browser</p>
+                    </div>
+                    <Switch
+                      checked={settings?.pushNotifications ?? false}
+                      onCheckedChange={(v: boolean) => handleSettingToggle("pushNotifications", v)}
+                      disabled={updateSettings.isPending}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium">Habit Reminders</span>
+                      <p className="text-xs text-muted-foreground">Get reminded to complete your daily habits</p>
+                    </div>
+                    <Switch
+                      checked={settings?.habitReminders ?? false}
+                      onCheckedChange={(v: boolean) => handleSettingToggle("habitReminders", v)}
+                      disabled={updateSettings.isPending}
+                    />
+                  </div>
+                  <Separator />
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-sm font-medium">Goal Reminders</span>
+                      <p className="text-xs text-muted-foreground">Get reminded about your goal deadlines</p>
+                    </div>
+                    <Switch
+                      checked={settings?.goalReminders ?? false}
+                      onCheckedChange={(v: boolean) => handleSettingToggle("goalReminders", v)}
+                      disabled={updateSettings.isPending}
+                    />
+                  </div>
+                </>
+              )}
             </CardContent>
           </Card>
         </div>

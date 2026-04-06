@@ -1,17 +1,35 @@
 import { Skeleton } from '@/components/ui/skeleton';
 
+// =============================================================================
+// Constants
+// =============================================================================
+
+const SKELETON_LINES = 6;
+
+// =============================================================================
+// Component
+// =============================================================================
+
 export default function ArticleLoading() {
   return (
-    <div className="h-full flex-1 overflow-y-auto no-scrollbar">
-      <div className="max-w-3xl mx-auto px-4 py-6">
-        <Skeleton className="h-8 w-2/3 mb-3" />
-        <Skeleton className="h-4 w-1/3 mb-6" />
-        <Skeleton className="h-64 w-full rounded-md mb-6" />
-        <div className="space-y-3">
-          {[...Array(8)].map((_, i) => (
-            <Skeleton key={i} className="h-4 w-full" />
-          ))}
-        </div>
+    <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-10">
+      {/* Meta skeleton */}
+      <div className="flex items-center gap-2">
+        <Skeleton className="h-5 w-16 rounded-full" />
+        <span className="text-muted-foreground">•</span>
+        <Skeleton className="h-4 w-24" />
+      </div>
+
+      {/* Title skeleton */}
+      <Skeleton className="mt-2 h-9 w-4/5" />
+
+      <Skeleton className="my-6 h-px w-full" />
+
+      {/* Content skeleton */}
+      <div className="space-y-4">
+        {Array.from({ length: SKELETON_LINES }).map((_, i) => (
+          <Skeleton key={i} className="h-4 w-full" />
+        ))}
       </div>
     </div>
   );

@@ -9,7 +9,7 @@ function Tabs({ className, ...props }: React.ComponentProps<typeof TabsPrimitive
     return (
         <TabsPrimitive.Root
             data-slot="tabs"
-            className={cn('flex flex-col gap-2', className)}
+            className={cn('flex flex-col gap-3', className)}
             {...props}
         />
     );
@@ -20,7 +20,7 @@ function TabsList({ className, ...props }: React.ComponentProps<typeof TabsPrimi
         <TabsPrimitive.List
             data-slot="tabs-list"
             className={cn(
-                'bg-background/70 text-muted-foreground inline-flex h-10 w-fit items-center justify-center gap-1 rounded-full border border-border/70 p-1 shadow-sm backdrop-blur',
+                'bg-background/80 text-muted-foreground inline-flex h-11 w-fit items-center justify-center gap-1 rounded-full border border-border/70 p-1 shadow-sm backdrop-blur',
                 className,
             )}
             {...props}
@@ -33,7 +33,7 @@ function TabsTrigger({ className, ...props }: React.ComponentProps<typeof TabsPr
         <TabsPrimitive.Trigger
             data-slot="tabs-trigger"
             className={cn(
-                "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring text-foreground inline-flex h-8 flex-1 items-center justify-center gap-1.5 rounded-full border border-transparent px-3 text-xs font-semibold tracking-[0.04em] whitespace-nowrap transition-[color,box-shadow,background] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm hover:bg-foreground/5 hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
+                "data-[state=active]:bg-primary data-[state=active]:text-primary-foreground focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:outline-ring text-foreground inline-flex h-9 flex-1 items-center justify-center gap-1.5 rounded-full border border-transparent px-3 text-xs font-semibold tracking-[0.04em] whitespace-nowrap transition-[color,box-shadow,background] focus-visible:ring-[3px] focus-visible:outline-1 disabled:pointer-events-none disabled:opacity-50 data-[state=active]:shadow-sm hover:bg-foreground/5 hover:text-foreground [&_svg]:pointer-events-none [&_svg]:shrink-0 [&_svg:not([class*='size-'])]:size-4",
                 className,
             )}
             {...props}

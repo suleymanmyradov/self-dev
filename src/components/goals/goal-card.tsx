@@ -5,10 +5,12 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import type { Goal } from "@/api/growthapiComponents";
+import type { Goal } from "@/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
-import { CalendarDays, CheckCircle2, EllipsisVertical, MessageSquare, HeartHandshake } from "lucide-react";
+import { cn } from "@/lib/utils";
+import { CATEGORY_COLORS } from "@/lib/constants";
+import { CalendarDays, CheckCircle2, MoreHorizontal, MessageSquare, HeartHandshake, Target, Sparkles } from "lucide-react";
 
 export type GoalCardProps = {
   goal: Goal;
@@ -20,59 +22,121 @@ export type GoalCardProps = {
 
 export function GoalCard({ goal, onToggle, onEdit, onDelete, deleting }: GoalCardProps) {
   const due = goal.dueDate ? new Date(goal.dueDate).toLocaleDateString() : undefined;
+  const categoryStyle = CATEGORY_COLORS[goal.category] || "bg-secondary text-secondary-foreground border-border";
+  const isNearCompletion = goal.progress >= 75 && goal.progress < 100;
+  const isCompleted = goal.completed || goal.progress >= 100;
+
   return (
     <Card
       data-deleting={deleting || undefined}
-      className="p-4 transition-all duration-200 data-[deleting=true]:opacity-0 data-[deleting=true]:-translate-y-1 data-[deleting=true]:scale-[0.98]"
+      className={cn(
+        "p-5 transition-all duration-300 hover-lift",
+        isCompleted && "ring-1 ring-growth/30 bg-growth-soft/20",
+        "data-[deleting=true]:opacity-0 data-[deleting=true]:-translate-y-2 data-[deleting=true]:scale-[0.98]"
+      )}
     >
-      <div className="flex items-start justify-between gap-3">
-        <div className="min-w-0">
+      <div className="flex items-start gap-4">
+        {/* Progress indicator */}
+        <div className={cn(
+          "flex flex-col items-center justify-center rounded-xl p-3 min-w-[60px]",
+          isCompleted ? "bg-growth text-growth-foreground" : "bg-muted"
+        )}>
+          <Target className={cn("h-5 w-5", isCompleted ? "text-growth-foreground" : "text-muted-foreground")} />
+          <span className={cn(
+            "mt-1 text-lg font-bold tabular-nums",
+            isCompleted ? "text-growth-foreground" : "text-foreground"
+          )}>
+            {goal.progress}%
+          </span>
+        </div>
+
+        {/* Content */}
+        <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
-            <Badge variant="outline" className="capitalize">{goal.category}</Badge>
+            <Badge variant="outline" className={cn("capitalize border", categoryStyle)}>
+              {goal.category}
+            </Badge>
             {due && (
               <span className="inline-flex items-center text-xs text-muted-foreground gap-1">
                 <CalendarDays className="h-3.5 w-3.5" /> {due}
               </span>
             )}
+            {isNearCompletion && (
+              <span className="inline-flex items-center gap-1 text-xs text-energy">
+                <Sparkles className="h-3 w-3" /> Almost there!
+              </span>
+            )}
           </div>
-          <h3 className="mt-1 text-base font-semibold leading-tight truncate">{goal.title}</h3>
-          <p className="mt-1 text-sm text-muted-foreground line-clamp-2">{goal.description}</p>
+          
+          <h3 className={cn(
+            "mt-1 text-base font-semibold leading-tight truncate",
+            isCompleted && "text-growth"
+          )}>
+            {goal.title}
+          </h3>
+          
+          <p className="mt-1 text-sm text-muted-foreground line-clamp-2 leading-relaxed">
+            {goal.description}
+          </p>
+
+          {/* Progress bar */}
           <div className="mt-3">
-            <Progress value={goal.progress} className="h-2" />
-            <div className="mt-1 text-xs text-muted-foreground">{goal.progress}% complete</div>
+            <Progress 
+              value={goal.progress} 
+              className={cn(
+                "h-1.5 bg-muted",
+                isCompleted && "[&>div]:bg-growth",
+                isNearCompletion && "[&>div]:bg-energy"
+              )}
+            />
           </div>
+
+          {/* Linked habits */}
           {goal.relatedHabitIds && goal.relatedHabitIds.length > 0 && (
             <div className="mt-2 text-xs text-muted-foreground">
               Linked habits: {goal.relatedHabitIds.length}
             </div>
           )}
-          <div className="mt-3 flex items-center gap-2 text-xs">
-            <Link href="/ai-coach" className="inline-flex items-center gap-1 underline-offset-2 hover:underline">
-              <MessageSquare className="h-3.5 w-3.5" /> Ask Coach
+
+          {/* Quick actions */}
+          <div className="mt-3 flex items-center gap-3 text-xs">
+            <Link 
+              href="/ai-coach" 
+              className="inline-flex items-center gap-1.5 rounded-full bg-calm-soft px-2.5 py-1 text-calm transition-colors hover:bg-calm hover:text-calm-foreground"
+            >
+              <MessageSquare className="h-3 w-3" /> Coach
             </Link>
-            <Link href="/ai-therapist" className="inline-flex items-center gap-1 underline-offset-2 hover:underline">
-              <HeartHandshake className="h-3.5 w-3.5" /> Ask Therapist
+            <Link 
+              href="/ai-therapist" 
+              className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+            >
+              <HeartHandshake className="h-3 w-3" /> Therapist
             </Link>
           </div>
         </div>
+
+        {/* Actions */}
         <div className="flex items-start gap-2">
           <Checkbox
             checked={goal.completed}
             onCheckedChange={() => onToggle(goal.id)}
-            className="mt-1"
+            className={cn(
+              "mt-1 transition-colors",
+              isCompleted && "border-growth bg-growth text-growth-foreground"
+            )}
             aria-label="Toggle completed"
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon" className="h-8 w-8">
-                <EllipsisVertical className="h-4 w-4" />
+              <Button variant="ghost" size="icon-sm" className="h-8 w-8">
+                <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end">
               <DropdownMenuItem onClick={() => onEdit(goal)}>
                 <CheckCircle2 className="mr-2 h-4 w-4" /> Edit
               </DropdownMenuItem>
-              <DropdownMenuItem className="text-destructive" onClick={() => onDelete(goal.id)}>
+              <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(goal.id)}>
                 Delete
               </DropdownMenuItem>
             </DropdownMenuContent>

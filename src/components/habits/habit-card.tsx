@@ -5,8 +5,9 @@ import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
-import type { Habit } from "@/api/growthapiComponents";
-import { Check, Flame, MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { CATEGORY_COLORS } from "@/lib/constants";
+import type { Habit } from "@/api";
+import { Check, Flame, MoreHorizontal, Pencil, Trash2, Sparkles } from "lucide-react";
 
 export type HabitCardProps = {
   habit: Habit;
@@ -17,34 +18,54 @@ export type HabitCardProps = {
 };
 
 export function HabitCard({ habit: h, onToggle, onEdit, onDelete, deleting }: HabitCardProps) {
+  const categoryStyle = CATEGORY_COLORS[h.category] || "bg-secondary text-secondary-foreground border-border";
+
   return (
     <Card
       data-deleting={deleting || undefined}
-      className="p-4 transition-all duration-200 data-[deleting=true]:opacity-0 data-[deleting=true]:-translate-y-1 data-[deleting=true]:scale-[0.98]"
+      className={cn(
+        "p-5 transition-all duration-300 hover-lift",
+        h.completed && "ring-1 ring-growth/30 bg-growth-soft/30",
+        "data-[deleting=true]:opacity-0 data-[deleting=true]:-translate-y-2 data-[deleting=true]:scale-[0.98]"
+      )}
     >
-      <div className="flex items-start gap-3">
-        <div
-          className={cn(
-            "mt-1 inline-flex h-7 items-center gap-1 rounded-full border px-2 text-xs",
-            h.completed ? "border-green-500/40 text-green-600" : "border-border text-muted-foreground",
-          )}
-        >
-          <Flame className={cn("h-4 w-4", h.completed ? "text-orange-500" : "text-muted-foreground")} />
-          <span>
-            {h.streak} day{h.streak === 1 ? "" : "s"}
+      <div className="flex items-start gap-4">
+        {/* Streak indicator */}
+        <div className={cn(
+          "flex flex-col items-center justify-center rounded-xl p-3 transition-colors",
+          h.completed ? "bg-growth text-growth-foreground" : "bg-muted"
+        )}>
+          <Flame className={cn("h-5 w-5", h.completed ? "text-growth-foreground" : "text-muted-foreground")} />
+          <span className={cn(
+            "mt-1 text-lg font-bold tabular-nums",
+            h.completed ? "text-growth-foreground" : "text-muted-foreground"
+          )}>
+            {h.streak}
+          </span>
+          <span className={cn(
+            "text-[0.65rem] uppercase tracking-wide",
+            h.completed ? "text-growth-foreground/80" : "text-muted-foreground"
+          )}>
+            days
           </span>
         </div>
 
+        {/* Content */}
         <div className="min-w-0 flex-1">
           <div className="flex items-center justify-between gap-2">
-            <h3 className="truncate text-base font-semibold">{h.name}</h3>
+            <h3 className={cn(
+              "truncate text-base font-semibold transition-colors",
+              h.completed && "text-growth"
+            )}>
+              {h.name}
+            </h3>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="shrink-0 capitalize">
+              <Badge variant="outline" className={cn("shrink-0 capitalize border", categoryStyle)}>
                 {h.category}
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
+                  <Button variant="ghost" size="icon-sm" className="h-8 w-8">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -52,33 +73,66 @@ export function HabitCard({ habit: h, onToggle, onEdit, onDelete, deleting }: Ha
                   <DropdownMenuItem onClick={() => onEdit(h)}>
                     <Pencil className="mr-2 h-4 w-4" /> Edit
                   </DropdownMenuItem>
-                  <DropdownMenuItem className="text-destructive" onClick={() => onDelete(h.id)}>
+                  <DropdownMenuItem className="text-destructive focus:text-destructive" onClick={() => onDelete(h.id)}>
                     <Trash2 className="mr-2 h-4 w-4" /> Delete
                   </DropdownMenuItem>
                 </DropdownMenuContent>
               </DropdownMenu>
             </div>
           </div>
-          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground">{h.description}</p>
+          
+          <p className="mt-1 line-clamp-2 text-sm text-muted-foreground leading-relaxed">
+            {h.description}
+          </p>
 
-          <div className="mt-3 grid grid-cols-14 gap-1">
-            {Array.from({ length: 28 }).map((_, i) => {
-              const intensity = (h.streak + i) % 4;
-              const color = ["bg-muted", "bg-primary/30", "bg-primary/60", "bg-primary/90"][intensity];
-              return <div key={i} className={cn("h-2 rounded-sm", color)} />;
-            })}
+          {/* Progress visualization - GitHub-style contribution graph */}
+          <div className="mt-4">
+            <div className="flex items-center gap-1.5 mb-2">
+              <span className="text-xs text-muted-foreground">Last 28 days</span>
+              {h.streak >= 7 && (
+                <span className="inline-flex items-center gap-1 text-xs text-growth">
+                  <Sparkles className="h-3 w-3" /> Great momentum!
+                </span>
+              )}
+            </div>
+            <div className="flex gap-1">
+              {Array.from({ length: 28 }).map((_, i) => {
+                const intensity = Math.min(3, Math.floor((h.streak + i * 0.5) % 4));
+                const colors = [
+                  "bg-muted",
+                  "bg-growth/30",
+                  "bg-growth/60",
+                  "bg-growth"
+                ];
+                return (
+                  <div
+                    key={i}
+                    className={cn(
+                      "h-3 w-2.5 rounded-sm transition-colors",
+                      colors[intensity]
+                    )}
+                  />
+                );
+              })}
+            </div>
           </div>
         </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-end gap-2">
-        <Button size="sm" variant={h.completed ? "secondary" : "default"} onClick={() => onToggle(h.id)}>
+      {/* Action button */}
+      <div className="mt-4 flex items-center justify-end">
+        <Button
+          size="sm"
+          variant={h.completed ? "success" : "growth"}
+          onClick={() => onToggle(h.id)}
+          className="min-w-[120px]"
+        >
           {h.completed ? (
             <>
-              <Check className="mr-2 h-4 w-4" /> Completed
+              <Check className="mr-2 h-4 w-4" /> Done Today
             </>
           ) : (
-            <>Mark Done</>
+            <>Mark Complete</>
           )}
         </Button>
       </div>

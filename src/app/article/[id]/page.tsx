@@ -1,7 +1,19 @@
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { getArticleById } from "@/lib/articles";
+import { getArticle } from "@/api";
+
+// =============================================================================
+// Helpers
+// =============================================================================
+
+function renderParagraphs(content: string) {
+  return content.split("\n\n").map((para, idx) => <p key={idx}>{para}</p>);
+}
+
+// =============================================================================
+// Component
+// =============================================================================
 
 export default async function ArticlePage({
   params,
@@ -9,7 +21,10 @@ export default async function ArticlePage({
   params: Promise<{ id: string }>;
 }) {
   const { id } = await params;
-  const article = getArticleById(id);
+
+  const response = await getArticle(id).catch(() => null);
+  const article = response?.data;
+
   if (!article) return notFound();
 
   return (
@@ -22,7 +37,7 @@ export default async function ArticlePage({
           {article.category}
         </Badge>
         <span>•</span>
-        <span>{article.postedAt}</span>
+        <span>{article.publishedAt}</span>
       </div>
 
       {/* Title */}
@@ -34,9 +49,7 @@ export default async function ArticlePage({
 
       {/* Body */}
       <article className="prose prose-neutral max-w-none dark:prose-invert">
-        {article.content.split("\n\n").map((para, idx) => (
-          <p key={idx}>{para}</p>
-        ))}
+        {renderParagraphs(article.content)}
       </article>
     </div>
   );

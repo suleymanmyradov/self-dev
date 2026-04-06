@@ -5,13 +5,13 @@ import type { Metadata } from 'next';
 import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
 
-import { LayoutFrame } from '@/components/root-layout/layout-frame';
+import { LayoutFrame } from '@/components/layout/layout-frame';
 import { ThemeProvider } from '@/components/theme-provider';
-import { UIStoreProvider } from '@/store/uiStore';
 import { QueryProvider } from '@/components/providers/query-provider';
 import { ViewportWatcher } from '@/components/shared/viewport-watcher';
 import { MobileTopBar } from '@/components/shared/mobile-topbar';
 import { BottomTabBar } from '@/components/shared/bottom-tab-bar';
+import { Toaster } from '@/components/ui/sonner';
 import Loading from './loading';
 
 const jakarta = Plus_Jakarta_Sans({
@@ -45,20 +45,19 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     enableSystem
                     disableTransitionOnChange
                 >
-                    <UIStoreProvider>
-                        <QueryProvider>
-                            <ViewportWatcher />
-                            <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
-                                <MobileTopBar />
-                                <LayoutFrame>
-                                    <Suspense fallback={<Loading />}>
-                                        {children}
-                                    </Suspense>
-                                </LayoutFrame>
-                                <BottomTabBar />
-                            </div>
-                        </QueryProvider>
-                    </UIStoreProvider>
+                    <QueryProvider>
+                        <ViewportWatcher />
+                        <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
+                            <MobileTopBar />
+                            <LayoutFrame>
+                                <Suspense fallback={<Loading />}>
+                                    {children}
+                                </Suspense>
+                            </LayoutFrame>
+                            <BottomTabBar />
+                        </div>
+                        <Toaster />
+                    </QueryProvider>
                 </ThemeProvider>
             </body>
         </html>

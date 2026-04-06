@@ -6,9 +6,19 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { toast } from "@/components/ui/sonner";
+import { submitReport } from "@/api";
+import type { ReportType } from "@/api";
+
+const categoryMap: Record<string, ReportType> = {
+  Bug: "bug",
+  "Abuse / Spam": "abuse",
+  "Content issue": "abuse",
+  Feedback: "feedback",
+  Other: "feedback",
+};
 
 const categories = ["Bug", "Abuse / Spam", "Content issue", "Feedback", "Other"] as const;
-
 type Category = typeof categories[number];
 
 export default function ReportPage() {
@@ -17,16 +27,31 @@ export default function ReportPage() {
   const [subject, setSubject] = useState("");
   const [details, setDetails] = useState("");
   const [submitted, setSubmitted] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const canSubmit = subject.trim().length > 2 && details.trim().length > 10;
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     if (!canSubmit) return;
-    // For now, we just show a success state. Hook to API endpoint later.
-    setSubmitted(true);
-    setTimeout(() => setSubmitted(false), 2000);
-    setSubject("");
-    setDetails("");
+    setIsSubmitting(true);
+    try {
+      await submitReport({
+        type: categoryMap[category],
+        title: subject.trim(),
+        description: details.trim(),
+        email: email.trim() || undefined,
+      });
+      setSubmitted(true);
+      setSubject("");
+      setDetails("");
+      setEmail("");
+      toast.success("Report submitted successfully");
+      setTimeout(() => setSubmitted(false), 3000);
+    } catch {
+      toast.error("Failed to submit report");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   return (
@@ -86,8 +111,8 @@ export default function ReportPage() {
               <div className="text-xs text-muted-foreground">
                 {submitted ? "Thanks for your report!" : "We appreciate your help improving the app."}
               </div>
-              <Button onClick={onSubmit} disabled={!canSubmit}>
-                Submit
+              <Button onClick={onSubmit} disabled={!canSubmit || isSubmitting}>
+                {isSubmitting ? "Submitting..." : "Submit"}
               </Button>
             </CardFooter>
           </Card>

@@ -1,0 +1,158 @@
+// API Client
+export { api, ApiError, getAccessToken, getRefreshToken, clearTokens, setAuthTokens } from './client';
+export type { RequestOptions } from './client';
+
+// Types
+export type {
+  // Pagination
+  PageParams,
+  PageResponse,
+  ApiResponse,
+  EmptyResponse,
+  
+  // Goal Types
+  Goal,
+  GoalCategory,
+  CreateGoalRequest,
+  UpdateGoalRequest,
+  UpdateGoalProgressRequest,
+  GoalsResponse,
+  GoalResponse,
+  
+  // Habit Types
+  Habit,
+  HabitCategory,
+  CreateHabitRequest,
+  UpdateHabitRequest,
+  HabitsResponse,
+  HabitResponse,
+  
+  // Auth Types
+  LoginRequest,
+  RegisterRequest,
+  RefreshRequest,
+  AuthResponse,
+  
+  // Profile Types
+  Profile,
+  UpdateProfileRequest,
+  ProfileResponse,
+  
+  // Article Types
+  Article,
+  ArticlesResponse,
+  ArticleResponse,
+  ListArticlesParams,
+  
+  // Activity Types
+  ActivityType,
+  Activity,
+  ActivityResponse,
+  
+  // Conversation Types
+  ConversationType,
+  MessageRole,
+  Message,
+  Conversation,
+  ConversationDetail,
+  StartConversationRequest,
+  SendMessageRequest,
+  ConversationsResponse,
+  ConversationResponse,
+  ConversationDetailResponse,
+  MessagesResponse,
+  MessageResponse,
+  ListConversationsParams,
+  
+  // Settings Types
+  Settings,
+  UpdateSettingsRequest,
+  SettingsResponse,
+  
+  // Notification Types
+  NotificationType,
+  Notification,
+  NotificationsResponse,
+  
+  // Search Types
+  SearchResultType,
+  SearchResult,
+  SearchResponse,
+  SearchParams,
+  
+  // Saved Items Types
+  SavedItemType,
+  SavedItem,
+  SaveItemRequest,
+  SavedItemsResponse,
+  SavedItemResponse,
+  
+  // Report Types
+  ReportType,
+  ReportRequest,
+} from './types';
+
+// Auth API
+export {
+  login,
+  register,
+  logout,
+  refreshToken,
+  getCurrentUser,
+  isAuthenticated,
+} from './auth';
+
+// Goals API
+export {
+  listGoals,
+  getGoal,
+  createGoal,
+  updateGoal,
+  deleteGoal,
+  toggleGoal,
+  updateGoalProgress,
+} from './goals';
+
+// Habits API
+export {
+  listHabits,
+  getHabit,
+  createHabit,
+  updateHabit,
+  deleteHabit,
+  toggleHabit,
+  resetTodayHabits,
+} from './habits';
+
+// Categories API
+export { listCategories } from './categories';
+
+// Category Types
+export type { Category, CategoriesResponse, EntityType } from './types';
+
+// Articles API
+export { listArticles, getArticle } from './articles';
+
+// Activities API
+export { listActivities } from './activities';
+
+// Saved Items API
+export { listSavedItems, saveItem, removeSavedItem } from './saved';
+
+// Conversations API
+export { listConversations, startConversation, getConversation, getMessages, sendMessage } from './conversations';
+
+// Search API
+export { search } from './search';
+
+// Notifications API
+export { listNotifications, markNotificationRead, markAllNotificationsRead } from './notifications';
+
+// Settings API
+export { getSettings, updateSettings } from './settings';
+
+// Report API
+export { submitReport } from './report';
+
+// Profile update
+export { updateProfile } from './auth';

@@ -2,7 +2,7 @@
 
 import { create } from 'zustand';
 
-export type FeedFilter = 'all' | 'philosophy' | 'habits' | 'relationships' | 'productivity';
+export type FeedFilter = string;
 
 interface FeedFilterState {
   filter: FeedFilter;

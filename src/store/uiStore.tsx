@@ -1,7 +1,6 @@
 'use client';
 
 import { create } from 'zustand';
-import { createContext, useContext, type ReactNode } from 'react';
 
 interface UIState {
     isSidebarCollapsed: boolean;
@@ -42,16 +41,7 @@ const useUIStore = create<UIState>(set => ({
     setSidebarCollapsed: collapsed => set({ isSidebarCollapsed: collapsed }),
 }));
 
-const UIStoreContext = createContext<typeof useUIStore | null>(null);
-
-export function UIStoreProvider({ children }: { children: ReactNode }) {
-    return <UIStoreContext.Provider value={useUIStore}>{children}</UIStoreContext.Provider>;
-}
-
+// Hook to access UI state directly from Zustand store
 export function useUI() {
-    const store = useContext(UIStoreContext);
-    if (!store) {
-        throw new Error('useUI must be used within UIStoreProvider');
-    }
-    return store();
+    return useUIStore();
 }

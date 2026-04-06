@@ -1,12 +1,14 @@
 "use client";
 
+import { useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { cn } from "@/lib/utils";
-import { Heart, Share2, Bookmark } from "lucide-react";
+import { CATEGORY_COLORS } from "@/lib/constants";
+import { useToggleState } from "@/hooks/use-toggle-state";
+import { Heart, Share2, Bookmark, ArrowUpRight } from "lucide-react";
 
 export type ArticleCardProps = {
   id?: string;
@@ -15,78 +17,147 @@ export type ArticleCardProps = {
   excerpt?: string;
   image?: string;
   category?: string;
-  postedAt: string; // e.g., "11h" or formatted date
+  postedAt: string;
   likes?: number;
   shares?: number;
   saves?: number;
   className?: string;
+  onLike?: (id: string) => void;
+  onShare?: (id: string) => void;
+  onSave?: (id: string) => void;
 };
 
-export function ArticleCard({ id, href, title, excerpt, image, category, postedAt, likes = 0, shares = 0, saves = 0, className }: ArticleCardProps) {
+export function ArticleCard({ 
+  id, 
+  href, 
+  title, 
+  excerpt, 
+  image, 
+  category, 
+  postedAt, 
+  likes: initialLikes = 0, 
+  shares: initialShares = 0, 
+  saves: initialSaves = 0, 
+  className,
+  onLike,
+  onShare,
+  onSave,
+}: ArticleCardProps) {
   const link = href ?? (id ? `/article/${id}` : "#");
+  const likeState = useToggleState(initialLikes, onLike);
+  const saveState = useToggleState(initialSaves, onSave);
+  const [shares, setShares] = useState(initialShares);
+
+  const handleShare = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    const shareData = {
+      title,
+      url: typeof window !== 'undefined' ? `${window.location.origin}${link}` : link,
+    };
+    
+    if (navigator.share) {
+      try {
+        await navigator.share(shareData);
+      } catch {
+        // User cancelled or share failed
+      }
+    }
+    
+    setShares((s) => s + 1);
+    if (id) onShare?.(id);
+  };
+
+  const categoryColor = category ? CATEGORY_COLORS[category] || "bg-secondary text-secondary-foreground" : "";
+
   return (
-    <article>
-      <Card className={cn("group overflow-hidden border border-border/70 bg-card/80 shadow-[0_12px_30px_-20px_rgba(15,23,42,0.35)] backdrop-blur transition-transform duration-300 hover:-translate-y-1", className)}>
-        {/* Banner image */}
+    <Link href={link} className="group block">
+      <Card className={cn(
+        "overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm transition-all duration-300",
+        "hover:border-border hover:shadow-sm hover:bg-card",
+        "flex flex-col sm:flex-row gap-0",
+        className
+      )}>
+        {/* Left Image - Medium style */}
         {image && (
-          <div className="relative aspect-[16/9] w-full overflow-hidden">
+          <div className="relative shrink-0 w-full sm:w-48 sm:min-h-[140px] h-40 sm:h-auto overflow-hidden bg-muted">
             <Image
               src={image}
               alt={title}
               fill
-              sizes="(max-width: 768px) 100vw, 600px"
-              className="object-cover transition-transform duration-500 group-hover:scale-[1.04]"
-              priority={false}
+              sizes="(max-width: 640px) 100vw, 192px"
+              className="object-cover transition-transform duration-500 group-hover:scale-105"
             />
-            <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/40 via-black/10 to-transparent" />
           </div>
         )}
 
-        <div className="p-4 md:p-5">
-          <div className="flex items-center gap-2 text-xs text-muted-foreground">
+        {/* Content */}
+        <div className="flex-1 min-w-0 flex flex-col p-4 sm:p-5">
+          {/* Meta */}
+          <div className="flex items-center gap-2 mb-2">
             {category ? (
-              <Badge
-                variant="secondary"
-                className="rounded-full border border-border/60 bg-background/80 px-2.5 py-0.5 text-[0.65rem] font-semibold uppercase tracking-[0.16em] text-foreground/80"
-              >
+              <Badge className={cn("rounded-full px-2 py-0 text-[0.65rem] font-medium border-0", categoryColor)}>
                 {category}
               </Badge>
             ) : null}
-            <span>•</span>
-            <span>{postedAt}</span>
+            <span className="text-xs text-muted-foreground">{postedAt}</span>
           </div>
 
-          <h3 className="font-display mt-3 text-2xl font-semibold leading-snug text-foreground">
-            <Link href={link} className="transition-colors hover:text-primary">
-              {title}
-            </Link>
+          {/* Title */}
+          <h3 className="font-display text-lg sm:text-xl font-semibold leading-tight tracking-tight line-clamp-2 group-hover:text-primary transition-colors">
+            {title}
           </h3>
 
+          {/* Excerpt */}
           {excerpt ? (
-            <p className="mt-2 text-sm leading-6 text-muted-foreground">
+            <p className="mt-2 text-sm text-muted-foreground line-clamp-2 sm:line-clamp-3">
               {excerpt}
             </p>
           ) : null}
 
-          <Separator className="my-4" />
-
-          {/* Actions row */}
-          <div className="flex items-center gap-4 text-sm text-muted-foreground">
-            <button className="inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-1 transition-colors hover:border-border/60 hover:text-foreground" aria-label="Like">
-              <Heart className="h-4 w-4" />
-              <span className="tabular-nums">{likes}</span>
-            </button>
-            <button className="inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-1 transition-colors hover:border-border/60 hover:text-foreground" aria-label="Share">
-              <Share2 className="h-4 w-4" />
-              <span className="tabular-nums">{shares}</span>
-            </button>
-            <button className="ml-auto inline-flex items-center gap-1 rounded-full border border-transparent px-2 py-1 transition-colors hover:border-border/60 hover:text-foreground" aria-label="Save">
-              <Bookmark className="h-4 w-4" />
-              {saves ? <span className="tabular-nums">{saves}</span> : null}
-            </button>
+          {/* Actions */}
+          <div className="mt-auto pt-3 flex items-center justify-between">
+            <div className="flex items-center gap-1">
+              <button 
+                onClick={(e) => likeState.toggle(e, id)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
+                  likeState.isActive 
+                    ? "text-red-500" 
+                    : "text-muted-foreground hover:text-foreground"
+                )} 
+                aria-label="Like"
+              >
+                <Heart className={cn("h-3.5 w-3.5", likeState.isActive && "fill-current")} />
+                <span className="tabular-nums">{likeState.value}</span>
+              </button>
+              <button 
+                onClick={handleShare}
+                className="inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs text-muted-foreground transition-colors hover:text-foreground" 
+                aria-label="Share"
+              >
+                <Share2 className="h-3.5 w-3.5" />
+                <span className="tabular-nums">{shares}</span>
+              </button>
+              <button 
+                onClick={(e) => saveState.toggle(e, id)}
+                className={cn(
+                  "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
+                  saveState.isActive 
+                    ? "text-primary" 
+                    : "text-muted-foreground hover:text-foreground"
+                )} 
+                aria-label="Save"
+              >
+                <Bookmark className={cn("h-3.5 w-3.5", saveState.isActive && "fill-current")} />
+                {saveState.value > 0 && <span className="tabular-nums">{saveState.value}</span>}
+              </button>
+            </div>
+            
+            <ArrowUpRight className="h-4 w-4 text-muted-foreground opacity-0 -translate-x-2 transition-all duration-200 group-hover:opacity-100 group-hover:translate-x-0" />
           </div>
         </div>
       </Card>
-    </article>
+    </Link>
   );
 }
