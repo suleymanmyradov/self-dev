@@ -1,8 +1,16 @@
 /**
- * Format a date as a relative time string (e.g., "2 hours ago", "1 day ago")
+ * Format a date as a relative time string (e.g., "2h ago", "1d ago")
  */
 export function formatRelativeTime(dateString: string): string {
+  if (!dateString) return '';
+
   const date = new Date(dateString);
+  
+  // Check if date is valid
+  if (isNaN(date.getTime())) {
+    return formatAbsoluteDate(dateString);
+  }
+  
   const now = new Date();
   const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000);
 
@@ -37,4 +45,21 @@ export function formatRelativeTime(dateString: string): string {
 
   const diffInYears = Math.floor(diffInDays / 365);
   return `${diffInYears}y ago`;
+}
+
+/**
+ * Format a date as an absolute date (e.g., "Feb 15, 2025")
+ */
+function formatAbsoluteDate(dateString: string): string {
+  const date = new Date(dateString);
+  
+  if (isNaN(date.getTime())) {
+    return dateString; // Return original if parsing fails
+  }
+  
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric'
+  });
 }

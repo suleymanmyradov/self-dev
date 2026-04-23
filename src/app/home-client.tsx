@@ -9,7 +9,7 @@ import type { FeedFilter } from '@/store/feed-filter';
 import { listCategories, listArticles } from '@/api';
 
 const TAB_TRIGGER_CLASS =
-  'shrink-0 rounded-full data-[state=active]:bg-primary data-[state=active]:text-primary-foreground';
+  'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm';
 
 const DEFAULT_CATEGORIES: { value: FeedFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -30,19 +30,28 @@ export function HomeClient() {
 
   const categories = useMemo(() => {
     const cats = categoriesData?.data;
+    console.log('Raw categories from API:', cats);
     if (cats && cats.length > 0) {
-      return [
+      const mapped = [
         { value: 'all' as FeedFilter, label: 'All' },
         ...cats.map((c) => ({ value: c.slug as FeedFilter, label: c.name })),
       ];
+      console.log('Mapped categories:', mapped);
+      return mapped;
     }
+    console.log('Using default categories');
     return DEFAULT_CATEGORIES;
   }, [categoriesData]);
 
   // Fetch articles with TanStack Query
   const { data: articlesData, isLoading } = useQuery({
     queryKey: ['articles', filter],
-    queryFn: () => listArticles(filter !== 'all' ? { category: filter } : undefined),
+    queryFn: () => {
+      console.log('Fetching articles with filter:', filter);
+      const params = filter !== 'all' ? { category: filter } : undefined;
+      console.log('API params:', params);
+      return listArticles(params);
+    },
   });
 
   const articles = articlesData?.data ?? [];
@@ -54,9 +63,9 @@ export function HomeClient() {
           <Tabs
             value={filter}
             onValueChange={(v) => setFilter(v as FeedFilter)}
-            className="mt-2 mb-6 w-full overflow-x-auto md:overflow-visible no-scrollbar"
+            className="mt-2 mb-6 w-full"
           >
-            <TabsList className="inline-flex min-w-max w-auto justify-start gap-1 bg-transparent p-0 md:justify-center">
+            <TabsList className="h-auto w-fit bg-secondary/50 p-1 rounded-lg">
               {categories.map(({ value, label }) => (
                 <TabsTrigger key={value} className={TAB_TRIGGER_CLASS} value={value}>
                   {label}
@@ -83,8 +92,8 @@ export function HomeClient() {
                     id={a.id}
                     title={a.title}
                     excerpt={a.excerpt}
-                    image={a.imageUrl ?? '/images/article-placeholder.jpg'}
-                    category={a.category}
+                    image={a.imageUrl ?? '/images/article-placeholder.svg'}
+                    category={a.category?.name}
                     postedAt={a.publishedAt}
                     likes={0}
                     saves={0}

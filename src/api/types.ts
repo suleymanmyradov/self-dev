@@ -168,12 +168,18 @@ export interface ProfileResponse extends ApiResponse<Profile> {}
 // Article Types
 // ============================================
 
+export interface ArticleCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
 export interface Article {
   id: string;
   title: string;
   excerpt: string;
   content: string;
-  category: string;
+  category?: ArticleCategory;
   readTime: number;
   imageUrl: string;
   author: string;

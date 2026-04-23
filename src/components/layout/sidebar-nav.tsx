@@ -17,7 +17,6 @@ import {
   Sparkles,
   HandFist,
   HeartHandshake,
-  Search,
   Bell,
 } from 'lucide-react';
 
@@ -32,8 +31,7 @@ const supportRoutes: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/ai-therapist", label: "Therapy", icon: HeartHandshake },
 ];
 
-const panelItems: { panel: "search" | "notifications"; label: string; icon: LucideIcon }[] = [
-  { panel: "search", label: "Search", icon: Search },
+const panelItems: { panel: "notifications"; label: string; icon: LucideIcon }[] = [
   { panel: "notifications", label: "Notifications", icon: Bell },
 ];
 
@@ -41,7 +39,7 @@ export function SidebarNav() {
   const pathname = usePathname();
   const { isSidebarCollapsed, openLeftPanel, isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUI();
 
-  const handlePanelClick = (panel: "search" | "notifications") => {
+  const handlePanelClick = (panel: "notifications") => {
     if (isLeftPanelOpen && leftPanelType === panel) {
       closeLeftPanel();
     } else {

@@ -34,7 +34,7 @@ export default function ExplorePage() {
     const q = query.trim().toLowerCase();
     if (!q) return articles;
     return articles.filter((a) =>
-      [a.title, a.excerpt, a.category].some((f) => f?.toLowerCase().includes(q)),
+      [a.title, a.excerpt, a.category?.name].some((f) => f?.toLowerCase().includes(q)),
     );
   }, [query, articles]);
 

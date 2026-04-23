@@ -8,9 +8,10 @@ export function useHabitFilters(habits: Habit[]) {
   const [sortBy, setSortBy] = useState<SortBy>('streak');
 
   const visibleHabits = useMemo(() => {
+    const safeHabits = habits || [];
     const filtered = categoryFilter === 'all' 
-      ? habits 
-      : habits.filter(h => h.category === categoryFilter);
+      ? safeHabits 
+      : safeHabits.filter(h => h.category === categoryFilter);
     
     const sorted = [...filtered].sort((a, b) => {
       if (sortBy === 'streak') return b.streak - a.streak;
@@ -21,9 +22,10 @@ export function useHabitFilters(habits: Habit[]) {
   }, [habits, categoryFilter, sortBy]);
 
   const completionPct = useMemo(() => {
-    if (habits.length === 0) return 0;
-    const done = habits.filter(h => h.completed).length;
-    return Math.round((done / habits.length) * 100);
+    const safeHabits = habits || [];
+    if (safeHabits.length === 0) return 0;
+    const done = safeHabits.filter(h => h.completed).length;
+    return Math.round((done / safeHabits.length) * 100);
   }, [habits]);
 
   return {

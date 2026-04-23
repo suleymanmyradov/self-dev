@@ -8,6 +8,7 @@ import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { useToggleState } from "@/hooks/use-toggle-state";
 import { Heart, Bookmark } from "lucide-react";
+import { formatRelativeTime } from "@/lib/time-format";
 
 export type ArticleCardGridProps = {
   id?: string;
@@ -74,7 +75,7 @@ export function ArticleCardGrid({
         {/* Content */}
         <div className="flex-1 flex flex-col p-3">
           {/* Meta */}
-          <span className="text-[0.7rem] text-muted-foreground mb-1">{postedAt}</span>
+          <span className="text-[0.7rem] text-muted-foreground mb-1">{formatRelativeTime(postedAt)}</span>
 
           {/* Title */}
           <h3 className="font-display text-sm font-semibold leading-tight tracking-tight line-clamp-2 group-hover:text-primary transition-colors">

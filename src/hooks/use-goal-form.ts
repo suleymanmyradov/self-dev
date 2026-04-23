@@ -6,6 +6,7 @@ const DEFAULT_FORM: GoalFormValues = {
   title: '',
   description: '',
   category: 'productivity',
+  progress: 0,
 };
 
 export function useGoalForm(initial?: Partial<GoalFormValues>) {
@@ -31,6 +32,10 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
     setForm((f) => ({ ...f, dueDate }));
   }, []);
 
+  const setProgress = useCallback((progress: number) => {
+    setForm((f) => ({ ...f, progress }));
+  }, []);
+
   const reset = useCallback((initial?: Partial<GoalFormValues>) => {
     setForm({ ...DEFAULT_FORM, ...initial });
     setError(null);
@@ -42,6 +47,7 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
       description: goal.description,
       category: goal.category as GoalFormValues['category'],
       dueDate: goal.dueDate,
+      progress: goal.progress,
     });
     setError(null);
   }, []);
@@ -69,6 +75,7 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
     setDescription,
     setCategory,
     setDueDate,
+    setProgress,
     reset,
     loadGoal,
     validate,

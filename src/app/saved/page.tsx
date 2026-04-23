@@ -110,7 +110,7 @@ export default function SavedPage() {
             <CardContent>
               <p className="text-sm text-muted-foreground">{article.excerpt}</p>
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{article.category}</span>
+                <span className="text-xs text-muted-foreground">{article.category?.name ?? 'Uncategorized'}</span>
                 <div className="flex items-center gap-2">
                   <Button asChild size="sm"><Link href={`/article/${article.id}`}>Read</Link></Button>
                   <Button

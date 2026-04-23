@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
+import { Calendar } from "lucide-react";
 import { getArticle } from "@/api";
+import { formatRelativeTime } from "@/lib/time-format";
 
 // =============================================================================
 // Helpers
@@ -31,19 +33,27 @@ export default async function ArticlePage({
     <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-10">
       {/* Hero banner intentionally removed */}
 
-      {/* Meta */}
-      <div className="flex items-center gap-2 text-xs text-muted-foreground">
-        <Badge variant="secondary" className="rounded-full px-2 py-0.5">
-          {article.category}
-        </Badge>
-        <span>•</span>
-        <span>{article.publishedAt}</span>
-      </div>
+      {/* Category above title */}
+      {article.category && (
+        <div className="mb-4">
+          <Badge variant="secondary" className="rounded-full px-3 py-1 text-sm">
+            {article.category.name}
+          </Badge>
+        </div>
+      )}
 
       {/* Title */}
-      <h1 className="mt-2 text-3xl font-bold leading-tight tracking-tight">
+      <h1 className="text-3xl font-bold leading-tight tracking-tight">
         {article.title}
       </h1>
+
+      {/* Meta */}
+      <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">
+        <Calendar className="h-4 w-4" />
+        <span>{formatRelativeTime(article.publishedAt)}</span>
+        <span className="mx-1">·</span>
+        <span>{article.readTime} min read</span>
+      </div>
 
       <Separator className="my-6" />
 

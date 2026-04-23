@@ -2,8 +2,9 @@ import Link from 'next/link';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Clock } from 'lucide-react';
+import { Clock, Calendar } from 'lucide-react';
 import { getCategoryBadgeClass } from '@/lib/category-styles';
+import { formatRelativeTime } from '@/lib/time-format';
 import type { Article } from '@/api';
 
 interface ArticleCardProps {
@@ -21,7 +22,14 @@ export function ArticleCard({ article }: ArticleCardProps) {
       </CardContent>
       <CardFooter className="flex items-center justify-between pt-0">
         <div className="flex items-center gap-2">
-          <Badge className={getCategoryBadgeClass(article.category)}>{article.category}</Badge>
+          {article.category && (
+            <Badge className={getCategoryBadgeClass(article.category.slug)}>
+              {article.category.name}
+            </Badge>
+          )}
+          <span className="flex items-center gap-1 text-xs text-muted-foreground">
+            <Calendar className="h-3 w-3" /> {formatRelativeTime(article.publishedAt)}
+          </span>
           <span className="flex items-center gap-1 text-xs text-muted-foreground">
             <Clock className="h-3 w-3" /> {article.readTime} min
           </span>

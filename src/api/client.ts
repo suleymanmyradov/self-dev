@@ -108,7 +108,14 @@ export interface RequestOptions {
 
 // Build URL with query params
 function buildUrl(endpoint: string, params?: Record<string, string | number | boolean | undefined>): string {
-  const url = `${config.apiUrl}${endpoint}`;
+  let baseUrl = config.apiUrl;
+  
+  // If apiUrl is relative (starts with /), we need to make it absolute for fetch
+  if (baseUrl.startsWith('/') && typeof window !== 'undefined') {
+    baseUrl = `${window.location.origin}${baseUrl}`;
+  }
+  
+  const url = `${baseUrl}${endpoint}`;
   if (!params) return url;
 
   const searchParams = new URLSearchParams();

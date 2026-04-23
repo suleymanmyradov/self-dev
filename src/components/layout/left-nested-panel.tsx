@@ -1,13 +1,12 @@
 "use client"
 
 import * as React from "react"
-import { Input } from "@/components/ui/input"
 import { Button } from "@/components/ui/button"
 import { useUI } from "@/store/uiStore"
 import { useNotifications, useConversations, useMarkAllNotificationsRead } from "@/hooks"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { X, MessageSquare, Bell, Search, CheckCheck } from "lucide-react"
+import { X, MessageSquare, Bell, CheckCheck } from "lucide-react"
 
 export function LeftNestedPanel() {
   const { isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUI()
@@ -52,18 +51,10 @@ export function LeftNestedPanel() {
           </button>
         </div>
 
-        {/* Search input */}
-        {leftPanelType === "search" && (
-          <div className="px-4 py-3 shrink-0">
-            <Input placeholder="Search accounts..." className="h-9" />
-          </div>
-        )}
-
         {/* Scrollable content */}
         <div className="flex-1 overflow-y-auto p-2">
           {leftPanelType === "messages" && <MessagesList />}
           {leftPanelType === "notifications" && <NotificationsList />}
-          {leftPanelType === "search" && <SearchList />}
         </div>
       </div>
     </aside>
@@ -71,7 +62,7 @@ export function LeftNestedPanel() {
 }
 
 function MessagesList() {
-  const { data: conversations, isLoading } = useConversations({ page: 1, limit: 20 })
+  const { data: conversations = [], isLoading } = useConversations({ page: 1, limit: 20 })
 
   if (isLoading) {
     return (
@@ -108,7 +99,7 @@ function MessagesList() {
 }
 
 function NotificationsList() {
-  const { data: notifications, isLoading } = useNotifications({ page: 1, limit: 20 })
+  const { data: notifications = [], isLoading } = useNotifications({ page: 1, limit: 20 })
   const markAllRead = useMarkAllNotificationsRead()
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0
@@ -165,28 +156,6 @@ function NotificationsList() {
           </div>
         ))}
       </div>
-    </div>
-  )
-}
-
-function SearchList() {
-  const [query, setQuery] = React.useState("")
-
-  return (
-    <div>
-      <div className="px-2 pb-2">
-        <Input
-          placeholder="Search..."
-          value={query}
-          onChange={(e) => setQuery(e.target.value)}
-          className="h-8 text-sm"
-        />
-      </div>
-      {query.length > 0 && (
-        <div className="p-4 text-sm text-muted-foreground text-center">
-          Search results will appear here
-        </div>
-      )}
     </div>
   )
 }

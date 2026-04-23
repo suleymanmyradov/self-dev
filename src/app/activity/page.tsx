@@ -14,8 +14,8 @@ export default function ActivityPage() {
   const { data: activities, isLoading, isError, error, refetch, isRefetching } = useActivities();
 
   const filteredActivities = filter === 'all'
-    ? activities
-    : activities?.filter(a => a.type === filter);
+    ? activities || []
+    : (activities || []).filter(a => a.type === filter);
 
   return (
     <div className="h-full flex flex-col">

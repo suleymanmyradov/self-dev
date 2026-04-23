@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Progress } from "@/components/ui/progress";
 import { GOAL_CATEGORIES } from "@/lib/constants";
 import type { GoalFormValues } from "@/lib/validators/goal";
 
@@ -17,6 +18,7 @@ export type GoalFormDialogProps = {
   onDescriptionChange: (description: string) => void;
   onCategoryChange: (category: GoalFormValues["category"]) => void;
   onDueDateChange: (dueDate: string | undefined) => void;
+  onProgressChange?: (progress: number) => void;
   onSubmit: () => void;
 };
 
@@ -30,6 +32,7 @@ export function GoalFormDialog({
   onDescriptionChange,
   onCategoryChange,
   onDueDateChange,
+  onProgressChange,
   onSubmit,
 }: GoalFormDialogProps) {
   return (
@@ -76,6 +79,38 @@ export function GoalFormDialog({
               onChange={(e) => onDueDateChange(e.target.value || undefined)}
             />
           </div>
+          {mode === "edit" && onProgressChange && (
+            <div className="grid gap-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium">Progress</label>
+                <span className="text-sm font-medium tabular-nums">{form.progress ?? 0}%</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="100"
+                step="5"
+                value={form.progress ?? 0}
+                onChange={(e) => onProgressChange(Number(e.target.value))}
+                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+              />
+              <Progress value={form.progress ?? 0} className="h-2" />
+              <div className="flex gap-2">
+                {[0, 25, 50, 75, 100].map((preset) => (
+                  <Button
+                    key={preset}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onProgressChange(preset)}
+                    className={(form.progress ?? 0) === preset ? "border-primary" : ""}
+                  >
+                    {preset}%
+                  </Button>
+                ))}
+              </div>
+            </div>
+          )}
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
         <DialogFooter>

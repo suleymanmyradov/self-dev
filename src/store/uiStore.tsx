@@ -10,13 +10,13 @@ interface UIState {
     showChatHistory: boolean;
     // Left nested panel controls
     isLeftPanelOpen: boolean;
-    leftPanelType: 'search' | 'notifications' | 'messages' | null;
+    leftPanelType: 'notifications' | 'messages' | null;
     toggleSidebar: () => void;
     openRightPanel: (type: 'notifications') => void;
     closeRightPanel: () => void;
     setIsMobile: (mobile: boolean) => void;
     setShowChatHistory: (show: boolean) => void;
-    openLeftPanel: (type: 'search' | 'notifications' | 'messages') => void;
+    openLeftPanel: (type: 'notifications' | 'messages') => void;
     closeLeftPanel: () => void;
     setSidebarCollapsed: (collapsed: boolean) => void;
 }

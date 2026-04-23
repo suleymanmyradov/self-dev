@@ -17,10 +17,11 @@ export type GoalCardProps = {
   onToggle: (id: string) => void;
   onEdit: (goal: Goal) => void;
   onDelete: (id: string) => void;
+  onProgressChange?: (id: string, progress: number) => void;
   deleting?: boolean;
 };
 
-export function GoalCard({ goal, onToggle, onEdit, onDelete, deleting }: GoalCardProps) {
+export function GoalCard({ goal, onToggle, onEdit, onDelete, onProgressChange, deleting }: GoalCardProps) {
   const due = goal.dueDate ? new Date(goal.dueDate).toLocaleDateString() : undefined;
   const categoryStyle = CATEGORY_COLORS[goal.category] || "bg-secondary text-secondary-foreground border-border";
   const isNearCompletion = goal.progress >= 75 && goal.progress < 100;
@@ -89,6 +90,19 @@ export function GoalCard({ goal, onToggle, onEdit, onDelete, deleting }: GoalCar
                 isNearCompletion && "[&>div]:bg-energy"
               )}
             />
+            {onProgressChange && !isCompleted && (
+              <div className="mt-2 flex gap-1">
+                {[25, 50, 75].map((preset) => (
+                  <button
+                    key={preset}
+                    onClick={() => onProgressChange(goal.id, preset)}
+                    className="text-xs px-2 py-0.5 rounded border border-border hover:bg-accent transition-colors"
+                  >
+                    {preset}%
+                  </button>
+                ))}
+              </div>
+            )}
           </div>
 
           {/* Linked habits */}

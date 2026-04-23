@@ -9,7 +9,7 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { GoalCard } from "@/components/goals/goal-card";
 import { GoalFormDialog } from "@/components/goals/goal-form-dialog";
 import { listArticles } from "@/api";
-import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useGoalForm, useConfirmDelete } from "@/hooks";
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useGoalForm, useConfirmDelete } from "@/hooks";
 import type { Goal } from "@/api";
 import Link from "next/link";
 import { Plus, Target, Trophy } from "lucide-react";
@@ -32,6 +32,7 @@ export default function GoalsPage() {
   const updateMutation = useUpdateGoal();
   const deleteMutation = useDeleteGoal();
   const toggleMutation = useToggleGoal();
+  const updateProgressMutation = useUpdateGoalProgress();
 
   // Create form
   const createForm = useGoalForm();
@@ -71,6 +72,16 @@ export default function GoalsPage() {
       { id: editingId, data: validated },
       { onSuccess: () => setEditOpen(false) }
     );
+  };
+
+  const handleProgressChange = (progress: number) => {
+    if (!editingId) return;
+    editForm.setProgress(progress);
+    updateProgressMutation.mutate({ id: editingId, progress });
+  };
+
+  const handleCardProgressChange = (id: string, progress: number) => {
+    updateProgressMutation.mutate({ id, progress });
   };
 
   const handleDelete = () => {
@@ -156,6 +167,7 @@ export default function GoalsPage() {
                 onToggle={(id) => toggleMutation.mutate(id)}
                 onEdit={openEdit}
                 onDelete={deleteConfirm.confirmDelete}
+                onProgressChange={handleCardProgressChange}
               />
             ))}
           </section>
@@ -170,7 +182,7 @@ export default function GoalsPage() {
                   <Link href={`/article/${a.id}`} className="underline-offset-2 hover:underline">
                     {a.title}
                   </Link>
-                  <span className="ml-2 text-muted-foreground">· {a.category}</span>
+                  <span className="ml-2 text-muted-foreground">· {a.category?.name ?? 'Uncategorized'}</span>
                 </li>
               ))}
             </ul>
@@ -208,6 +220,7 @@ export default function GoalsPage() {
         onDescriptionChange={editForm.setDescription}
         onCategoryChange={editForm.setCategory}
         onDueDateChange={editForm.setDueDate}
+        onProgressChange={handleProgressChange}
         onSubmit={handleSaveEdit}
       />
 

@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { useToggleState } from "@/hooks/use-toggle-state";
 import { Heart, Share2, Bookmark, ArrowUpRight } from "lucide-react";
+import { formatRelativeTime } from "@/lib/time-format";
 
 export type ArticleCardProps = {
   id?: string;
@@ -99,7 +100,7 @@ export function ArticleCard({
               <Badge className={cn("rounded-full px-2 py-0 text-[0.65rem] font-medium border-0", categoryColor)}>
                 {category}
               </Badge>
-            ) : null}
+            ) : null}formatRelativeTime()
             <span className="text-xs text-muted-foreground">{postedAt}</span>
           </div>
 
