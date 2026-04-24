@@ -27,7 +27,7 @@ export function TrendingTopics() {
     return (
         <div className="space-y-3">
             {topics.map((topic, i) => (
-                <div key={i} className="rounded-2xl border border-border/50 bg-card/60 p-3 transition-colors hover:bg-card/80">
+                <div key={i} className="rounded-lg border border-border/50 bg-card/60 p-3 transition-colors hover:bg-card/80">
                     <div className="flex items-center gap-1 text-[0.68rem] uppercase tracking-[0.14em] text-muted-foreground">
                         <span>{topic.category}</span>
                         <span>•</span>

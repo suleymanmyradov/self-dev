@@ -97,7 +97,7 @@ export function ArticleCard({
           {/* Meta */}
           <div className="flex items-center gap-2 mb-2">
             {category ? (
-              <Badge className={cn("rounded-full px-2 py-0 text-[0.65rem] font-medium border-0", categoryColor)}>
+              <Badge className={cn("px-2 py-0 text-[0.65rem] font-medium border-0", categoryColor)}>
                 {category}
               </Badge>
             ) : null}formatRelativeTime()

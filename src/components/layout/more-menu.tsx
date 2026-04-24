@@ -28,13 +28,13 @@ export function MoreMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex h-11 w-11 items-center justify-center rounded-full border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-border hover:bg-muted/50 hover:text-foreground hover:shadow-md"
+          className="flex h-11 w-11 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-border hover:bg-muted/50 hover:text-foreground hover:shadow-md"
           title="More"
         >
           <Menu className="h-[22px] w-[22px]" strokeWidth={1.7} />
         </button>
       </DropdownMenuTrigger>
-      <DropdownMenuContent side="top" align="start" className="w-56 rounded-2xl border-border/70 p-2 shadow-[0_20px_60px_-24px_rgb(0_0_0/35%)]">
+      <DropdownMenuContent side="top" align="start" className="w-56 rounded-lg border-border/70 p-2 shadow-[0_20px_60px_-24px_rgb(0_0_0/35%)]">
         <DropdownMenuLabel className="px-2 pt-1 pb-2 text-xs uppercase tracking-[0.16em] text-muted-foreground">Menu</DropdownMenuLabel>
         <DropdownMenuSeparator />
         {items.map((it, idx) =>

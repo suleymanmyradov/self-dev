@@ -16,7 +16,7 @@ const ThreadScrollToBottom: FC = () => {
       <TooltipIconButton
         tooltip="Scroll to bottom"
         variant="outline"
-        className="aui-thread-scroll-to-bottom absolute -top-12 z-10 self-center rounded-full p-4 disabled:invisible dark:bg-background dark:hover:bg-accent"
+        className="aui-thread-scroll-to-bottom absolute -top-12 z-10 self-center rounded-lg p-4 disabled:invisible dark:bg-background dark:hover:bg-accent"
       >
         <ArrowUpIcon />
       </TooltipIconButton>
@@ -26,12 +26,12 @@ const ThreadScrollToBottom: FC = () => {
 
 export const Composer: FC = () => {
   return (
-    <div className="aui-composer-wrapper sticky bottom-0 mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-4 overflow-visible rounded-t-2xl bg-gradient-to-t from-background via-background to-transparent pb-4 md:pb-6">
+    <div className="aui-composer-wrapper sticky bottom-0 mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-4 overflow-visible rounded-t-lg bg-gradient-to-t from-background via-background to-transparent pb-4 md:pb-6">
       <ThreadScrollToBottom />
       <ThreadPrimitive.Empty>
         <ThreadWelcomeSuggestions />
       </ThreadPrimitive.Empty>
-      <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col rounded-2xl border border-border/50 bg-muted/50 backdrop-blur-sm px-1 pt-2 shadow-sm transition-all focus-within:border-calm/30 focus-within:bg-muted">
+      <ComposerPrimitive.Root className="aui-composer-root relative flex w-full flex-col rounded-lg border border-border/50 bg-muted/50 backdrop-blur-sm px-1 pt-2 shadow-sm transition-all focus-within:border-calm/30 focus-within:bg-muted">
         <ComposerAttachments />
         <ComposerPrimitive.Input
           placeholder="Share your thoughts..."
@@ -59,7 +59,7 @@ const ComposerAction: FC = () => {
             type="submit"
             variant="calm"
             size="icon"
-            className="aui-composer-send size-[34px] rounded-full p-1"
+            className="aui-composer-send size-[34px] rounded-lg p-1"
             aria-label="Send message"
           >
             <ArrowUpIcon className="aui-composer-send-icon size-5" />
@@ -73,7 +73,7 @@ const ComposerAction: FC = () => {
             type="button"
             variant="outline"
             size="icon"
-            className="aui-composer-cancel size-[34px] rounded-full border border-border/50 hover:bg-muted"
+            className="aui-composer-cancel size-[34px] rounded-lg border border-border/50 hover:bg-muted"
             aria-label="Stop generating"
           >
             <Square className="aui-composer-cancel-icon size-3.5 fill-foreground" />

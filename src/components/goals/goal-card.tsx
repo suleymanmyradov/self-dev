@@ -116,13 +116,13 @@ export function GoalCard({ goal, onToggle, onEdit, onDelete, onProgressChange, d
           <div className="mt-3 flex items-center gap-3 text-xs">
             <Link 
               href="/ai-coach" 
-              className="inline-flex items-center gap-1.5 rounded-full bg-calm-soft px-2.5 py-1 text-calm transition-colors hover:bg-calm hover:text-calm-foreground"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-calm-soft px-2.5 py-1 text-calm transition-colors hover:bg-calm hover:text-calm-foreground"
             >
               <MessageSquare className="h-3 w-3" /> Coach
             </Link>
             <Link 
               href="/ai-therapist" 
-              className="inline-flex items-center gap-1.5 rounded-full bg-primary/10 px-2.5 py-1 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
+              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
             >
               <HeartHandshake className="h-3 w-3" /> Therapist
             </Link>

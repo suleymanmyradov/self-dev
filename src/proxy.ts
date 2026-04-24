@@ -19,7 +19,7 @@ const PROTECTED_ROUTES = [
 // Routes only for unauthenticated users
 const AUTH_ROUTES = ['/login', '/register'];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const token = request.cookies.get(AUTH_COOKIE_NAME)?.value;
 

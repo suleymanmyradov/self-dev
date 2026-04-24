@@ -36,7 +36,7 @@ export default async function ArticlePage({
       {/* Category above title */}
       {article.category && (
         <div className="mb-4">
-          <Badge variant="secondary" className="rounded-full px-3 py-1 text-sm">
+          <Badge variant="secondary" className="px-3 py-1 text-sm">
             {article.category.name}
           </Badge>
         </div>

@@ -69,7 +69,7 @@ export const ThreadWelcomeSuggestions: FC = () => {
           >
             <Button
               variant="ghost"
-              className="aui-thread-welcome-suggestion h-auto w-full flex-1 flex-wrap items-start justify-start gap-1 rounded-2xl border border-border/50 bg-background/50 backdrop-blur-sm px-5 py-4 text-left text-sm transition-all hover:border-calm/30 hover:bg-calm-soft/20 @md:flex-col"
+              className="aui-thread-welcome-suggestion h-auto w-full flex-1 flex-wrap items-start justify-start gap-1 rounded-lg border border-border/50 bg-background/50 backdrop-blur-sm px-5 py-4 text-left text-sm transition-all hover:border-calm/30 hover:bg-calm-soft/20 @md:flex-col"
               aria-label={suggestedAction.action}
             >
               <span className="aui-thread-welcome-suggestion-text-1 font-medium text-foreground">

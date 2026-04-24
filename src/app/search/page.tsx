@@ -64,7 +64,7 @@ export default function SearchPage() {
         <div className="flex gap-2 mb-6 flex-wrap">
           <button
             onClick={() => handleFilterChange(undefined)}
-            className={`px-3 py-1 text-xs rounded-full border transition-colors ${
+            className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
               !filterType
                 ? "bg-primary text-primary-foreground border-primary"
                 : "border-muted-foreground/20 hover:bg-accent"
@@ -76,7 +76,7 @@ export default function SearchPage() {
             <button
               key={type}
               onClick={() => handleFilterChange(type)}
-              className={`px-3 py-1 text-xs rounded-full border capitalize transition-colors ${
+              className={`px-3 py-1 text-xs rounded-lg border capitalize transition-colors ${
                 filterType === type
                   ? "bg-primary text-primary-foreground border-primary"
                   : "border-muted-foreground/20 hover:bg-accent"

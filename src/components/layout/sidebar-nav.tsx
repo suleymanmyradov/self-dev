@@ -9,7 +9,7 @@ import { cn } from '@/lib/utils';
 import { useUI } from '@/store/uiStore';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
-  Home,
+  Leaf,
   Target,
   Brain,
   Compass,
@@ -54,12 +54,12 @@ export function SidebarNav() {
             href="/"
             onClick={() => closeLeftPanel()}
             className={cn(
-              'mb-5 flex h-12 w-12 items-center justify-center rounded-[1.15rem] border border-border/60 bg-card/80 text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:bg-muted/70 hover:shadow-md',
+              'mb-5 flex h-12 w-12 items-center justify-center rounded-lg border border-border/60 bg-gradient-to-br from-calm/20 to-growth/20 text-foreground shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-border hover:shadow-md',
               pathname === '/' && 'ring-1 ring-border/60',
             )}
             aria-label="Go to home"
           >
-            <Home className="h-[18px] w-[18px]" />
+            <Leaf className="h-[18px] w-[18px]" />
           </Link>
 
         {/* Main navigation */}

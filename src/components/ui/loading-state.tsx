@@ -24,7 +24,7 @@ export function LoadingState({
             <Skeleton className="h-4 w-full" />
             <Skeleton className="h-4 w-2/3" />
             <div className="flex items-center justify-between pt-2">
-              <Skeleton className="h-6 w-20 rounded-full" />
+              <Skeleton className="h-6 w-20 rounded-lg" />
               <Skeleton className="h-8 w-16 rounded-lg" />
             </div>
           </div>
@@ -81,10 +81,10 @@ export function LoadingState({
               i % 2 === 0 ? "justify-start" : "justify-end"
             )}
           >
-            {i % 2 === 0 && <Skeleton className="h-8 w-8 rounded-full" />}
+            {i % 2 === 0 && <Skeleton className="h-8 w-8 rounded-lg" />}
             <div
               className={cn(
-                "space-y-2 rounded-2xl p-4",
+                "space-y-2 rounded-lg p-4",
                 i % 2 === 0 ? "bg-muted/50" : "bg-calm-soft/30"
               )}
             >

@@ -23,21 +23,23 @@ export type ArticleCardGridProps = {
   className?: string;
   onLike?: (id: string) => void;
   onSave?: (id: string) => void;
+  index?: number;
 };
 
-export function ArticleCardGrid({ 
-  id, 
-  href, 
-  title, 
-  excerpt, 
-  image, 
-  category, 
-  postedAt, 
-  likes: initialLikes = 0, 
-  saves: initialSaves = 0, 
+export function ArticleCardGrid({
+  id,
+  href,
+  title,
+  excerpt,
+  image,
+  category,
+  postedAt,
+  likes: initialLikes = 0,
+  saves: initialSaves = 0,
   className,
   onLike,
   onSave,
+  index = 0,
 }: ArticleCardGridProps) {
   const link = href ?? (id ? `/article/${id}` : "#");
   const likeState = useToggleState(initialLikes, onLike);
@@ -45,16 +47,19 @@ export function ArticleCardGrid({
 
   const categoryColor = category ? CATEGORY_COLORS[category] || "bg-secondary text-secondary-foreground" : "";
 
+  // Staggered entrance animation delay
+  const animationDelay = `${Math.min(index * 50, 500)}ms`;
+
   return (
-    <Link href={link} className="group block">
+    <Link href={link} className="group block" style={{ animationDelay }}>
       <Card className={cn(
         "overflow-hidden border-border/50 bg-card/80 backdrop-blur-sm transition-all duration-300",
-        "hover:border-border hover:shadow-sm hover:bg-card",
-        "flex flex-col h-full",
+        "hover:border-border/80 hover:shadow-md hover:bg-card hover:-translate-y-0.5",
+        "flex flex-col h-full animate-in fade-in-0 slide-in-from-bottom-2 fill-mode-backwards duration-500",
         className
       )}>
-        {/* Top Image - 3:2 ratio for taller cards */}
-        <div className="relative w-full aspect-[3/2] overflow-hidden bg-muted">
+        {/* Top Image - 16:10 ratio for balanced cards */}
+        <div className="relative w-full aspect-[16/10] overflow-hidden bg-muted">
           <Image
             src={image}
             alt={title}
@@ -65,7 +70,7 @@ export function ArticleCardGrid({
           {/* Category badge on image */}
           {category && (
             <div className="absolute top-2 left-2">
-              <Badge className={cn("rounded-full px-2 py-0 text-[0.6rem] font-medium border-0 shadow-sm", categoryColor)}>
+              <Badge className={cn("px-2.5 py-0.5 text-[0.65rem] font-medium border shadow-sm backdrop-blur-sm bg-background/80", categoryColor)}>
                 {category}
               </Badge>
             </div>
@@ -73,49 +78,49 @@ export function ArticleCardGrid({
         </div>
 
         {/* Content */}
-        <div className="flex-1 flex flex-col p-3">
+        <div className="flex-1 flex flex-col p-3.5">
           {/* Meta */}
-          <span className="text-[0.7rem] text-muted-foreground mb-1">{formatRelativeTime(postedAt)}</span>
+          <span className="text-[0.7rem] text-muted-foreground mb-1.5 tracking-wide uppercase">{formatRelativeTime(postedAt)}</span>
 
           {/* Title */}
-          <h3 className="font-display text-sm font-semibold leading-tight tracking-tight line-clamp-2 group-hover:text-primary transition-colors">
+          <h3 className="font-display text-sm font-semibold leading-snug tracking-tight line-clamp-2 group-hover:text-primary transition-colors duration-200">
             {title}
           </h3>
 
           {/* Excerpt - compact */}
           {excerpt ? (
-            <p className="mt-1.5 text-xs text-muted-foreground line-clamp-2 flex-1">
+            <p className="mt-2 text-xs text-muted-foreground/80 line-clamp-2 flex-1 leading-relaxed">
               {excerpt}
             </p>
           ) : <div className="flex-1" />}
 
           {/* Actions */}
-          <div className="mt-auto pt-2 flex items-center justify-between border-t border-border/30">
-            <button 
+          <div className="mt-auto pt-3 flex items-center justify-between border-t border-border/30">
+            <button
               onClick={(e) => likeState.toggle(e, id)}
               className={cn(
-                "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
-                likeState.isActive 
-                  ? "text-red-500" 
+                "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-secondary/50",
+                likeState.isActive
+                  ? "text-red-500"
                   : "text-muted-foreground hover:text-foreground"
-              )} 
+              )}
               aria-label="Like"
             >
-              <Heart className={cn("h-3 w-3", likeState.isActive && "fill-current")} />
-              <span className="tabular-nums">{likeState.value}</span>
+              <Heart className={cn("h-3.5 w-3.5", likeState.isActive && "fill-current")} />
+              <span className="tabular-nums font-medium">{likeState.value}</span>
             </button>
-            <button 
+            <button
               onClick={(e) => saveState.toggle(e, id)}
               className={cn(
-                "inline-flex items-center gap-1 rounded px-1.5 py-0.5 text-xs transition-colors",
-                saveState.isActive 
-                  ? "text-primary" 
+                "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-secondary/50",
+                saveState.isActive
+                  ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
-              )} 
+              )}
               aria-label="Save"
             >
-              <Bookmark className={cn("h-3 w-3", saveState.isActive && "fill-current")} />
-              {saveState.value > 0 && <span className="tabular-nums">{saveState.value}</span>}
+              <Bookmark className={cn("h-3.5 w-3.5", saveState.isActive && "fill-current")} />
+              {saveState.value > 0 && <span className="tabular-nums font-medium">{saveState.value}</span>}
             </button>
           </div>
         </div>

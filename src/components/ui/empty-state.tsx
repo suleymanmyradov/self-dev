@@ -58,7 +58,7 @@ export function EmptyState({
     >
       <div
         className={cn(
-          "flex items-center justify-center rounded-2xl p-4 mb-4",
+          "flex items-center justify-center rounded-lg p-4 mb-4",
           config.bgColor
         )}
       >

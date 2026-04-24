@@ -35,7 +35,7 @@ export class ErrorBoundary extends Component<ErrorBoundaryProps, ErrorBoundarySt
 
       return (
         <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-          <div className="rounded-full bg-destructive/10 p-4">
+          <div className="rounded-lg bg-destructive/10 p-4">
             <svg
               className="h-8 w-8 text-destructive"
               fill="none"

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
-import { Bell } from 'lucide-react';
+import { Bell, Leaf } from 'lucide-react';
 
 export function MobileTopBar() {
   return (
@@ -12,14 +12,14 @@ export function MobileTopBar() {
     >
       <div className="flex h-14 items-center px-4">
         <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-primary text-primary-foreground shadow-sm">
-            <span className="text-sm font-bold">G</span>
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-gradient-to-br from-calm to-growth text-calm-foreground shadow-sm">
+            <Leaf className="h-4 w-4" />
           </div>
           <span className="text-base font-semibold tracking-tight">Growth</span>
         </Link>
 
         <div className="ml-auto">
-          <Button variant="ghost" size="icon" asChild className="relative rounded-full border border-border/60 bg-background/80 shadow-sm hover:bg-muted/50">
+          <Button variant="ghost" size="icon" asChild className="relative border border-border/60 bg-background/80 shadow-sm hover:bg-muted/50">
             <Link href="/notifications" aria-label="Notifications">
               <Bell className="h-5 w-5" />
               {/* Unread badge */}

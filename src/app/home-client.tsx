@@ -9,7 +9,7 @@ import type { FeedFilter } from '@/store/feed-filter';
 import { listCategories, listArticles } from '@/api';
 
 const TAB_TRIGGER_CLASS =
-  'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-colors hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm';
+  'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold';
 
 const DEFAULT_CATEGORIES: { value: FeedFilter; label: string }[] = [
   { value: 'all', label: 'All' },
@@ -30,16 +30,13 @@ export function HomeClient() {
 
   const categories = useMemo(() => {
     const cats = categoriesData?.data;
-    console.log('Raw categories from API:', cats);
     if (cats && cats.length > 0) {
       const mapped = [
         { value: 'all' as FeedFilter, label: 'All' },
         ...cats.map((c) => ({ value: c.slug as FeedFilter, label: c.name })),
       ];
-      console.log('Mapped categories:', mapped);
       return mapped;
     }
-    console.log('Using default categories');
     return DEFAULT_CATEGORIES;
   }, [categoriesData]);
 
@@ -47,9 +44,7 @@ export function HomeClient() {
   const { data: articlesData, isLoading } = useQuery({
     queryKey: ['articles', filter],
     queryFn: () => {
-      console.log('Fetching articles with filter:', filter);
       const params = filter !== 'all' ? { category: filter } : undefined;
-      console.log('API params:', params);
       return listArticles(params);
     },
   });
@@ -58,6 +53,12 @@ export function HomeClient() {
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
+      {/* Ambient background accents */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden">
+        <div className="absolute -top-20 left-1/3 h-80 w-80 rounded-full bg-ambient-calm opacity-20 blur-3xl" />
+        <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-ambient-growth opacity-15 blur-3xl" />
+      </div>
+
       <div className="relative flex-1 overflow-y-auto no-scrollbar">
         <div className="w-full px-6 lg:px-10 pb-10">
           <Tabs
@@ -78,15 +79,16 @@ export function HomeClient() {
           <section>
             {isLoading ? (
               <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">Loading articles...</p>
+                <p className="text-muted-foreground animate-pulse">Loading articles...</p>
               </div>
             ) : articles.length === 0 ? (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground">No articles found</p>
+              <div className="flex flex-col items-center justify-center py-16 gap-3">
+                <p className="text-muted-foreground text-sm">No articles found</p>
+                <p className="text-muted-foreground/60 text-xs">Try selecting a different category</p>
               </div>
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-                {articles.map((a) => (
+                {articles.map((a, i) => (
                   <ArticleCardGrid
                     key={a.id}
                     id={a.id}
@@ -97,6 +99,7 @@ export function HomeClient() {
                     postedAt={a.publishedAt}
                     likes={0}
                     saves={0}
+                    index={i}
                   />
                 ))}
               </div>
