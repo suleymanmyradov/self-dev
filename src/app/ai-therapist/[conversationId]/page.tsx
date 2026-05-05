@@ -1,4 +1,4 @@
-import { Assistant } from '@/app/assistant';
+import { redirect } from 'next/navigation';
 
 export default async function AITherapistConversationPage({
     params,
@@ -6,5 +6,5 @@ export default async function AITherapistConversationPage({
     params: Promise<{ conversationId: string }>;
 }) {
     const { conversationId } = await params;
-    return <Assistant key={conversationId} />;
+    redirect(`/ai-coach/${conversationId}`);
 }

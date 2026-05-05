@@ -65,6 +65,7 @@ export type {
   ListConversationsParams,
   
   // Settings Types
+  AccountabilityStyle,
   Settings,
   UpdateSettingsRequest,
   SettingsResponse,

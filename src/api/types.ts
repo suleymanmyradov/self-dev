@@ -279,6 +279,8 @@ export interface ListConversationsParams extends PageParams {
 // Settings Types
 // ============================================
 
+export type AccountabilityStyle = 'gentle' | 'balanced' | 'strict';
+
 export interface Settings {
   id: string;
   theme: 'light' | 'dark' | 'system';
@@ -288,6 +290,9 @@ export interface Settings {
   pushNotifications: boolean;
   habitReminders: boolean;
   goalReminders: boolean;
+  accountabilityStyle: AccountabilityStyle;
+  checkInTime: string;
+  onboardingCompleted: boolean;
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -301,6 +306,9 @@ export interface UpdateSettingsRequest {
   pushNotifications?: boolean;
   habitReminders?: boolean;
   goalReminders?: boolean;
+  accountabilityStyle?: AccountabilityStyle;
+  checkInTime?: string;
+  onboardingCompleted?: boolean;
 }
 
 export interface SettingsResponse extends ApiResponse<Settings> {}

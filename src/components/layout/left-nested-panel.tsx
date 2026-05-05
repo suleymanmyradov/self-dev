@@ -77,7 +77,7 @@ function MessagesList() {
       <div className="p-4 text-sm text-muted-foreground flex flex-col items-center gap-3">
         <MessageSquare className="h-8 w-8 opacity-50" />
         <p>No conversations yet.</p>
-        <p className="text-xs">Start chatting with your AI coach or therapist.</p>
+        <p className="text-xs">Start a conversation with your AI accountability coach.</p>
       </div>
     )
   }
@@ -87,7 +87,7 @@ function MessagesList() {
       {conversations.map((c) => (
         <Link
           key={c.id}
-          href={c.type === 'therapist' ? `/ai-therapist/${c.id}` : `/ai-coach/${c.id}`}
+          href={`/ai-coach/${c.id}`}
           className="block rounded-md p-3 text-sm hover:bg-accent"
         >
           <div className="font-medium">{c.title}</div>

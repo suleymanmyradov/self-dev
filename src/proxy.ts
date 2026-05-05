@@ -9,11 +9,11 @@ const PROTECTED_ROUTES = [
   '/goals',
   '/activity',
   '/ai-coach',
-  '/ai-therapist',
   '/settings',
   '/profile',
   '/saved',
   '/appearance',
+  '/onboarding',
 ];
 
 // Routes only for unauthenticated users

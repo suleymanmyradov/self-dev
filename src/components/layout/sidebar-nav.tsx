@@ -16,7 +16,6 @@ import {
   User,
   Sparkles,
   HandFist,
-  HeartHandshake,
   Bell,
 } from 'lucide-react';
 
@@ -28,7 +27,6 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
 
 const supportRoutes: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/ai-coach", label: "Coach", icon: HandFist },
-  { href: "/ai-therapist", label: "Therapy", icon: HeartHandshake },
 ];
 
 const panelItems: { panel: "notifications"; label: string; icon: LucideIcon }[] = [

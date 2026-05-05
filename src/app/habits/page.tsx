@@ -99,7 +99,7 @@ export default function HabitsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">Habits</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Small steps, lasting change.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Build consistency one day at a time.</p>
               </div>
               <div className="flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => resetMutation.mutate()}>

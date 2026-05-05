@@ -14,13 +14,13 @@ export const ThreadWelcome: FC = () => {
               {...fadeInUp}
               className="aui-thread-welcome-message-motion-1 text-2xl font-semibold text-calm"
             >
-              Hello there!
+              Hey, I'm your accountability coach.
             </m.div>
             <m.div
               {...withDelay(fadeInUp, 0.1)}
               className="aui-thread-welcome-message-motion-2 text-lg text-muted-foreground/80 mt-1"
             >
-              I'm here to support your growth journey. How can I help?
+              Tell me your goal and let's build a plan you'll actually stick to.
             </m.div>
           </div>
         </div>
@@ -31,24 +31,24 @@ export const ThreadWelcome: FC = () => {
 
 const SUGGESTED_ACTIONS = [
   {
-    title: "Help me build a habit",
-    label: "for daily mindfulness",
-    action: "Help me build a daily mindfulness habit",
+    title: "I have a goal in mind",
+    label: "help me turn it into a habit plan",
+    action: "I have a goal I want to work on. Help me turn it into a concrete daily habit plan.",
   },
   {
-    title: "Set a meaningful goal",
-    label: "for personal growth",
-    action: "Help me set a meaningful personal growth goal",
+    title: "I keep falling off track",
+    label: "help me understand why and reset",
+    action: "I keep starting habits but falling off after a few days. Help me figure out why and build a recovery plan.",
   },
   {
-    title: "Overcome procrastination",
-    label: "with practical strategies",
-    action: "Give me practical strategies to overcome procrastination",
+    title: "Review my week",
+    label: "what went well and what to adjust",
+    action: "Let's do a quick weekly review. I want to look at what I completed, what I missed, and adjust my plan.",
   },
   {
-    title: "Create a routine",
-    label: "for better mornings",
-    action: "Help me create a morning routine for better productivity",
+    title: "I need accountability",
+    label: "check in on my current goals",
+    action: "Can you check in on my current goals and habits? I want to stay accountable.",
   },
 ] as const;
 

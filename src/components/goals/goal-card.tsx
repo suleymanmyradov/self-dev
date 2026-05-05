@@ -10,7 +10,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/constants";
-import { CalendarDays, CheckCircle2, MoreHorizontal, MessageSquare, HeartHandshake, Target, Sparkles } from "lucide-react";
+import { CalendarDays, CheckCircle2, MoreHorizontal, MessageSquare, Target, Sparkles } from "lucide-react";
 
 export type GoalCardProps = {
   goal: Goal;
@@ -118,13 +118,7 @@ export function GoalCard({ goal, onToggle, onEdit, onDelete, onProgressChange, d
               href="/ai-coach" 
               className="inline-flex items-center gap-1.5 rounded-lg bg-calm-soft px-2.5 py-1 text-calm transition-colors hover:bg-calm hover:text-calm-foreground"
             >
-              <MessageSquare className="h-3 w-3" /> Coach
-            </Link>
-            <Link 
-              href="/ai-therapist" 
-              className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 px-2.5 py-1 text-primary transition-colors hover:bg-primary hover:text-primary-foreground"
-            >
-              <HeartHandshake className="h-3 w-3" /> Therapist
+              <MessageSquare className="h-3 w-3" /> Ask coach
             </Link>
           </div>
         </div>

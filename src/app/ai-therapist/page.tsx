@@ -1,5 +1,5 @@
-import { Assistant } from '@/app/assistant';
+import { redirect } from 'next/navigation';
 
 export default function AITherapistPage() {
-    return <Assistant />;
+    redirect('/ai-coach');
 }

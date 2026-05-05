@@ -121,7 +121,7 @@ export default function GoalsPage() {
             <div className="flex items-center justify-between">
               <div>
                 <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">Goals</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Set outcomes, track progress, achieve growth.</p>
+                <p className="mt-1 text-sm text-muted-foreground">Turn intentions into a plan you can act on daily.</p>
               </div>
               <Button size="sm" variant="energy" onClick={() => setCreateOpen(true)}>
                 <Plus className="mr-2 h-4 w-4" /> New Goal
@@ -189,8 +189,7 @@ export default function GoalsPage() {
           </section>
 
           <p className="mt-6 text-xs text-muted-foreground">
-            Tip: You can link habits to goals later to track the small daily actions that ladder up
-            to your outcomes.
+            Tip: Link habits to your goals to turn big outcomes into small daily actions your coach can track.
           </p>
         </div>
       </div>

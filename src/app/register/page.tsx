@@ -24,7 +24,7 @@ export default function RegisterPage() {
     mutationFn: register,
     onSuccess: (data) => {
       setAuthUser(data.user, data.accessToken, data.refreshToken);
-      router.push('/habits');
+      router.push('/onboarding');
     },
     onError: (err: Error) => {
       setError(err.message || 'Registration failed. Please try again.');
