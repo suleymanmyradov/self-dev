@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -9,6 +10,8 @@ import { Plus, RotateCcw, Target, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HabitCard } from "@/components/habits/habit-card";
 import { HabitFormDialog } from "@/components/habits/habit-form-dialog";
+import { CheckInModal } from "@/components/check-in/check-in-modal";
+import type { Habit } from "@/api";
 import {
   useHabits,
   useCreateHabit,
@@ -20,6 +23,7 @@ import {
   useHabitForm,
   useHabitEditForm,
   useConfirmDelete,
+  useCreateCheckIn,
 } from "@/hooks";
 
 export default function HabitsPage() {
@@ -32,9 +36,14 @@ export default function HabitsPage() {
   const deleteMutation = useDeleteHabit();
   const toggleMutation = useToggleHabit();
   const resetMutation = useResetTodayHabits();
+  const checkInMutation = useCreateCheckIn();
+
+  // Check-in modal state
+  const [checkInHabit, setCheckInHabit] = useState<Habit | undefined>();
+  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
 
   // Filters
-  const { categoryFilter, setCategoryFilter, sortBy, setSortBy, visibleHabits, completionPct } = 
+  const { categoryFilter, setCategoryFilter, sortBy, setSortBy, visibleHabits, completionPct } =
     useHabitFilters(habits);
 
   // Create form
@@ -77,6 +86,21 @@ export default function HabitsPage() {
         onSettled: () => deleteConfirm.stopDeleting(id),
       });
     }
+  };
+
+  // Check-in handler
+  const handleCheckIn = (habit: Habit) => {
+    setCheckInHabit(habit);
+    setIsCheckInModalOpen(true);
+  };
+
+  const handleSubmitCheckIn = (data: any) => {
+    checkInMutation.mutate(data, {
+      onSuccess: () => {
+        setIsCheckInModalOpen(false);
+        setCheckInHabit(undefined);
+      },
+    });
   };
 
   // Loading state
@@ -178,6 +202,7 @@ export default function HabitsPage() {
                 onToggle={(id) => toggleMutation.mutate(id)}
                 onEdit={editForm.openEdit}
                 onDelete={deleteConfirm.confirmDelete}
+                onCheckIn={handleCheckIn}
               />
             ))}
           </section>
@@ -218,6 +243,15 @@ export default function HabitsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Check-In Modal */}
+      <CheckInModal
+        open={isCheckInModalOpen}
+        onOpenChange={setIsCheckInModalOpen}
+        habit={checkInHabit}
+        onSubmit={handleSubmitCheckIn}
+        isSubmitting={checkInMutation.isPending}
+      />
     </div>
   );
 }

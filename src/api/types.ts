@@ -109,6 +109,39 @@ export interface HabitsResponse extends ApiResponse<Habit[]> {
 export interface HabitResponse extends ApiResponse<Habit> {}
 
 // ============================================
+// Check-In Types
+// ============================================
+
+export type CheckInStatus = 'completed' | 'missed';
+export type CheckInMood = 'great' | 'okay' | 'low' | 'stressed';
+export type CheckInEnergy = 'high' | 'medium' | 'low';
+export type CheckInBlocker = 'lack_of_time' | 'low_motivation' | 'too_distracted' | 'unclear_plan' | 'other';
+
+export interface CheckIn {
+  id: string;
+  userId: string;
+  habitId: string;
+  status: CheckInStatus;
+  mood?: CheckInMood;
+  energy?: CheckInEnergy;
+  blocker?: CheckInBlocker;
+  note?: string;
+  createdAt: string;
+}
+
+export interface CreateCheckInRequest {
+  habitId: string;
+  status: CheckInStatus;
+  mood?: CheckInMood;
+  energy?: CheckInEnergy;
+  blocker?: CheckInBlocker;
+  note?: string;
+}
+
+export interface CheckInsResponse extends ApiResponse<CheckIn[]> {}
+export interface CheckInResponse extends ApiResponse<CheckIn> {}
+
+// ============================================
 // Auth Types
 // ============================================
 

@@ -26,7 +26,17 @@ export type {
   UpdateHabitRequest,
   HabitsResponse,
   HabitResponse,
-  
+
+  // Check-In Types
+  CheckIn,
+  CheckInStatus,
+  CheckInMood,
+  CheckInEnergy,
+  CheckInBlocker,
+  CreateCheckInRequest,
+  CheckInsResponse,
+  CheckInResponse,
+
   // Auth Types
   LoginRequest,
   RegisterRequest,
@@ -124,6 +134,13 @@ export {
   toggleHabit,
   resetTodayHabits,
 } from './habits';
+
+// Check-Ins API
+export {
+  createCheckIn,
+  getTodayCheckIns,
+  getCheckInHistory,
+} from './check-ins';
 
 // Categories API
 export { listCategories } from './categories';

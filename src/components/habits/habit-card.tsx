@@ -14,10 +14,11 @@ export type HabitCardProps = {
   onToggle: (id: string) => void;
   onEdit: (habit: Habit) => void;
   onDelete: (id: string) => void;
+  onCheckIn: (habit: Habit) => void;
   deleting?: boolean;
 };
 
-export function HabitCard({ habit: h, onToggle, onEdit, onDelete, deleting }: HabitCardProps) {
+export function HabitCard({ habit: h, onToggle, onEdit, onDelete, onCheckIn, deleting }: HabitCardProps) {
   const categoryStyle = CATEGORY_COLORS[h.category] || "bg-secondary text-secondary-foreground border-border";
 
   return (
@@ -124,7 +125,7 @@ export function HabitCard({ habit: h, onToggle, onEdit, onDelete, deleting }: Ha
         <Button
           size="sm"
           variant={h.completed ? "success" : "growth"}
-          onClick={() => onToggle(h.id)}
+          onClick={() => onCheckIn(h)}
           className="min-w-[120px]"
         >
           {h.completed ? (
@@ -132,7 +133,7 @@ export function HabitCard({ habit: h, onToggle, onEdit, onDelete, deleting }: Ha
               <Check className="mr-2 h-4 w-4" /> Done Today
             </>
           ) : (
-            <>Mark Complete</>
+            <>Check In</>
           )}
         </Button>
       </div>
