@@ -41,6 +41,7 @@ export default function HabitsPage() {
   // Check-in modal state
   const [checkInHabit, setCheckInHabit] = useState<Habit | undefined>();
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  const [checkInFeedback, setCheckInFeedback] = useState<string | undefined>();
 
   // Filters
   const { categoryFilter, setCategoryFilter, sortBy, setSortBy, visibleHabits, completionPct } =
@@ -96,11 +97,16 @@ export default function HabitsPage() {
 
   const handleSubmitCheckIn = (data: any) => {
     checkInMutation.mutate(data, {
-      onSuccess: () => {
-        setIsCheckInModalOpen(false);
-        setCheckInHabit(undefined);
+      onSuccess: (response) => {
+        setCheckInFeedback(response.data?.aiFeedback);
       },
     });
+  };
+
+  const handleCloseCheckIn = () => {
+    setIsCheckInModalOpen(false);
+    setCheckInHabit(undefined);
+    setCheckInFeedback(undefined);
   };
 
   // Loading state
@@ -251,6 +257,8 @@ export default function HabitsPage() {
         habit={checkInHabit}
         onSubmit={handleSubmitCheckIn}
         isSubmitting={checkInMutation.isPending}
+        feedback={checkInFeedback}
+        onClearFeedback={() => setCheckInFeedback(undefined)}
       />
     </div>
   );

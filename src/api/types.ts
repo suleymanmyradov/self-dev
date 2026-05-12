@@ -138,6 +138,12 @@ export interface CreateCheckInRequest {
   note?: string;
 }
 
+export interface CreateCheckInResponseData {
+  checkIn: CheckIn;
+  habit: any;
+  aiFeedback?: string;
+}
+
 export interface CheckInsResponse extends ApiResponse<CheckIn[]> {}
 export interface CheckInResponse extends ApiResponse<CheckIn> {}
 

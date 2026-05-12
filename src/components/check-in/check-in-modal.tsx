@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Smile, Meh, Frown, AlertTriangle, Zap, Battery, BatteryLow } from "lucide-react";
+import { Check, X, Smile, Meh, Frown, AlertTriangle, Zap, Battery, BatteryLow, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Habit, CheckInStatus, CheckInMood, CheckInEnergy, CheckInBlocker } from "@/api";
 
@@ -15,6 +15,8 @@ export type CheckInModalProps = {
   habit?: Habit;
   onSubmit: (data: { habitId: string; status: CheckInStatus; mood?: CheckInMood; energy?: CheckInEnergy; blocker?: CheckInBlocker; note?: string }) => void;
   isSubmitting?: boolean;
+  feedback?: string;
+  onClearFeedback?: () => void;
 };
 
 const MOOD_OPTIONS: { value: CheckInMood; label: string; icon: any; color: string }[] = [
@@ -38,7 +40,7 @@ const BLOCKER_OPTIONS: { value: CheckInBlocker; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting }: CheckInModalProps) {
+export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting, feedback, onClearFeedback }: CheckInModalProps) {
   const [status, setStatus] = useState<CheckInStatus | null>(null);
   const [mood, setMood] = useState<CheckInMood | null>(null);
   const [energy, setEnergy] = useState<CheckInEnergy | null>(null);
@@ -48,11 +50,11 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
 
   const handleSubmit = () => {
     if (!habit || !status) return;
-    
-    const finalBlocker: CheckInBlocker | undefined = blocker === 'other' && otherBlocker.trim() 
-      ? (otherBlocker.trim() as CheckInBlocker) 
+
+    const finalBlocker: CheckInBlocker | undefined = blocker === 'other' && otherBlocker.trim()
+      ? (otherBlocker.trim() as CheckInBlocker)
       : (blocker ?? undefined);
-    
+
     onSubmit({
       habitId: habit.id,
       status,
@@ -79,6 +81,7 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       resetForm();
+      onClearFeedback?.();
     }
     onOpenChange(newOpen);
   };
@@ -98,7 +101,27 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
           </div>
         )}
 
-        {!status ? (
+        {feedback ? (
+          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
+            <div className="flex items-center gap-2 text-growth">
+              <Sparkles className="h-5 w-5" />
+              <span className="text-sm font-semibold">Coach says</span>
+            </div>
+            <div className="rounded-xl bg-growth-soft/40 p-4 text-sm leading-relaxed text-foreground">
+              {feedback}
+            </div>
+            <Button
+              variant="growth"
+              onClick={() => {
+                onClearFeedback?.();
+                onOpenChange(false);
+              }}
+              className="w-full"
+            >
+              Done
+            </Button>
+          </div>
+        ) : !status ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">How did it go today?</p>
             <div className="grid grid-cols-2 gap-3">

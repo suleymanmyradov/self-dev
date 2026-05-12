@@ -1,5 +1,5 @@
 import api from './client';
-import type { CheckIn, CreateCheckInRequest, PageParams, ApiResponse } from './types';
+import type { CheckIn, CreateCheckInRequest, CreateCheckInResponseData, PageParams, ApiResponse } from './types';
 
 const ENDPOINTS = {
   CHECK_INS: '/check-ins',
@@ -7,7 +7,7 @@ const ENDPOINTS = {
   HISTORY: '/check-ins/history',
 };
 
-export async function createCheckIn(data: CreateCheckInRequest): Promise<ApiResponse<{ checkIn: CheckIn; habit: any }>> {
+export async function createCheckIn(data: CreateCheckInRequest): Promise<ApiResponse<CreateCheckInResponseData>> {
   return api.post(ENDPOINTS.CHECK_INS, data);
 }
 
