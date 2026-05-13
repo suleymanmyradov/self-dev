@@ -10,12 +10,14 @@ import { ActivityItem, ActivityEmptyState, ActivityFilterBar } from "@/component
 import type { ActivityType } from "@/api";
 
 export default function ActivityPage() {
-  const [filter, setFilter] = useState<ActivityType | 'all'>('all');
+  const [filter, setFilter] = useState<ActivityType | 'all' | 'check_in'>('all');
   const { data: activities, isLoading, isError, error, refetch, isRefetching } = useActivities();
 
   const filteredActivities = filter === 'all'
     ? activities || []
-    : (activities || []).filter(a => a.type === filter);
+    : filter === 'check_in'
+      ? (activities || []).filter(a => a.type === 'check_in_completed' || a.type === 'check_in_missed')
+      : (activities || []).filter(a => a.type === filter);
 
   return (
     <div className="h-full flex flex-col">

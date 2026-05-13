@@ -237,11 +237,33 @@ export interface ListArticlesParams extends PageParams {
   category?: string;
 }
 
+export interface LikeArticleRequest {
+  id: string;
+}
+
+export interface LikeArticleResponse {
+  success: boolean;
+  newLikeCount: number;
+}
+
+export interface ShareArticleRequest {
+  id: string;
+  platform: string;
+}
+
+export interface ShareArticleResponse {
+  success: boolean;
+}
+
+export interface GetAuthorArticlesParams extends PageParams {
+  authorId: string;
+}
+
 // ============================================
 // Activity Types
 // ============================================
 
-export type ActivityType = 'habit_completed' | 'goal_created' | 'goal_completed' | 'article_saved';
+export type ActivityType = 'habit_completed' | 'goal_created' | 'goal_completed' | 'article_saved' | 'check_in_completed' | 'check_in_missed';
 
 export interface Activity {
   id: string;

@@ -1,4 +1,4 @@
-import { CheckCircle, Target, Bookmark } from "lucide-react";
+import { CheckCircle, Target, Bookmark, ClipboardCheck, ClipboardX } from "lucide-react";
 import { formatRelativeTime } from "@/lib/time-format";
 import type { Activity, ActivityType } from "@/api";
 
@@ -7,6 +7,8 @@ const ACTIVITY_ICONS: Record<ActivityType, React.ReactNode> = {
   goal_created: <Target className="h-4 w-4 text-blue-500" />,
   goal_completed: <CheckCircle className="h-4 w-4 text-green-500" />,
   article_saved: <Bookmark className="h-4 w-4 text-purple-500" />,
+  check_in_completed: <ClipboardCheck className="h-4 w-4 text-emerald-500" />,
+  check_in_missed: <ClipboardX className="h-4 w-4 text-orange-500" />,
 };
 
 interface ActivityItemProps {

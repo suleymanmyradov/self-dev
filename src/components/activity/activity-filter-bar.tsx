@@ -1,16 +1,17 @@
 import { Button } from "@/components/ui/button";
 import type { ActivityType } from "@/api";
 
-const ACTIVITY_FILTERS: { label: string; value: ActivityType | 'all' }[] = [
+const ACTIVITY_FILTERS: { label: string; value: ActivityType | 'all' | 'check_in' }[] = [
   { label: 'All', value: 'all' },
+  { label: 'Check-ins', value: 'check_in' },
   { label: 'Habits', value: 'habit_completed' },
   { label: 'Goals', value: 'goal_created' },
   { label: 'Articles', value: 'article_saved' },
 ];
 
 interface ActivityFilterBarProps {
-  filter: ActivityType | 'all';
-  onFilterChange: (filter: ActivityType | 'all') => void;
+  filter: ActivityType | 'all' | 'check_in';
+  onFilterChange: (filter: ActivityType | 'all' | 'check_in') => void;
 }
 
 export function ActivityFilterBar({ filter, onFilterChange }: ActivityFilterBarProps) {

@@ -4,6 +4,7 @@ import { Separator } from "@/components/ui/separator";
 import { Calendar } from "lucide-react";
 import { getArticle } from "@/api";
 import { formatRelativeTime } from "@/lib/time-format";
+import ArticleSaveButton from "./article-save-button";
 
 // =============================================================================
 // Helpers
@@ -43,9 +44,12 @@ export default async function ArticlePage({
       )}
 
       {/* Title */}
-      <h1 className="text-3xl font-bold leading-tight tracking-tight">
-        {article.title}
-      </h1>
+      <div className="flex items-start justify-between gap-4">
+        <h1 className="text-3xl font-bold leading-tight tracking-tight">
+          {article.title}
+        </h1>
+        <ArticleSaveButton articleId={article.id} />
+      </div>
 
       {/* Meta */}
       <div className="mt-3 flex items-center gap-2 text-sm text-muted-foreground">

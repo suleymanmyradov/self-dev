@@ -53,6 +53,11 @@ export type {
   ArticlesResponse,
   ArticleResponse,
   ListArticlesParams,
+  LikeArticleRequest,
+  LikeArticleResponse,
+  ShareArticleRequest,
+  ShareArticleResponse,
+  GetAuthorArticlesParams,
   
   // Activity Types
   ActivityType,
@@ -149,7 +154,7 @@ export { listCategories } from './categories';
 export type { Category, CategoriesResponse, EntityType } from './types';
 
 // Articles API
-export { listArticles, getArticle } from './articles';
+export { listArticles, getArticle, likeArticle, shareArticle, getAuthorArticles } from './articles';
 
 // Activities API
 export { listActivities } from './activities';
