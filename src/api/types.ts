@@ -378,7 +378,7 @@ export interface SettingsResponse extends ApiResponse<Settings> {}
 // Notification Types
 // ============================================
 
-export type NotificationType = 'habit_reminder' | 'goal_deadline' | 'achievement' | 'system';
+export type NotificationType = 'habit_reminder' | 'goal_deadline' | 'achievement' | 'system' | 'missed_check_in' | 'weekly_review' | 'encouragement' | 'ai_feedback';
 
 export interface Notification {
   id: string;

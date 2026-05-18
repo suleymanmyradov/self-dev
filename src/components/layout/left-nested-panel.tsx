@@ -6,7 +6,8 @@ import { useUI } from "@/store/uiStore"
 import { useNotifications, useConversations, useMarkAllNotificationsRead } from "@/hooks"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { X, MessageSquare, Bell, CheckCheck } from "lucide-react"
+import { X, MessageSquare, Bell, CheckCheck, Target, CalendarCheck, Trophy, AlertCircle, Sparkles, Info } from "lucide-react"
+import type { NotificationType } from "@/api"
 
 export function LeftNestedPanel() {
   const { isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUI()
@@ -98,6 +99,29 @@ function MessagesList() {
   )
 }
 
+const typeIcon: Record<NotificationType, any> = {
+  habit_reminder: Target,
+  goal_deadline: CalendarCheck,
+  achievement: Trophy,
+  system: Info,
+  missed_check_in: AlertCircle,
+  weekly_review: CalendarCheck,
+  encouragement: Sparkles,
+  ai_feedback: Sparkles,
+}
+
+function relativeTime(dateStr: string): string {
+  const diff = Date.now() - new Date(dateStr).getTime()
+  const mins = Math.floor(diff / 60_000)
+  if (mins < 1) return "just now"
+  if (mins < 60) return `${mins}m ago`
+  const hrs = Math.floor(mins / 60)
+  if (hrs < 24) return `${hrs}h ago`
+  const days = Math.floor(hrs / 24)
+  if (days < 7) return `${days}d ago`
+  return new Date(dateStr).toLocaleDateString()
+}
+
 function NotificationsList() {
   const { data: notifications = [], isLoading } = useNotifications({ page: 1, limit: 20 })
   const markAllRead = useMarkAllNotificationsRead()
@@ -140,21 +164,27 @@ function NotificationsList() {
         </div>
       )}
       <div className="space-y-1">
-        {notifications.map((n) => (
-          <div
-            key={n.id}
-            className={cn(
-              "rounded-md p-3 text-sm hover:bg-accent",
-              !n.read && "bg-accent/50"
-            )}
-          >
-            <div className="font-medium">{n.title}</div>
-            <div className="text-xs text-muted-foreground mt-1">{n.message}</div>
-            <div className="text-xs text-muted-foreground mt-1">
-              {new Date(n.createdAt).toLocaleDateString()}
+        {notifications.map((n) => {
+          const Icon = typeIcon[n.type] ?? Bell
+          return (
+            <div
+              key={n.id}
+              className={cn(
+                "flex gap-3 rounded-md p-3 text-sm hover:bg-accent",
+                !n.read && "bg-accent/50"
+              )}
+            >
+              <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
+              <div className="min-w-0 flex-1">
+                <div className="font-medium">{n.title}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{n.message}</div>
+                <div className="text-xs text-muted-foreground/60 mt-1">
+                  {relativeTime(n.createdAt)}
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          )
+        })}
       </div>
     </div>
   )

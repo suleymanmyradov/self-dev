@@ -10,6 +10,6 @@ export { useToggleState } from './use-toggle-state';
 export { useSavedItems, useSaveItem, useRemoveSavedItem } from './use-saved';
 export { useConversations, useConversation, useMessages, useStartConversation, useSendMessage } from './use-conversations';
 export { useSearch } from './use-search';
-export { useNotifications, useMarkNotificationRead, useMarkAllNotificationsRead } from './use-notifications';
+export { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead } from './use-notifications';
 export { useSettings, useUpdateSettings } from './use-settings';
 export { useTodayCheckIns, useCreateCheckIn } from './use-check-ins';

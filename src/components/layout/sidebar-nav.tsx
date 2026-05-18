@@ -7,6 +7,7 @@ import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUI } from '@/store/uiStore';
+import { useUnreadCount } from '@/hooks';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
   Leaf,
@@ -36,6 +37,7 @@ const panelItems: { panel: "notifications"; label: string; icon: LucideIcon }[] 
 export function SidebarNav() {
   const pathname = usePathname();
   const { isSidebarCollapsed, openLeftPanel, isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUI();
+  const { data: unreadCount = 0 } = useUnreadCount();
 
   const handlePanelClick = (panel: "notifications") => {
     if (isLeftPanelOpen && leftPanelType === panel) {
@@ -92,14 +94,20 @@ export function SidebarNav() {
 
           {/* Panel toggles */}
           {panelItems.map((item) => (
-            <NavButton
-              key={item.panel}
-              label={item.label}
-              icon={item.icon}
-              isActive={isLeftPanelOpen && leftPanelType === item.panel}
-              isCollapsed={isSidebarCollapsed}
-              onClick={() => handlePanelClick(item.panel)}
-            />
+            <div key={item.panel} className="relative">
+              <NavButton
+                label={item.label}
+                icon={item.icon}
+                isActive={isLeftPanelOpen && leftPanelType === item.panel}
+                isCollapsed={isSidebarCollapsed}
+                onClick={() => handlePanelClick(item.panel)}
+              />
+              {unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-red-500 px-1 text-[10px] font-bold text-white">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </div>
           ))}
 
           <div className="mt-auto flex flex-col items-center gap-2 pt-4">

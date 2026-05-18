@@ -14,6 +14,23 @@ export function useNotifications(params: PageParams = { page: 1, limit: 20 }) {
 }
 
 /**
+ * Hook to fetch unread notification count (lightweight polling).
+ */
+export function useUnreadCount() {
+  return useQuery({
+    queryKey: ['notifications', 'unread'],
+    queryFn: async () => {
+      const data = await listNotifications({ page: 1, limit: 1 });
+      // The API doesn't have a dedicated unread-count endpoint yet,
+      // so we derive it from the first page of notifications.
+      return (data.data ?? []).filter((n) => !n.read).length;
+    },
+    refetchInterval: 60_000,
+    staleTime: 30_000,
+  });
+}
+
+/**
  * Hook to mark a notification as read
  */
 export function useMarkNotificationRead() {
