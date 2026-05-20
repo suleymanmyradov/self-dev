@@ -2,11 +2,16 @@
 
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
+import Link from 'next/link';
 import { ArticleCardGrid } from '@/components/home/article-card-grid';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { CheckCircle2, CircleDashed, ArrowRight } from 'lucide-react';
 import { useFeedFilter } from '@/store/feed-filter';
 import type { FeedFilter } from '@/store/feed-filter';
 import { listCategories, listArticles } from '@/api';
+import { useHabits, useTodayCheckIns } from '@/hooks';
 
 const TAB_TRIGGER_CLASS =
   'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold';
@@ -21,6 +26,18 @@ const DEFAULT_CATEGORIES: { value: FeedFilter; label: string }[] = [
 
 export function HomeClient() {
   const { filter, setFilter } = useFeedFilter();
+
+  // Fetch habits and check-ins for today's widget
+  const { data: habits = [] } = useHabits({ page: 1, limit: 100 });
+  const { data: todayCheckIns = [] } = useTodayCheckIns();
+
+  const checkInStats = useMemo(() => {
+    if (habits.length === 0) return null;
+    const checkedHabitIds = new Set(todayCheckIns.map((ci) => ci.habitId));
+    const checkedCount = habits.filter((h) => checkedHabitIds.has(h.id)).length;
+    const remainingCount = habits.length - checkedCount;
+    return { checkedCount, remainingCount, total: habits.length, allChecked: remainingCount === 0 };
+  }, [habits, todayCheckIns]);
 
   // Fetch categories with TanStack Query
   const { data: categoriesData } = useQuery({
@@ -61,6 +78,46 @@ export function HomeClient() {
 
       <div className="relative flex-1 overflow-y-auto no-scrollbar">
         <div className="w-full px-6 lg:px-10 pb-10">
+          {/* Today's Check-in Widget */}
+          {checkInStats && !checkInStats.allChecked && (
+            <div className="mb-6 card-elevated rounded-xl p-4">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-3">
+                  <CircleDashed className="h-5 w-5 text-muted-foreground" />
+                  <div>
+                    <p className="text-sm font-medium">Today's Check-in</p>
+                    <p className="text-xs text-muted-foreground">
+                      {checkInStats.remainingCount} habit{checkInStats.remainingCount === 1 ? '' : 's'} left
+                    </p>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <Badge variant="outline" className="text-xs">
+                    {checkInStats.checkedCount}/{checkInStats.total}
+                  </Badge>
+                  <Button variant="ghost" size="sm" asChild>
+                    <Link href="/habits" className="flex items-center gap-1">
+                      Check In <ArrowRight className="h-3 w-3" />
+                    </Link>
+                  </Button>
+                </div>
+              </div>
+            </div>
+          )}
+          {checkInStats?.allChecked && (
+            <div className="mb-6 card-elevated rounded-xl p-4 bg-growth/5 border-growth/20">
+              <div className="flex items-center gap-3">
+                <CheckCircle2 className="h-5 w-5 text-growth" />
+                <div>
+                  <p className="text-sm font-medium text-growth">All habits checked in today!</p>
+                  <p className="text-xs text-muted-foreground">
+                    {checkInStats.checkedCount}/{checkInStats.total} completed
+                  </p>
+                </div>
+              </div>
+            </div>
+          )}
+
           <Tabs
             value={filter}
             onValueChange={(v) => setFilter(v as FeedFilter)}

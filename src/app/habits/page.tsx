@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 import { HabitCard } from "@/components/habits/habit-card";
 import { HabitFormDialog } from "@/components/habits/habit-form-dialog";
 import { CheckInModal } from "@/components/check-in/check-in-modal";
+import { CheckInBanner } from "@/components/check-in/check-in-banner";
 import type { Habit } from "@/api";
 import {
   useHabits,
@@ -142,6 +143,16 @@ export default function HabitsPage() {
             </div>
           </header>
 
+          {/* Check-In Banner */}
+          <CheckInBanner
+            habits={visibleHabits}
+            onCheckInAll={() => {
+              if (visibleHabits.length > 0) {
+                handleCheckIn(visibleHabits[0]);
+              }
+            }}
+          />
+
           {/* Progress Card */}
           <div className="card-elevated mb-6 rounded-xl p-5">
             <div className="flex items-center justify-between mb-3">
@@ -212,6 +223,27 @@ export default function HabitsPage() {
               />
             ))}
           </section>
+
+          {/* Empty State */}
+          {visibleHabits.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+                <Target className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold">No habits yet</h3>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                Create your first habit to start checking in daily and building consistency.
+              </p>
+              <Button
+                variant="growth"
+                size="sm"
+                className="mt-4"
+                onClick={() => createForm.setOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Create Habit
+              </Button>
+            </div>
+          )}
         </div>
       </div>
 
