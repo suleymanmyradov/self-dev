@@ -18,6 +18,8 @@ const items: Array<
   { type: "item", label: "Settings", href: "/settings" },
   { type: "item", label: "Saved", href: "/saved" },
   { type: "separator" },
+  { type: "item", label: "Weekly Review", href: "/weekly-review" },
+  { type: "separator" },
   { type: "item", label: "Report a problem", href: "/report" },
   { type: "separator" },
   { type: "item", label: "Log out", href: "/logout" },

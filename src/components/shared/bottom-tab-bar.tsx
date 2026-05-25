@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Home, Brain, User, Target, HandFist, Compass } from 'lucide-react';
+import { Home, User, Target, HandFist, Compass } from 'lucide-react';
 
 const tabs = [
   { href: "/", label: "Home", icon: Home },

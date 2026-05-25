@@ -5,28 +5,36 @@ import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Smile, Meh, Frown, AlertTriangle, Zap, Battery, BatteryLow, Sparkles } from "lucide-react";
+import { Check, X, Smile, Meh, Frown, AlertTriangle, Zap, Battery, BatteryLow } from "lucide-react";
+import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 import type { Habit, CheckInStatus, CheckInMood, CheckInEnergy, CheckInBlocker } from "@/api";
+
+export type CheckInSubmitData = {
+  habitId: string;
+  status: CheckInStatus;
+  mood?: CheckInMood;
+  energy?: CheckInEnergy;
+  blocker?: CheckInBlocker;
+  note?: string;
+};
 
 export type CheckInModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   habit?: Habit;
-  onSubmit: (data: { habitId: string; status: CheckInStatus; mood?: CheckInMood; energy?: CheckInEnergy; blocker?: CheckInBlocker; note?: string }) => void;
+  onSubmit: (data: CheckInSubmitData) => void;
   isSubmitting?: boolean;
-  feedback?: string;
-  onClearFeedback?: () => void;
 };
 
-const MOOD_OPTIONS: { value: CheckInMood; label: string; icon: any; color: string }[] = [
+const MOOD_OPTIONS: { value: CheckInMood; label: string; icon: LucideIcon; color: string }[] = [
   { value: 'great', label: 'Great', icon: Smile, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
   { value: 'okay', label: 'Okay', icon: Meh, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
   { value: 'low', label: 'Low', icon: Frown, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
   { value: 'stressed', label: 'Stressed', icon: AlertTriangle, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
 ];
 
-const ENERGY_OPTIONS: { value: CheckInEnergy; label: string; icon: any; color: string }[] = [
+const ENERGY_OPTIONS: { value: CheckInEnergy; label: string; icon: LucideIcon; color: string }[] = [
   { value: 'high', label: 'High', icon: Zap, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
   { value: 'medium', label: 'Medium', icon: Battery, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
   { value: 'low', label: 'Low', icon: BatteryLow, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
@@ -40,7 +48,7 @@ const BLOCKER_OPTIONS: { value: CheckInBlocker; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting, feedback, onClearFeedback }: CheckInModalProps) {
+export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting }: CheckInModalProps) {
   const [status, setStatus] = useState<CheckInStatus | null>(null);
   const [mood, setMood] = useState<CheckInMood | null>(null);
   const [energy, setEnergy] = useState<CheckInEnergy | null>(null);
@@ -51,17 +59,19 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
   const handleSubmit = () => {
     if (!habit || !status) return;
 
-    const finalBlocker: CheckInBlocker | undefined = blocker === 'other' && otherBlocker.trim()
-      ? (otherBlocker.trim() as CheckInBlocker)
-      : (blocker ?? undefined);
+    // When blocker is "other", send the custom text in the note field instead of as the blocker value
+    // This maintains type safety and keeps blocker values constrained to the enum
+    const finalNote = blocker === 'other' && otherBlocker.trim()
+      ? `Blocker: ${otherBlocker.trim()}${note.trim() ? `\n\n${note.trim()}` : ''}`
+      : note.trim();
 
     onSubmit({
       habitId: habit.id,
       status,
       mood: status === 'completed' ? (mood ?? undefined) : undefined,
       energy: status === 'completed' ? (energy ?? undefined) : undefined,
-      blocker: status === 'missed' ? finalBlocker : undefined,
-      note: note.trim() || undefined,
+      blocker: status === 'missed' ? (blocker === 'other' ? 'other' : (blocker ?? undefined)) : undefined,
+      note: finalNote || undefined,
     });
   };
 
@@ -81,7 +91,6 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
   const handleOpenChange = (newOpen: boolean) => {
     if (!newOpen) {
       resetForm();
-      onClearFeedback?.();
     }
     onOpenChange(newOpen);
   };
@@ -101,27 +110,7 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
           </div>
         )}
 
-        {feedback ? (
-          <div className="space-y-4 animate-in fade-in slide-in-from-bottom-2 duration-500">
-            <div className="flex items-center gap-2 text-growth">
-              <Sparkles className="h-5 w-5" />
-              <span className="text-sm font-semibold">Coach says</span>
-            </div>
-            <div className="rounded-xl bg-growth-soft/40 p-4 text-sm leading-relaxed text-foreground">
-              {feedback}
-            </div>
-            <Button
-              variant="growth"
-              onClick={() => {
-                onClearFeedback?.();
-                onOpenChange(false);
-              }}
-              className="w-full"
-            >
-              Done
-            </Button>
-          </div>
-        ) : !status ? (
+        {!status ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">How did it go today?</p>
             <div className="grid grid-cols-2 gap-3">
@@ -203,10 +192,10 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
               <Button variant="outline" onClick={() => setStatus(null)} className="flex-1">
                 Back
               </Button>
-              <Button 
-                variant="growth" 
-                onClick={handleSubmit} 
-                disabled={!mood || !energy || isSubmitting}
+              <Button
+                variant="growth"
+                onClick={handleSubmit}
+                disabled={!canSubmit || isSubmitting}
                 className="flex-1"
               >
                 {isSubmitting ? 'Submitting...' : 'Submit'}

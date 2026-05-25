@@ -1,6 +1,5 @@
 import api from './client';
 import type {
-  Activity,
   ActivityResponse,
   PageParams,
 } from './types';

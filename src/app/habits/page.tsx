@@ -5,12 +5,13 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { toast } from "@/components/ui/sonner";
 import { HABIT_CATEGORIES } from "@/lib/constants";
 import { Plus, RotateCcw, Target, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HabitCard } from "@/components/habits/habit-card";
 import { HabitFormDialog } from "@/components/habits/habit-form-dialog";
-import { CheckInModal } from "@/components/check-in/check-in-modal";
+import { CheckInModal, type CheckInSubmitData } from "@/components/check-in/check-in-modal";
 import { CheckInBanner } from "@/components/check-in/check-in-banner";
 import type { Habit } from "@/api";
 import {
@@ -18,7 +19,6 @@ import {
   useCreateHabit,
   useUpdateHabit,
   useDeleteHabit,
-  useToggleHabit,
   useResetTodayHabits,
   useHabitFilters,
   useHabitForm,
@@ -35,14 +35,12 @@ export default function HabitsPage() {
   const createMutation = useCreateHabit();
   const updateMutation = useUpdateHabit();
   const deleteMutation = useDeleteHabit();
-  const toggleMutation = useToggleHabit();
   const resetMutation = useResetTodayHabits();
   const checkInMutation = useCreateCheckIn();
 
   // Check-in modal state
   const [checkInHabit, setCheckInHabit] = useState<Habit | undefined>();
   const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
-  const [checkInFeedback, setCheckInFeedback] = useState<string | undefined>();
 
   // Filters
   const { categoryFilter, setCategoryFilter, sortBy, setSortBy, visibleHabits, completionPct } =
@@ -96,18 +94,15 @@ export default function HabitsPage() {
     setIsCheckInModalOpen(true);
   };
 
-  const handleSubmitCheckIn = (data: any) => {
+  const handleSubmitCheckIn = (data: CheckInSubmitData) => {
     checkInMutation.mutate(data, {
-      onSuccess: (response) => {
-        setCheckInFeedback(response.data?.aiFeedback);
+      onError: (error: unknown) => {
+        const errorMessage = error instanceof Error && 'response' in error 
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
+          : "Failed to submit check-in";
+        toast.error(errorMessage);
       },
     });
-  };
-
-  const handleCloseCheckIn = () => {
-    setIsCheckInModalOpen(false);
-    setCheckInHabit(undefined);
-    setCheckInFeedback(undefined);
   };
 
   // Loading state
@@ -145,10 +140,10 @@ export default function HabitsPage() {
 
           {/* Check-In Banner */}
           <CheckInBanner
-            habits={visibleHabits}
+            habits={habits}
             onCheckInAll={() => {
-              if (visibleHabits.length > 0) {
-                handleCheckIn(visibleHabits[0]);
+              if (habits.length > 0) {
+                handleCheckIn(habits[0]);
               }
             }}
           />
@@ -158,7 +153,7 @@ export default function HabitsPage() {
             <div className="flex items-center justify-between mb-3">
               <div className="flex items-center gap-2">
                 <Target className="h-4 w-4 text-growth" />
-                <span className="text-sm font-medium">Today's Progress</span>
+                <span className="text-sm font-medium">Today&apos;s Progress</span>
               </div>
               <Badge className={cn(
                 "rounded-full",
@@ -216,7 +211,6 @@ export default function HabitsPage() {
                 key={h.id}
                 habit={h}
                 deleting={deleteConfirm.isDeleting(h.id)}
-                onToggle={(id) => toggleMutation.mutate(id)}
                 onEdit={editForm.openEdit}
                 onDelete={deleteConfirm.confirmDelete}
                 onCheckIn={handleCheckIn}
@@ -289,8 +283,6 @@ export default function HabitsPage() {
         habit={checkInHabit}
         onSubmit={handleSubmitCheckIn}
         isSubmitting={checkInMutation.isPending}
-        feedback={checkInFeedback}
-        onClearFeedback={() => setCheckInFeedback(undefined)}
       />
     </div>
   );

@@ -4,14 +4,15 @@ import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import Link from 'next/link';
 import { ArticleCardGrid } from '@/components/home/article-card-grid';
+import { PlanAdjustmentCard } from '@/components/plan-adjustment-card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, CircleDashed, ArrowRight } from 'lucide-react';
+import { CheckCircle2, CircleDashed, ArrowRight, Lightbulb } from 'lucide-react';
 import { useFeedFilter } from '@/store/feed-filter';
 import type { FeedFilter } from '@/store/feed-filter';
 import { listCategories, listArticles } from '@/api';
-import { useHabits, useTodayCheckIns } from '@/hooks';
+import { useHabits, useTodayCheckIns, usePlanAdjustments } from '@/hooks';
 
 const TAB_TRIGGER_CLASS =
   'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold';
@@ -30,6 +31,9 @@ export function HomeClient() {
   // Fetch habits and check-ins for today's widget
   const { data: habits = [] } = useHabits({ page: 1, limit: 100 });
   const { data: todayCheckIns = [] } = useTodayCheckIns();
+
+  // Fetch plan adjustment suggestions
+  const { suggestions = [], loading: suggestionsLoading, applySuggestion, dismissSuggestion } = usePlanAdjustments();
 
   const checkInStats = useMemo(() => {
     if (habits.length === 0) return null;
@@ -85,7 +89,7 @@ export function HomeClient() {
                 <div className="flex items-center gap-3">
                   <CircleDashed className="h-5 w-5 text-muted-foreground" />
                   <div>
-                    <p className="text-sm font-medium">Today's Check-in</p>
+                    <p className="text-sm font-medium">Today&apos;s Check-in</p>
                     <p className="text-xs text-muted-foreground">
                       {checkInStats.remainingCount} habit{checkInStats.remainingCount === 1 ? '' : 's'} left
                     </p>
@@ -114,6 +118,27 @@ export function HomeClient() {
                     {checkInStats.checkedCount}/{checkInStats.total} completed
                   </p>
                 </div>
+              </div>
+            </div>
+          )}
+
+          {/* Plan Adjustment Suggestions */}
+          {suggestions.length > 0 && !suggestionsLoading && (
+            <div className="mb-6">
+              <div className="flex items-center gap-2 mb-3">
+                <Lightbulb className="h-4 w-4 text-amber-500" />
+                <h3 className="text-sm font-medium">Suggestions for you</h3>
+              </div>
+              <div className="space-y-3">
+                {suggestions.slice(0, 2).map((suggestion) => (
+                  <PlanAdjustmentCard
+                    key={suggestion.id}
+                    suggestion={suggestion}
+                    onAccept={() => applySuggestion(suggestion.id)}
+                    onDismiss={() => dismissSuggestion(suggestion.id)}
+                    loading={suggestionsLoading}
+                  />
+                ))}
               </div>
             </div>
           )}

@@ -3,9 +3,7 @@ import { getAccessTokenFromStore } from '@/store/auth';
 import type {
   LoginRequest,
   RegisterRequest,
-  RefreshRequest,
   AuthResponse,
-  Profile,
   UpdateProfileRequest,
   ProfileResponse,
 } from './types';

@@ -13,3 +13,12 @@ export { useSearch } from './use-search';
 export { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead } from './use-notifications';
 export { useSettings, useUpdateSettings } from './use-settings';
 export { useTodayCheckIns, useCreateCheckIn } from './use-check-ins';
+export {
+  useCurrentWeeklyReview,
+  useWeeklyReview,
+  useWeeklyReviews,
+  useGenerateWeeklyReview,
+} from './use-weekly-reviews';
+export { useCoachingProfile } from './use-coaching-profile';
+export { usePersonalization } from './use-personalization';
+export { usePlanAdjustments } from './use-plan-adjustments';

@@ -9,7 +9,6 @@ import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/constants";
 import { useToggleState } from "@/hooks/use-toggle-state";
 import { Heart, Share2, Bookmark, ArrowUpRight } from "lucide-react";
-import { formatRelativeTime } from "@/lib/time-format";
 
 export type ArticleCardProps = {
   id?: string;

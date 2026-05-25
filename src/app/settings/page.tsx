@@ -10,8 +10,8 @@ import { toast } from "@/components/ui/sonner";
 import { FormField } from "@/components/form-field";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser, updateProfile } from "@/api";
-import { useSettings, useUpdateSettings } from "@/hooks";
-import type { Profile, UpdateProfileRequest } from "@/api";
+import { useSettings, useUpdateSettings, useCoachingProfile } from "@/hooks";
+import type { Profile, UpdateProfileRequest, AccountabilityStyle, PreferredTone, DifficultyPreference } from "@/api";
 
 const accountSchema = z.object({
   username: z
@@ -28,6 +28,7 @@ export default function SettingsPage() {
   const queryClient = useQueryClient();
   const { data: settings, isLoading: settingsLoading } = useSettings();
   const updateSettings = useUpdateSettings();
+  const { profile: coachingProfile, updatePreferences, loading: coachingLoading } = useCoachingProfile();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [profileLoading, setProfileLoading] = useState(true);
   const [formData, setFormData] = useState<AccountFormData>({
@@ -107,6 +108,22 @@ export default function SettingsPage() {
       toast.success(`${key.replace(/([A-Z])/g, " $1").trim()} updated`);
     } catch {
       toast.error("Failed to update setting");
+    }
+  };
+
+  const handleCoachingPreferenceChange = async (
+    field: "accountabilityStyle" | "preferredTone" | "difficultyPreference",
+    value: AccountabilityStyle | PreferredTone | DifficultyPreference
+  ) => {
+    try {
+      await updatePreferences({
+        accountabilityStyle: field === "accountabilityStyle" ? value as AccountabilityStyle : coachingProfile?.accountabilityStyle || "balanced",
+        preferredTone: field === "preferredTone" ? value as PreferredTone : coachingProfile?.preferredTone || "supportive",
+        difficultyPreference: field === "difficultyPreference" ? value as DifficultyPreference : coachingProfile?.difficultyPreference || "adaptive",
+      });
+      toast.success("Coaching preferences updated");
+    } catch {
+      toast.error("Failed to update coaching preferences");
     }
   };
 
@@ -210,6 +227,70 @@ export default function SettingsPage() {
                       onCheckedChange={(v: boolean) => handleSettingToggle("goalReminders", v)}
                       disabled={updateSettings.isPending}
                     />
+                  </div>
+                </>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>AI Coaching Preferences</CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-6">
+              {coachingLoading ? (
+                <p className="text-sm text-muted-foreground">Loading coaching preferences...</p>
+              ) : (
+                <>
+                  <div>
+                    <span className="text-sm font-medium">Accountability Style</span>
+                    <p className="text-xs text-muted-foreground mb-3">How strict should your AI coach be?</p>
+                    <div className="flex gap-2">
+                      {(["gentle", "balanced", "strict"] as AccountabilityStyle[]).map((style) => (
+                        <Button
+                          key={style}
+                          variant={coachingProfile?.accountabilityStyle === style ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleCoachingPreferenceChange("accountabilityStyle", style)}
+                        >
+                          {style.charAt(0).toUpperCase() + style.slice(1)}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <Separator />
+                  <div>
+                    <span className="text-sm font-medium">Communication Tone</span>
+                    <p className="text-xs text-muted-foreground mb-3">How should your AI coach communicate with you?</p>
+                    <div className="flex flex-wrap gap-2">
+                      {(["supportive", "direct", "warm", "practical", "challenging"] as PreferredTone[]).map((tone) => (
+                        <Button
+                          key={tone}
+                          variant={coachingProfile?.preferredTone === tone ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleCoachingPreferenceChange("preferredTone", tone)}
+                        >
+                          {tone.charAt(0).toUpperCase() + tone.slice(1)}
+                        </Button>
+                      ))}
+                    </div>
+                  </div>
+                  <Separator />
+                  <div>
+                    <span className="text-sm font-medium">Difficulty Preference</span>
+                    <p className="text-xs text-muted-foreground mb-3">How challenging should your goals and habits be?</p>
+                    <div className="flex gap-2">
+                      {(["easy", "adaptive", "ambitious"] as DifficultyPreference[]).map((difficulty) => (
+                        <Button
+                          key={difficulty}
+                          variant={coachingProfile?.difficultyPreference === difficulty ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => handleCoachingPreferenceChange("difficultyPreference", difficulty)}
+                        >
+                          {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
+                        </Button>
+                      ))}
+                    </div>
                   </div>
                 </>
               )}

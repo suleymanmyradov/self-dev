@@ -1,11 +1,8 @@
 import api from './client';
 import type {
-  Conversation,
-  ConversationDetail,
   Message,
   ConversationsResponse,
   ConversationResponse,
-  ConversationDetailResponse,
   MessagesResponse,
   StartConversationRequest,
   SendMessageRequest,

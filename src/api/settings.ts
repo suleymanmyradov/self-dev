@@ -1,6 +1,5 @@
 import api from './client';
 import type {
-  Settings,
   SettingsResponse,
   UpdateSettingsRequest,
 } from './types';

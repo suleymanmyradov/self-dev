@@ -3,9 +3,7 @@ import type {
   ArticlesResponse,
   ArticleResponse,
   ListArticlesParams,
-  LikeArticleRequest,
   LikeArticleResponse,
-  ShareArticleRequest,
   ShareArticleResponse,
   GetAuthorArticlesParams,
 } from './types';

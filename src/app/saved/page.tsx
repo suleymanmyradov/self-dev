@@ -8,7 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
 import Link from "next/link";
-import { Bookmark, FileText, Target, Repeat, Trash2 } from "lucide-react";
+import { FileText, Target, Repeat, Trash2 } from "lucide-react";
 import { useSavedItems, useRemoveSavedItem } from "@/hooks";
 import { getArticle, getHabit, getGoal } from "@/api";
 

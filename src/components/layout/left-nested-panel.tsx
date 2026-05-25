@@ -7,23 +7,52 @@ import { useNotifications, useConversations, useMarkAllNotificationsRead } from 
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { X, MessageSquare, Bell, CheckCheck, Target, CalendarCheck, Trophy, AlertCircle, Sparkles, Info } from "lucide-react"
+import type { LucideIcon } from "lucide-react"
 import type { NotificationType } from "@/api"
+
+const typeIcon: Record<NotificationType, LucideIcon> = {
+  habit_reminder: Target,
+  goal_deadline: CalendarCheck,
+  achievement: Trophy,
+  system: Info,
+  missed_check_in: AlertCircle,
+  weekly_review: CalendarCheck,
+  encouragement: Sparkles,
+  ai_feedback: Sparkles,
+}
 
 export function LeftNestedPanel() {
   const { isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUI()
   const [shouldRender, setShouldRender] = React.useState(false)
   const [show, setShow] = React.useState(false)
+  const animationFrameId = React.useRef<number>()
+  const timeoutId = React.useRef<NodeJS.Timeout>()
 
   React.useEffect(() => {
     if (isLeftPanelOpen) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setShouldRender(true)
-      const id = requestAnimationFrame(() => setShow(true))
-      return () => cancelAnimationFrame(id)
+      animationFrameId.current = requestAnimationFrame(() => {
+        setShow(true)
+      })
+      return () => {
+        if (animationFrameId.current) {
+          cancelAnimationFrame(animationFrameId.current)
+        }
+      }
     } else {
       setShow(false)
-      const t = setTimeout(() => setShouldRender(false), 200)
-      return () => clearTimeout(t)
+      timeoutId.current = setTimeout(() => {
+        // eslint-disable-next-line react-hooks/set-state-in-effect
+        setShouldRender(false)
+      }, 200)
+      return () => {
+        if (timeoutId.current) {
+          clearTimeout(timeoutId.current)
+        }
+      }
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isLeftPanelOpen])
 
   if (!shouldRender) return null
@@ -99,17 +128,6 @@ function MessagesList() {
   )
 }
 
-const typeIcon: Record<NotificationType, any> = {
-  habit_reminder: Target,
-  goal_deadline: CalendarCheck,
-  achievement: Trophy,
-  system: Info,
-  missed_check_in: AlertCircle,
-  weekly_review: CalendarCheck,
-  encouragement: Sparkles,
-  ai_feedback: Sparkles,
-}
-
 function relativeTime(dateStr: string): string {
   const diff = Date.now() - new Date(dateStr).getTime()
   const mins = Math.floor(diff / 60_000)
@@ -125,6 +143,7 @@ function relativeTime(dateStr: string): string {
 function NotificationsList() {
   const { data: notifications = [], isLoading } = useNotifications({ page: 1, limit: 20 })
   const markAllRead = useMarkAllNotificationsRead()
+  const { closeLeftPanel } = useUI()
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0
 
@@ -141,7 +160,7 @@ function NotificationsList() {
       <div className="p-4 text-sm text-muted-foreground flex flex-col items-center gap-3">
         <Bell className="h-8 w-8 opacity-50" />
         <p>No notifications yet.</p>
-        <p className="text-xs">We'll notify you of important updates.</p>
+        <p className="text-xs">We&apos;ll notify you of important updates.</p>
       </div>
     )
   }
@@ -166,14 +185,8 @@ function NotificationsList() {
       <div className="space-y-1">
         {notifications.map((n) => {
           const Icon = typeIcon[n.type] ?? Bell
-          return (
-            <div
-              key={n.id}
-              className={cn(
-                "flex gap-3 rounded-md p-3 text-sm hover:bg-accent",
-                !n.read && "bg-accent/50"
-              )}
-            >
+          const content = (
+            <>
               <Icon className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
               <div className="min-w-0 flex-1">
                 <div className="font-medium">{n.title}</div>
@@ -182,6 +195,34 @@ function NotificationsList() {
                   {relativeTime(n.createdAt)}
                 </div>
               </div>
+            </>
+          )
+
+          if (n.type === 'weekly_review') {
+            return (
+              <Link
+                key={n.id}
+                href="/weekly-review"
+                onClick={closeLeftPanel}
+                className={cn(
+                  "flex gap-3 rounded-md p-3 text-sm hover:bg-accent",
+                  !n.read && "bg-accent/50"
+                )}
+              >
+                {content}
+              </Link>
+            )
+          }
+
+          return (
+            <div
+              key={n.id}
+              className={cn(
+                "flex gap-3 rounded-md p-3 text-sm hover:bg-accent",
+                !n.read && "bg-accent/50"
+              )}
+            >
+              {content}
             </div>
           )
         })}

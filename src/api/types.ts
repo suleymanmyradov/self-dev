@@ -24,7 +24,7 @@ export interface ApiResponse<T> {
   page?: PageResponse;
 }
 
-export interface EmptyResponse {}
+export type EmptyResponse = Record<string, never>;
 
 // ============================================
 // Goal Types
@@ -70,7 +70,7 @@ export interface GoalsResponse extends ApiResponse<Goal[]> {
   page: PageResponse;
 }
 
-export interface GoalResponse extends ApiResponse<Goal> {}
+export type GoalResponse = ApiResponse<Goal>;
 
 // ============================================
 // Habit Types
@@ -106,7 +106,7 @@ export interface HabitsResponse extends ApiResponse<Habit[]> {
   page: PageResponse;
 }
 
-export interface HabitResponse extends ApiResponse<Habit> {}
+export type HabitResponse = ApiResponse<Habit>;
 
 // ============================================
 // Check-In Types
@@ -140,12 +140,12 @@ export interface CreateCheckInRequest {
 
 export interface CreateCheckInResponseData {
   checkIn: CheckIn;
-  habit: any;
+  habit: Habit;
   aiFeedback?: string;
 }
 
-export interface CheckInsResponse extends ApiResponse<CheckIn[]> {}
-export interface CheckInResponse extends ApiResponse<CheckIn> {}
+export type CheckInsResponse = ApiResponse<CheckIn[]>;
+export type CheckInResponse = ApiResponse<CheckIn>;
 
 // ============================================
 // Auth Types
@@ -201,7 +201,7 @@ export interface UpdateProfileRequest {
   avatarUrl?: string;
 }
 
-export interface ProfileResponse extends ApiResponse<Profile> {}
+export type ProfileResponse = ApiResponse<Profile>;
 
 // ============================================
 // Article Types
@@ -231,7 +231,7 @@ export interface ArticlesResponse extends ApiResponse<Article[]> {
   page: PageResponse;
 }
 
-export interface ArticleResponse extends ApiResponse<Article> {}
+export type ArticleResponse = ApiResponse<Article>;
 
 export interface ListArticlesParams extends PageParams {
   category?: string;
@@ -263,7 +263,7 @@ export interface GetAuthorArticlesParams extends PageParams {
 // Activity Types
 // ============================================
 
-export type ActivityType = 'habit_completed' | 'goal_created' | 'goal_completed' | 'article_saved' | 'check_in_completed' | 'check_in_missed';
+export type ActivityType = 'habit_completed' | 'goal_created' | 'goal_completed' | 'article_saved' | 'check_in_completed' | 'check_in_missed' | 'weekly_review_generated';
 
 export interface Activity {
   id: string;
@@ -322,15 +322,15 @@ export interface ConversationsResponse extends ApiResponse<Conversation[]> {
   page: PageResponse;
 }
 
-export interface ConversationResponse extends ApiResponse<Conversation> {}
+export type ConversationResponse = ApiResponse<Conversation>;
 
-export interface ConversationDetailResponse extends ApiResponse<ConversationDetail> {}
+export type ConversationDetailResponse = ApiResponse<ConversationDetail>;
 
 export interface MessagesResponse extends ApiResponse<Message[]> {
   page: PageResponse;
 }
 
-export interface MessageResponse extends ApiResponse<Message> {}
+export type MessageResponse = ApiResponse<Message>;
 
 export interface ListConversationsParams extends PageParams {
   type?: ConversationType;
@@ -339,8 +339,6 @@ export interface ListConversationsParams extends PageParams {
 // ============================================
 // Settings Types
 // ============================================
-
-export type AccountabilityStyle = 'gentle' | 'balanced' | 'strict';
 
 export interface Settings {
   id: string;
@@ -351,7 +349,7 @@ export interface Settings {
   pushNotifications: boolean;
   habitReminders: boolean;
   goalReminders: boolean;
-  accountabilityStyle: AccountabilityStyle;
+  accountabilityStyle: 'gentle' | 'balanced' | 'strict';
   checkInTime: string;
   onboardingCompleted: boolean;
   userId: string;
@@ -372,11 +370,65 @@ export interface UpdateSettingsRequest {
   onboardingCompleted?: boolean;
 }
 
-export interface SettingsResponse extends ApiResponse<Settings> {}
+export type SettingsResponse = ApiResponse<Settings>;
 
 // ============================================
 // Notification Types
 // ============================================
+
+export type WeeklyReviewAdjustmentType =
+  | 'keep_same'
+  | 'reduce_difficulty'
+  | 'change_time'
+  | 'clarify_plan'
+  | 'pause_habit';
+
+export interface WeeklyReviewHabitBreakdown {
+  habitId: string;
+  habitName: string;
+  category?: string;
+  totalCheckIns: number;
+  completedCount: number;
+  missedCount: number;
+  completionRate: number;
+  lastCheckInAt?: string;
+}
+
+export interface WeeklyReviewAdjustment {
+  habitId?: string;
+  habitName: string;
+  adjustmentType: WeeklyReviewAdjustmentType;
+  reason: string;
+  suggestion: string;
+}
+
+export interface WeeklyReviewNextWeekPlan {
+  focus: string;
+  commitments: string[];
+  risks: string[];
+  recoveryActions: string[];
+}
+
+export interface WeeklyReview {
+  id: string;
+  userId: string;
+  weekStart: string;
+  weekEnd: string;
+  totalHabits: number;
+  completedCheckIns: number;
+  missedCheckIns: number;
+  completionRate: number;
+  bestDay?: string;
+  hardestDay?: string;
+  topBlocker?: string;
+  moodSummary: Record<string, number>;
+  energySummary: Record<string, number>;
+  habitBreakdown: WeeklyReviewHabitBreakdown[];
+  aiSummary?: string;
+  suggestedAdjustments: WeeklyReviewAdjustment[];
+  nextWeekPlan: WeeklyReviewNextWeekPlan;
+  generatedAt: string;
+}
 
 export type NotificationType = 'habit_reminder' | 'goal_deadline' | 'achievement' | 'system' | 'missed_check_in' | 'weekly_review' | 'encouragement' | 'ai_feedback';
 
@@ -441,7 +493,7 @@ export interface SavedItemsResponse extends ApiResponse<SavedItem[]> {
   page: PageResponse;
 }
 
-export interface SavedItemResponse extends ApiResponse<SavedItem> {}
+export type SavedItemResponse = ApiResponse<SavedItem>;
 
 // ============================================
 // Report Types
@@ -472,4 +524,96 @@ export interface Category {
   updatedAt: string;
 }
 
-export interface CategoriesResponse extends ApiResponse<Category[]> {}
+export type CategoriesResponse = ApiResponse<Category[]>;
+
+// ============================================
+// Personalization Types
+// ============================================
+
+export type AccountabilityStyle = 'gentle' | 'balanced' | 'strict';
+export type PreferredTone = 'supportive' | 'direct' | 'warm' | 'practical' | 'challenging';
+export type DifficultyPreference = 'easy' | 'adaptive' | 'ambitious';
+export type AdjustmentType = 'reduce_difficulty' | 'increase_difficulty' | 'change_time' | 'clarify_plan' | 'pause' | 'keep_same';
+export type SuggestionStatus = 'pending' | 'accepted' | 'dismissed' | 'applied';
+export type SuggestionSource = 'check_in' | 'weekly_review' | 'assistant' | 'pattern_analysis';
+
+export interface CoachingProfile {
+  id: string;
+  userId: string;
+  accountabilityStyle: AccountabilityStyle;
+  preferredTone: PreferredTone;
+  difficultyPreference: DifficultyPreference;
+  primaryMotivation?: string;
+  commonBlockers: string[];
+  coachingNotes: Record<string, unknown>;
+  lastContextRefreshAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PlanAdjustmentSuggestion {
+  id: string;
+  userId: string;
+  goalId?: string;
+  habitId?: string;
+  source: SuggestionSource;
+  adjustmentType: AdjustmentType;
+  reason: string;
+  suggestion: string;
+  status: SuggestionStatus;
+  metadata: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface PersonalizationContext {
+  profile: CoachingProfile;
+  activeGoals: Goal[];
+  activeHabits: Habit[];
+  recentCheckIns: CheckIn[];
+  latestWeeklyReview?: WeeklyReview;
+  pendingSuggestions: PlanAdjustmentSuggestion[];
+  patternInsights: Record<string, string>;
+}
+
+export interface UpdateCoachingProfilePreferencesRequest {
+  accountabilityStyle: AccountabilityStyle;
+  preferredTone: PreferredTone;
+  difficultyPreference: DifficultyPreference;
+}
+
+export interface CreatePlanAdjustmentSuggestionRequest {
+  goalId?: string;
+  habitId?: string;
+  source: SuggestionSource;
+  adjustmentType: AdjustmentType;
+  reason: string;
+  suggestion: string;
+  metadata?: Record<string, unknown>;
+}
+
+export interface UpdatePlanAdjustmentSuggestionStatusRequest {
+  status: SuggestionStatus;
+}
+
+export interface ApplyPlanAdjustmentSuggestionRequest {
+  id: string;
+}
+
+export interface GeneratePersonalizedCoachingRequest {
+  userMessage: string;
+  context?: string;
+}
+
+export interface GeneratePersonalizedCoachingResponse {
+  coachingResponse: string;
+  context?: string;
+}
+
+export type CoachingProfileResponse = ApiResponse<CoachingProfile>;
+export type PersonalizationContextResponse = ApiResponse<PersonalizationContext>;
+export interface PlanAdjustmentSuggestionsResponse extends ApiResponse<PlanAdjustmentSuggestion[]> {
+  total: number;
+}
+export type PlanAdjustmentSuggestionResponse = ApiResponse<PlanAdjustmentSuggestion>;
+export type PersonalizedCoachingResponse = ApiResponse<GeneratePersonalizedCoachingResponse>;

@@ -11,14 +11,13 @@ import { Check, Flame, MoreHorizontal, Pencil, Trash2, Sparkles } from "lucide-r
 
 export type HabitCardProps = {
   habit: Habit;
-  onToggle: (id: string) => void;
   onEdit: (habit: Habit) => void;
   onDelete: (id: string) => void;
   onCheckIn: (habit: Habit) => void;
   deleting?: boolean;
 };
 
-export function HabitCard({ habit: h, onToggle, onEdit, onDelete, onCheckIn, deleting }: HabitCardProps) {
+export function HabitCard({ habit: h, onEdit, onDelete, onCheckIn, deleting }: HabitCardProps) {
   const categoryStyle = CATEGORY_COLORS[h.category] || "bg-secondary text-secondary-foreground border-border";
 
   return (

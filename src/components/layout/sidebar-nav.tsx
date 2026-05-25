@@ -15,14 +15,15 @@ import {
   Brain,
   Compass,
   User,
-  Sparkles,
   HandFist,
   Bell,
+  BarChart3,
 } from 'lucide-react';
 
 const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: "/habits", label: "Habits", icon: Target },
   { href: "/goals", label: "Goals", icon: Brain },
+  { href: "/weekly-review", label: "Weekly Review", icon: BarChart3 },
   { href: "/explore", label: "Explore", icon: Compass },
 ];
 

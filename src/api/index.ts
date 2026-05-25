@@ -85,6 +85,27 @@ export type {
   UpdateSettingsRequest,
   SettingsResponse,
   
+  // Personalization Types
+  PreferredTone,
+  DifficultyPreference,
+  AdjustmentType,
+  SuggestionStatus,
+  SuggestionSource,
+  CoachingProfile,
+  PlanAdjustmentSuggestion,
+  PersonalizationContext,
+  UpdateCoachingProfilePreferencesRequest,
+  CreatePlanAdjustmentSuggestionRequest,
+  UpdatePlanAdjustmentSuggestionStatusRequest,
+  ApplyPlanAdjustmentSuggestionRequest,
+  GeneratePersonalizedCoachingRequest,
+  GeneratePersonalizedCoachingResponse,
+  CoachingProfileResponse,
+  PersonalizationContextResponse,
+  PlanAdjustmentSuggestionsResponse,
+  PlanAdjustmentSuggestionResponse,
+  PersonalizedCoachingResponse,
+  
   // Notification Types
   NotificationType,
   Notification,
@@ -174,8 +195,37 @@ export { listNotifications, markNotificationRead, markAllNotificationsRead } fro
 // Settings API
 export { getSettings, updateSettings } from './settings';
 
+// Personalization API
+export {
+  getCoachingProfile,
+  upsertCoachingProfile,
+  updateCoachingProfilePreferences,
+  getPersonalizationContext,
+  getPendingPlanAdjustmentSuggestions,
+  createPlanAdjustmentSuggestion,
+  updatePlanAdjustmentSuggestionStatus,
+  applyPlanAdjustmentSuggestion,
+  generatePersonalizedCoaching,
+} from './personalization';
+
 // Report API
 export { submitReport } from './report';
+
+// Weekly Reviews API
+export {
+  generateWeeklyReview,
+  getCurrentWeeklyReview,
+  getWeeklyReview,
+  listWeeklyReviews,
+} from './weekly-reviews';
+
+export type {
+  WeeklyReview,
+  WeeklyReviewHabitBreakdown,
+  WeeklyReviewAdjustment,
+  WeeklyReviewNextWeekPlan,
+  WeeklyReviewAdjustmentType,
+} from './types';
 
 // Profile update
 export { updateProfile } from './auth';

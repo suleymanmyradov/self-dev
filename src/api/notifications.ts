@@ -1,6 +1,5 @@
 import api from './client';
 import type {
-  Notification,
   NotificationsResponse,
   PageParams,
 } from './types';
