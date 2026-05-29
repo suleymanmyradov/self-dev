@@ -25,11 +25,16 @@ import {
   useHabitEditForm,
   useConfirmDelete,
   useCreateCheckIn,
+  useEntitlements,
+  useTrackUpgradeEvent,
 } from "@/hooks";
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 
 export default function HabitsPage() {
   // Fetch habits
   const { data: habits = [], isLoading } = useHabits({ page: 1, limit: 100 });
+  const { data: entitlements } = useEntitlements();
+  const trackUpgradeEvent = useTrackUpgradeEvent();
 
   // Mutations
   const createMutation = useCreateHabit();
@@ -37,6 +42,9 @@ export default function HabitsPage() {
   const deleteMutation = useDeleteHabit();
   const resetMutation = useResetTodayHabits();
   const checkInMutation = useCreateCheckIn();
+
+  // Habit limit state
+  const [habitLimitReached, setHabitLimitReached] = useState(false);
 
   // Check-in modal state
   const [checkInHabit, setCheckInHabit] = useState<Habit | undefined>();
@@ -49,13 +57,34 @@ export default function HabitsPage() {
   // Create form
   const createForm = useHabitForm();
   const handleCreate = () => {
+    // Check entitlement before creating
+    if (entitlements && !entitlements.canCreateHabit) {
+      setHabitLimitReached(true);
+      trackUpgradeEvent.mutate({
+        eventType: "prompt_viewed",
+        surface: "habit_create_limit",
+        trigger: "habit_limit",
+        planCode: "pro",
+      });
+      return;
+    }
     const validated = createForm.validate();
     if (validated) {
-      createMutation.mutate({
-        name: validated.name.trim(),
-        description: validated.description.trim(),
-        category: validated.category,
-      });
+      createMutation.mutate(
+        {
+          name: validated.name.trim(),
+          description: validated.description.trim(),
+          category: validated.category,
+        },
+        {
+          onError: (error: unknown) => {
+            const err = error as { data?: { code?: string } };
+            if (err?.data?.code === "plan_limit_reached") {
+              setHabitLimitReached(true);
+            }
+          },
+        }
+      );
       createForm.reset();
     }
   };
@@ -217,6 +246,19 @@ export default function HabitsPage() {
               />
             ))}
           </section>
+
+          {/* Habit limit upgrade prompt */}
+          {habitLimitReached && (
+            <div className="mt-4">
+              <UpgradePrompt
+                surface="habit_create_limit"
+                trigger="habit_limit"
+                title="Unlock unlimited habits"
+                description="You've reached the Free plan habit limit. Upgrade to Pro to build more daily habits."
+                onDismiss={() => setHabitLimitReached(false)}
+              />
+            </div>
+          )}
 
           {/* Empty State */}
           {visibleHabits.length === 0 && (

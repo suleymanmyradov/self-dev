@@ -617,3 +617,97 @@ export interface PlanAdjustmentSuggestionsResponse extends ApiResponse<PlanAdjus
 }
 export type PlanAdjustmentSuggestionResponse = ApiResponse<PlanAdjustmentSuggestion>;
 export type PersonalizedCoachingResponse = ApiResponse<GeneratePersonalizedCoachingResponse>;
+
+// ============================================
+// Billing / Monetization Types
+// ============================================
+
+export interface Plan {
+  id: string;
+  code: 'free' | 'pro';
+  name: string;
+  description?: string;
+  priceMonthlyCents: number;
+  priceAnnualCents: number;
+  /** Note: 0 or undefined means unlimited. Prefer using canCreateGoal/canCreateHabit/etc booleans from Entitlements. */
+  activeGoalLimit?: number;
+  /** Note: 0 or undefined means unlimited. Prefer using canCreateGoal/canCreateHabit/etc booleans from Entitlements. */
+  activeHabitLimit?: number;
+  /** Note: 0 or undefined means unlimited. Prefer using canViewWeeklyReviewHistory boolean from Entitlements. */
+  weeklyReviewHistoryLimit?: number;
+  /** Note: 0 or undefined means unlimited. Prefer using canCreatePlanAdjustment boolean from Entitlements. */
+  planAdjustmentLimit?: number;
+  personalizedAiEnabled: boolean;
+  isActive: boolean;
+}
+
+export interface UserSubscription {
+  id: string;
+  userId: string;
+  planId: string;
+  planCode: 'free' | 'pro';
+  planName: string;
+  status: 'free' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired';
+  billingInterval?: 'monthly' | 'annual';
+  currentPeriodStart?: string;
+  currentPeriodEnd?: string;
+  trialEnd?: string;
+  cancelAtPeriodEnd: boolean;
+  stripeCustomerId?: string;
+  stripeSubscriptionId?: string;
+}
+
+export interface Entitlements {
+  planCode: 'free' | 'pro';
+  status: string;
+  activeGoalLimit?: number;
+  activeHabitLimit?: number;
+  weeklyReviewHistoryLimit?: number;
+  planAdjustmentLimit?: number;
+  personalizedAiEnabled: boolean;
+  canCreateGoal: boolean;
+  canCreateHabit: boolean;
+  canViewWeeklyReviewHistory: boolean;
+  canUsePersonalizedAi: boolean;
+  canCreatePlanAdjustment: boolean;
+  currentActiveGoals: number;
+  currentActiveHabits: number;
+  currentPendingAdjustments: number;
+}
+
+export interface BillingOverview {
+  plans: Plan[];
+  subscription: UserSubscription;
+  entitlements: Entitlements;
+  billingMode: 'disabled' | 'fake_door' | 'stripe_test' | 'stripe_live';
+}
+
+export type UpgradeEventType = 'prompt_viewed' | 'prompt_clicked' | 'prompt_dismissed' | 'checkout_started' | 'checkout_completed' | 'checkout_canceled';
+
+export type UpgradeSurface = 'pricing_page' | 'settings_billing' | 'goal_create_limit' | 'habit_create_limit' | 'weekly_review_history' | 'assistant_personalization' | 'plan_adjustments' | 'weekly_review_value_moment';
+
+export type UpgradeTrigger = 'goal_limit' | 'habit_limit' | 'weekly_history' | 'personalized_ai' | 'plan_adjustments';
+
+export interface UpgradeEventRequest {
+  eventType: UpgradeEventType;
+  surface: UpgradeSurface;
+  trigger?: UpgradeTrigger;
+  planCode?: string;
+  billingInterval?: 'monthly' | 'annual';
+  feedbackReason?: string;
+  feedbackNote?: string;
+  /** JSON-serialized metadata string. The gateway contract expects `metadataJson` as a string field. */
+  metadataJson?: string;
+}
+
+export type BillingOverviewResponse = ApiResponse<BillingOverview>;
+export type UpgradeEventResponse = ApiResponse<{ eventId: string }>;
+export type CheckoutSessionResponse = ApiResponse<{ checkoutUrl: string }>;
+export type PortalSessionResponse = ApiResponse<{ portalUrl: string }>;
+
+export interface PlanLimitError {
+  code: 'plan_limit_reached';
+  message: string;
+  limit: 'active_goals' | 'active_habits' | 'weekly_review_history' | 'plan_adjustments' | 'personalized_ai';
+  upgradeTrigger: UpgradeTrigger;
+}

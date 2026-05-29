@@ -22,3 +22,4 @@ export {
 export { useCoachingProfile } from './use-coaching-profile';
 export { usePersonalization } from './use-personalization';
 export { usePlanAdjustments } from './use-plan-adjustments';
+export { useBillingOverview, useEntitlements, useTrackUpgradeEvent, useCreateCheckoutSession, useCreateCustomerPortalSession } from './use-billing';

@@ -14,10 +14,14 @@ import type { Goal } from "@/api";
 import Link from "next/link";
 import { Plus, Target, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useEntitlements, useTrackUpgradeEvent } from "@/hooks";
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 
 export default function GoalsPage() {
   // Data fetching
   const { data: goals = [], isLoading } = useGoals();
+  const { data: entitlements } = useEntitlements();
+  const trackUpgradeEvent = useTrackUpgradeEvent();
 
   const { data: articlesData } = useQuery({
     queryKey: ["articles", "recommended"],
@@ -47,13 +51,33 @@ export default function GoalsPage() {
   const deleteConfirm = useConfirmDelete<string>();
 
   // Handlers
+  const [goalLimitReached, setGoalLimitReached] = useState(false);
+
   const handleCreate = () => {
+    // Check entitlement before creating
+    if (entitlements && !entitlements.canCreateGoal) {
+      setGoalLimitReached(true);
+      trackUpgradeEvent.mutate({
+        eventType: "prompt_viewed",
+        surface: "goal_create_limit",
+        trigger: "goal_limit",
+        planCode: "pro",
+      });
+      return;
+    }
     const validated = createForm.validate();
     if (!validated) return;
     createMutation.mutate(validated, {
       onSuccess: () => {
         setCreateOpen(false);
         createForm.reset();
+      },
+      onError: (error: unknown) => {
+        // Check for plan limit error from backend
+        const err = error as { data?: { code?: string } };
+        if (err?.data?.code === "plan_limit_reached") {
+          setGoalLimitReached(true);
+        }
       },
     });
   };
@@ -171,6 +195,19 @@ export default function GoalsPage() {
               />
             ))}
           </section>
+
+          {/* Goal limit upgrade prompt */}
+          {goalLimitReached && (
+            <div className="mt-4">
+              <UpgradePrompt
+                surface="goal_create_limit"
+                trigger="goal_limit"
+                title="Unlock unlimited goals"
+                description="You've reached the Free plan goal limit. Upgrade to Pro to track as many goals as you need."
+                onDismiss={() => setGoalLimitReached(false)}
+              />
+            </div>
+          )}
 
           {/* Recommended Articles */}
           <section className="mt-8">

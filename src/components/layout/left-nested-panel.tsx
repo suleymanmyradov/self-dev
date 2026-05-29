@@ -25,8 +25,8 @@ export function LeftNestedPanel() {
   const { isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUI()
   const [shouldRender, setShouldRender] = React.useState(false)
   const [show, setShow] = React.useState(false)
-  const animationFrameId = React.useRef<number>()
-  const timeoutId = React.useRef<NodeJS.Timeout>()
+  const animationFrameId = React.useRef<number>(undefined as unknown as number)
+  const timeoutId = React.useRef<NodeJS.Timeout>(undefined as unknown as NodeJS.Timeout)
 
   React.useEffect(() => {
     if (isLeftPanelOpen) {

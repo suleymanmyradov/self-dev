@@ -10,8 +10,11 @@ import { toast } from "@/components/ui/sonner";
 import { FormField } from "@/components/form-field";
 import { useQueryClient } from "@tanstack/react-query";
 import { getCurrentUser, updateProfile } from "@/api";
-import { useSettings, useUpdateSettings, useCoachingProfile } from "@/hooks";
+import { useSettings, useUpdateSettings, useCoachingProfile, useBillingOverview, useCreateCustomerPortalSession } from "@/hooks";
 import type { Profile, UpdateProfileRequest, AccountabilityStyle, PreferredTone, DifficultyPreference } from "@/api";
+import { PlanBadge } from "@/components/billing/plan-badge";
+import { Crown, Sparkles } from "lucide-react";
+import Link from "next/link";
 
 const accountSchema = z.object({
   username: z
@@ -172,6 +175,19 @@ export default function SettingsPage() {
             </Card>
           </form>
 
+          {/* Billing / Plan */}
+          <Card className="mb-4">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                Plan &amp; Billing
+                <PlanBadge />
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="grid gap-4">
+              <BillingSection />
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader>
               <CardTitle>Preferences</CardTitle>
@@ -299,5 +315,93 @@ export default function SettingsPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function BillingSection() {
+  const { data: billing, isLoading } = useBillingOverview();
+  const portalMutation = useCreateCustomerPortalSession();
+
+  if (isLoading) {
+    return <p className="text-sm text-muted-foreground">Loading plan info...</p>;
+  }
+
+  const subscription = billing?.subscription;
+  const isPro = subscription?.planCode === "pro";
+
+  const handleManageBilling = () => {
+    portalMutation.mutate(undefined, {
+      onSuccess: (data) => {
+        if (data.data?.portalUrl) {
+          window.location.href = data.data.portalUrl;
+        }
+      },
+    });
+  };
+
+  return (
+    <>
+      <div className="flex items-center justify-between">
+        <div>
+          <span className="text-sm font-medium">Current Plan</span>
+          <p className="text-xs text-muted-foreground">
+            {isPro ? "Growth Pro" : "Free"} — {subscription?.planName ?? "Core accountability loop"}
+          </p>
+        </div>
+        {!isPro && (
+          <Link href="/pricing">
+            <Button size="sm" variant="energy">
+              <Sparkles className="mr-1.5 h-3.5 w-3.5" />
+              Upgrade
+            </Button>
+          </Link>
+        )}
+      </div>
+
+      {isPro && (
+        <>
+          <Separator />
+          <div className="flex items-center justify-between">
+            <div>
+              <span className="text-sm font-medium">Billing</span>
+              <p className="text-xs text-muted-foreground">
+                {subscription?.billingInterval === "annual" ? "Annual plan" : "Monthly plan"}
+                {subscription?.cancelAtPeriodEnd && " — Cancels at period end"}
+              </p>
+              {subscription?.currentPeriodEnd && (
+                <p className="text-xs text-muted-foreground">
+                  {subscription.cancelAtPeriodEnd ? "Access until" : "Renews on"}{" "}
+                  {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                </p>
+              )}
+            </div>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleManageBilling}
+              disabled={portalMutation.isPending}
+            >
+              <Crown className="mr-1.5 h-3.5 w-3.5" />
+              Manage billing
+            </Button>
+          </div>
+        </>
+      )}
+
+      {!isPro && (
+        <>
+          <Separator />
+          <div className="rounded-lg bg-energy/5 border border-energy/20 p-3">
+            <p className="text-xs text-muted-foreground">
+              Upgrade to Pro for unlimited goals, full weekly review history, and personalized AI coaching.
+              {" "}
+              <Link href="/pricing" className="text-energy hover:underline">
+                View plans
+              </Link>
+            </p>
+          </div>
+        </>
+      )}
+    </>
   );
 }

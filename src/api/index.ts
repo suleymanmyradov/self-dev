@@ -227,5 +227,30 @@ export type {
   WeeklyReviewAdjustmentType,
 } from './types';
 
+// Billing API
+export {
+  getBillingOverview,
+  trackUpgradeEvent,
+  createCheckoutSession,
+  createCustomerPortalSession,
+} from './billing';
+
+// Billing Types
+export type {
+  Plan,
+  UserSubscription,
+  Entitlements,
+  BillingOverview,
+  UpgradeEventType,
+  UpgradeSurface,
+  UpgradeTrigger,
+  UpgradeEventRequest,
+  BillingOverviewResponse,
+  UpgradeEventResponse,
+  CheckoutSessionResponse,
+  PortalSessionResponse,
+  PlanLimitError,
+} from './types';
+
 // Profile update
 export { updateProfile } from './auth';

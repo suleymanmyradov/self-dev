@@ -12,7 +12,8 @@ import { CheckCircle2, CircleDashed, ArrowRight, Lightbulb } from 'lucide-react'
 import { useFeedFilter } from '@/store/feed-filter';
 import type { FeedFilter } from '@/store/feed-filter';
 import { listCategories, listArticles } from '@/api';
-import { useHabits, useTodayCheckIns, usePlanAdjustments } from '@/hooks';
+import { useHabits, useTodayCheckIns, usePlanAdjustments, useBillingOverview } from '@/hooks';
+import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
 
 const TAB_TRIGGER_CLASS =
   'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold';
@@ -34,6 +35,10 @@ export function HomeClient() {
 
   // Fetch plan adjustment suggestions
   const { suggestions = [], loading: suggestionsLoading, applySuggestion, dismissSuggestion } = usePlanAdjustments();
+
+  // Billing entitlements for plan adjustment limit
+  const { data: billing } = useBillingOverview();
+  const canCreatePlanAdjustment = billing?.entitlements?.canCreatePlanAdjustment ?? true;
 
   const checkInStats = useMemo(() => {
     if (habits.length === 0) return null;
@@ -140,6 +145,17 @@ export function HomeClient() {
                   />
                 ))}
               </div>
+              {!canCreatePlanAdjustment && (
+                <div className="mt-3">
+                  <UpgradePrompt
+                    surface="plan_adjustments"
+                    trigger="plan_adjustments"
+                    title=""
+                    description=""
+                    compact
+                  />
+                </div>
+              )}
             </div>
           )}
 

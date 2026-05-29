@@ -13,7 +13,9 @@ import { WeeklyReviewAdjustmentsCard } from "@/components/weekly-review/weekly-r
 import { WeeklyReviewNextPlanCard } from "@/components/weekly-review/weekly-review-next-plan-card";
 import { WeeklyReviewHistory } from "@/components/weekly-review/weekly-review-history";
 import { Sparkles, RotateCcw, Calendar } from "lucide-react";
-import { useCurrentWeeklyReview, useGenerateWeeklyReview, useWeeklyReviews } from "@/hooks";
+import { useCurrentWeeklyReview, useGenerateWeeklyReview, useWeeklyReviews, useBillingOverview } from "@/hooks";
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
+import { FeatureLock } from "@/components/billing/feature-lock";
 
 export default function WeeklyReviewPage() {
   const [activeTab, setActiveTab] = useState("overview");
@@ -21,6 +23,8 @@ export default function WeeklyReviewPage() {
   const { data: currentReview, isLoading, error, refetch } = useCurrentWeeklyReview();
   const generateMutation = useGenerateWeeklyReview();
   const { data: reviews, isLoading: historyLoading } = useWeeklyReviews({ page: 1, limit: 10 });
+  const { data: billing } = useBillingOverview();
+  const isPro = billing?.subscription?.planCode === "pro";
 
   const handleGenerate = () => {
     generateMutation.mutate({ forceRegenerate: true });
@@ -93,6 +97,16 @@ export default function WeeklyReviewPage() {
             <WeeklyReviewPatternsCard review={currentReview} />
           </div>
           {currentReview.aiSummary && <WeeklyReviewCoachCard review={currentReview} />}
+          {/* Value moment upgrade prompt for free users */}
+          {!isPro && currentReview.completionRate > 50 && (
+            <UpgradePrompt
+              surface="weekly_review_value_moment"
+              trigger="weekly_history"
+              title="Unlock your full weekly history"
+              description="You've built enough consistency to benefit from a fuller weekly history. Pro unlocks all past reviews."
+              compact
+            />
+          )}
         </TabsContent>
 
         <TabsContent value="habits" className="space-y-4">
@@ -109,7 +123,13 @@ export default function WeeklyReviewPage() {
         </TabsContent>
 
         <TabsContent value="history" className="space-y-4">
-          <WeeklyReviewHistory reviews={reviews ?? []} isLoading={historyLoading} />
+          {isPro ? (
+            <WeeklyReviewHistory reviews={reviews ?? []} isLoading={historyLoading} />
+          ) : (
+            <FeatureLock feature="weekly_review_history">
+              <WeeklyReviewHistory reviews={reviews ?? []} isLoading={historyLoading} />
+            </FeatureLock>
+          )}
         </TabsContent>
       </Tabs>
     </div>

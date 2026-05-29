@@ -4,9 +4,13 @@ import { AssistantRuntimeProvider } from "@assistant-ui/react";
 import { useChatRuntime } from "@assistant-ui/react-ai-sdk";
 import { Thread } from "@/components/ai-conversation/thread";
 import { ThreadList } from "@/components/ai-conversation/thread-list";
+import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
+import { useBillingOverview } from "@/hooks";
 
 export const Assistant = () => {
   const runtime = useChatRuntime();
+  const { data: billing } = useBillingOverview();
+  const isPro = billing?.subscription?.planCode === "pro";
 
   return (
     <AssistantRuntimeProvider runtime={runtime}>
@@ -20,6 +24,18 @@ export const Assistant = () => {
         {/* Sidebar */}
         <div className="relative w-[220px] shrink-0 border-r border-border/40 overflow-y-auto p-3 bg-background/50 backdrop-blur-sm">
           <ThreadList />
+          {/* Personalized AI upgrade prompt for free users */}
+          {!isPro && (
+            <div className="mt-4">
+              <UpgradePrompt
+                surface="assistant_personalization"
+                trigger="personalized_ai"
+                title="Deeper coaching memory"
+                description="Upgrade to Pro for personalized AI coaching that remembers your patterns."
+                compact
+              />
+            </div>
+          )}
         </div>
 
         {/* Main chat area */}
