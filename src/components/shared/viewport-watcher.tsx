@@ -1,12 +1,12 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useUI } from '@/store/uiStore';
+import { useUIStore } from '@/store/uiStore';
 
 // Keeps uiStore.isMobile in sync with viewport width
 // Mobile breakpoint set to < 768px (tailwind md)
 export function ViewportWatcher() {
-  const { setIsMobile } = useUI();
+  const setIsMobile = useUIStore(s => s.setIsMobile);
 
   useEffect(() => {
     let raf = 0;

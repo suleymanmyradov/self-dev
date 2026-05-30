@@ -1,5 +1,7 @@
 export { useActivities } from './use-activities';
-export { useAuth } from './use-auth';
+export { useAuth, useAuthSafe } from './use-auth';
+export { useProfile } from './use-profile';
+export { useHydrated } from './use-hydrated';
 export { useGoals, useGoal, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress } from './use-goals';
 export { useGoalForm } from './use-goal-form';
 export { useHabits, useHabit, useCreateHabit, useUpdateHabit, useDeleteHabit, useToggleHabit, useResetTodayHabits } from './use-habits';

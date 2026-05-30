@@ -6,7 +6,8 @@ import { NavButton } from './nav-button';
 import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
-import { useUI } from '@/store/uiStore';
+import { useUIStore } from '@/store/uiStore';
+import { useShallow } from 'zustand/react/shallow';
 import { useUnreadCount } from '@/hooks';
 import { TooltipProvider } from '@/components/ui/tooltip';
 import {
@@ -37,7 +38,15 @@ const panelItems: { panel: "notifications"; label: string; icon: LucideIcon }[] 
 
 export function SidebarNav() {
   const pathname = usePathname();
-  const { isSidebarCollapsed, openLeftPanel, isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUI();
+  const { isSidebarCollapsed, openLeftPanel, isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUIStore(
+    useShallow(s => ({
+      isSidebarCollapsed: s.isSidebarCollapsed,
+      openLeftPanel: s.openLeftPanel,
+      isLeftPanelOpen: s.isLeftPanelOpen,
+      leftPanelType: s.leftPanelType,
+      closeLeftPanel: s.closeLeftPanel,
+    }))
+  );
   const { data: unreadCount = 0 } = useUnreadCount();
 
   const handlePanelClick = (panel: "notifications") => {

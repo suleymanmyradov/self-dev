@@ -5,7 +5,7 @@ import { Slot } from '@radix-ui/react-slot';
 import { VariantProps, cva } from 'class-variance-authority';
 import { PanelLeftIcon } from 'lucide-react';
 
-import { useUI } from '@/store/uiStore';
+import { useUIStore } from '@/store/uiStore';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -61,7 +61,7 @@ function SidebarProvider({
     open?: boolean;
     onOpenChange?: (open: boolean) => void;
 }) {
-    const { isMobile } = useUI();
+    const isMobile = useUIStore(s => s.isMobile);
     const [openMobile, setOpenMobile] = React.useState(false);
 
     // This is the internal state of the sidebar.

@@ -3,12 +3,13 @@
 import * as React from "react"
 import { SidebarNav } from "./sidebar-nav"
 import { LeftNestedPanel } from "./left-nested-panel"
-import { useUI } from "@/store/uiStore"
+import { useUIStore } from "@/store/uiStore"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
 export function LayoutFrame({ children }: { children: React.ReactNode }) {
-  const { isLeftPanelOpen, closeLeftPanel } = useUI()
+  const isLeftPanelOpen = useUIStore(s => s.isLeftPanelOpen)
+  const closeLeftPanel = useUIStore(s => s.closeLeftPanel)
   const pathname = usePathname()
   // Close any open left nested panel on route change
   React.useEffect(() => {

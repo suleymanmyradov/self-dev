@@ -2,7 +2,8 @@
 
 import * as React from "react"
 import { Button } from "@/components/ui/button"
-import { useUI } from "@/store/uiStore"
+import { useUIStore } from "@/store/uiStore"
+import { useShallow } from "zustand/react/shallow"
 import { useNotifications, useConversations, useMarkAllNotificationsRead } from "@/hooks"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
@@ -22,7 +23,13 @@ const typeIcon: Record<NotificationType, LucideIcon> = {
 }
 
 export function LeftNestedPanel() {
-  const { isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUI()
+  const { isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUIStore(
+    useShallow(s => ({
+      isLeftPanelOpen: s.isLeftPanelOpen,
+      leftPanelType: s.leftPanelType,
+      closeLeftPanel: s.closeLeftPanel,
+    }))
+  )
   const [shouldRender, setShouldRender] = React.useState(false)
   const [show, setShow] = React.useState(false)
   const animationFrameId = React.useRef<number>(undefined as unknown as number)
@@ -143,7 +150,7 @@ function relativeTime(dateStr: string): string {
 function NotificationsList() {
   const { data: notifications = [], isLoading } = useNotifications({ page: 1, limit: 20 })
   const markAllRead = useMarkAllNotificationsRead()
-  const { closeLeftPanel } = useUI()
+  const closeLeftPanel = useUIStore(s => s.closeLeftPanel)
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0
 

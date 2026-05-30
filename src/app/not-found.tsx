@@ -2,11 +2,6 @@ import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Home, ArrowLeft } from 'lucide-react';
 
-export const metadata = {
-  title: 'Page Not Found | Growth',
-  description: 'The page you are looking for does not exist.',
-};
-
 export default function NotFound() {
   return (
     <div className="h-full flex flex-col items-center justify-center px-4">

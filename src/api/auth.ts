@@ -1,4 +1,5 @@
-import api, { setAuthTokens, clearTokens } from './client';
+import api from './client';
+import { setAuthTokens, clearTokens } from '@/lib/auth-tokens';
 import { getAccessTokenFromStore } from '@/store/auth';
 import type {
   LoginRequest,

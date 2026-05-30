@@ -1,6 +1,9 @@
 // API Client
-export { api, ApiError, getAccessToken, getRefreshToken, clearTokens, setAuthTokens } from './client';
+export { api, ApiError } from './client';
 export type { RequestOptions } from './client';
+
+// Auth Tokens (SSR-safe, no React dependency)
+export { getAccessToken, getRefreshToken, clearTokens, setAuthTokens } from '@/lib/auth-tokens';
 
 // Types
 export type {

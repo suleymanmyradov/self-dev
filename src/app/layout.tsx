@@ -1,6 +1,5 @@
 import '@/lib/storage-shim';
 import type React from 'react';
-import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
@@ -12,7 +11,6 @@ import { ViewportWatcher } from '@/components/shared/viewport-watcher';
 import { MobileTopBar } from '@/components/shared/mobile-topbar';
 import { BottomTabBar } from '@/components/shared/bottom-tab-bar';
 import { Toaster } from '@/components/ui/sonner';
-import Loading from './loading';
 
 const jakarta = Plus_Jakarta_Sans({
     subsets: ['latin'],
@@ -50,9 +48,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
                             <MobileTopBar />
                             <LayoutFrame>
-                                <Suspense fallback={<Loading />}>
-                                    {children}
-                                </Suspense>
+                                {children}
                             </LayoutFrame>
                             <BottomTabBar />
                         </div>

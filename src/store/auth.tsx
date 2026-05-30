@@ -3,22 +3,8 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { getSafeStorage } from '@/lib/safe-storage';
+import { getAccessToken, getRefreshToken, setAuthTokens, clearTokens } from '@/lib/auth-tokens';
 import type { Profile } from '@/api';
-
-// Cookie helpers — sync access token to a cookie so Next.js middleware can read it
-const AUTH_COOKIE_NAME = 'auth-token';
-
-function setAuthCookie(token: string): void {
-  if (typeof document === 'undefined') return;
-  // SameSite=Lax, path=/, 7-day expiry
-  const maxAge = 60 * 60 * 24 * 7;
-  document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax`;
-}
-
-function removeAuthCookie(): void {
-  if (typeof document === 'undefined') return;
-  document.cookie = `${AUTH_COOKIE_NAME}=; path=/; max-age=0; SameSite=Lax`;
-}
 
 export type AuthState = {
   user: Profile | null;
@@ -47,15 +33,15 @@ const useAuthStore = create<AuthState>()(
       hasHydrated: false,
       setUser: (user) => set({ user, isAuthenticated: !!user }),
       setTokens: (accessToken, refreshToken) => {
-        setAuthCookie(accessToken);
+        setAuthTokens(accessToken, refreshToken);
         set({ accessToken, refreshToken });
       },
       login: (user, accessToken, refreshToken) => {
-        setAuthCookie(accessToken);
+        setAuthTokens(accessToken, refreshToken);
         set({ user, accessToken, refreshToken, isAuthenticated: true });
       },
       logout: () => {
-        removeAuthCookie();
+        clearTokens();
         set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
       },
       setHydrated: (state) => set({ hasHydrated: state }),
@@ -98,6 +84,11 @@ const useAuthStore = create<AuthState>()(
       }),
       onRehydrateStorage: () => (state, error) => {
         if (!error && state) {
+          // Sync rehydrated tokens to the standalone module so the API client
+          // can read them without depending on the Zustand store.
+          if (state.accessToken && state.refreshToken) {
+            setAuthTokens(state.accessToken, state.refreshToken);
+          }
           Promise.resolve().then(() => {
             state.setHydrated(true);
           });
@@ -109,39 +100,48 @@ const useAuthStore = create<AuthState>()(
   )
 );
 
-// Hook to access auth state - use directly without Context wrapper
+export { useAuthStore };
+
+// Hook to access auth state - prefer using useAuthStore with atomic selectors:
+//   const login = useAuthStore(s => s.login)
 export function useAuth() {
   return useAuthStore();
 }
 
 // Hook to get access token for API client
 export function useAccessToken() {
-  return useAuth().accessToken;
+  return useAuthStore(s => s.accessToken);
 }
 
-// Get access token outside of React components
+// Get access token outside of React components — delegates to the standalone module
 export function getAccessTokenFromStore(): string | null {
-  return useAuthStore.getState().accessToken;
+  return getAccessToken();
 }
 
-// Get refresh token outside of React components
+// Get refresh token outside of React components — delegates to the standalone module
 export function getRefreshTokenFromStore(): string | null {
-  return useAuthStore.getState().refreshToken;
+  return getRefreshToken();
 }
 
-// Set tokens outside of React components (for API client)
+// Set tokens outside of React components (for API client) — delegates to the standalone module
 export function setTokensInStore(accessToken: string, refreshToken: string): void {
+  setAuthTokens(accessToken, refreshToken);
   useAuthStore.getState().setTokens(accessToken, refreshToken);
 }
 
-// Clear auth state outside of React components
+// Clear auth state outside of React components — delegates to the standalone module
 export function clearAuthState(): void {
+  clearTokens();
   useAuthStore.getState().logout();
 }
 
 // Convenience hook for profile access (replaces useProfile from profile.tsx)
 export function useProfile() {
-  const { user, hasHydrated, setProfile, updateProfile, clearProfile } = useAuth();
+  const user = useAuthStore(s => s.user);
+  const hasHydrated = useAuthStore(s => s.hasHydrated);
+  const setProfile = useAuthStore(s => s.setProfile);
+  const updateProfile = useAuthStore(s => s.updateProfile);
+  const clearProfile = useAuthStore(s => s.clearProfile);
   return {
     profile: user,
     hasHydrated,

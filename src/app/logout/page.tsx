@@ -3,12 +3,12 @@
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { useAuth } from "@/store/auth";
+import { useAuthStore } from "@/store/auth";
 import { logout as apiLogout } from "@/api";
 
 export default function LogoutPage() {
   const router = useRouter();
-  const { logout } = useAuth();
+  const logout = useAuthStore(s => s.logout);
 
   useEffect(() => {
     const performLogout = async () => {

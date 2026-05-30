@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { login } from '@/api';
-import { useAuth } from '@/store/auth';
+import { useAuthStore } from '@/store/auth';
 import Link from 'next/link';
 
 export default function LoginPage() {
   const router = useRouter();
-  const { login: setAuth } = useAuth();
+  const setAuth = useAuthStore(s => s.login);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);

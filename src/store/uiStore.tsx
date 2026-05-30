@@ -41,7 +41,11 @@ const useUIStore = create<UIState>(set => ({
     setSidebarCollapsed: collapsed => set({ isSidebarCollapsed: collapsed }),
 }));
 
+export { useUIStore };
+
 // Hook to access UI state directly from Zustand store
+// Prefer using `useUIStore` with atomic selectors to avoid re-renders:
+//   const isLeftPanelOpen = useUIStore(s => s.isLeftPanelOpen)
 export function useUI() {
     return useUIStore();
 }

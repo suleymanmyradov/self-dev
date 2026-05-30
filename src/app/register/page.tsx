@@ -7,12 +7,12 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { register } from '@/api';
-import { useAuth } from '@/store/auth';
+import { useAuthStore } from '@/store/auth';
 import Link from 'next/link';
 
 export default function RegisterPage() {
   const router = useRouter();
-  const { login: setAuthUser } = useAuth();
+  const setAuthUser = useAuthStore(s => s.login);
   const [fullName, setFullName] = useState('');
   const [username, setUsername] = useState('');
   const [email, setEmail] = useState('');

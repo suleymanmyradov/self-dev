@@ -1,10 +1,10 @@
 import { config } from '@/lib/config';
 import {
-  getAccessTokenFromStore,
-  getRefreshTokenFromStore,
-  setTokensInStore,
-  clearAuthState,
-} from '@/store/auth';
+  getAccessToken,
+  getRefreshToken,
+  setAuthTokens,
+  clearTokens,
+} from '@/lib/auth-tokens';
 
 // Debug logging in development
 const DEBUG = config.appEnv === 'development';
@@ -12,27 +12,6 @@ const DEBUG = config.appEnv === 'development';
 // Track if we're currently refreshing the token
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
-
-// Token management - delegates to the auth Zustand store
-export function getAccessToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return getAccessTokenFromStore();
-}
-
-export function getRefreshToken(): string | null {
-  if (typeof window === 'undefined') return null;
-  return getRefreshTokenFromStore();
-}
-
-export function clearTokens(): void {
-  if (typeof window === 'undefined') return;
-  clearAuthState();
-}
-
-export function setAuthTokens(accessToken: string, refreshToken: string): void {
-  if (typeof window === 'undefined') return;
-  setTokensInStore(accessToken, refreshToken);
-}
 
 // Attempt to refresh the access token
 async function refreshAccessToken(): Promise<boolean> {

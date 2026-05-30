@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
@@ -5,6 +6,21 @@ import { Calendar } from "lucide-react";
 import { getArticle } from "@/api";
 import { formatRelativeTime } from "@/lib/time-format";
 import ArticleSaveButton from "./article-save-button";
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ id: string }>;
+}): Promise<Metadata> {
+  const { id } = await params;
+  const response = await getArticle(id).catch(() => null);
+  const article = response?.data;
+
+  return {
+    title: article ? `${article.title} | Growth` : "Article | Growth",
+    description: article?.excerpt ?? "Read this article on Growth.",
+  };
+}
 
 // =============================================================================
 // Helpers
