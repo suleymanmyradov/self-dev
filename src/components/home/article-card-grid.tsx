@@ -103,7 +103,7 @@ export const ArticleCardGrid = memo(function ArticleCardGrid({
               className={cn(
                 "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-secondary/50",
                 likeState.isActive
-                  ? "text-red-500"
+                  ? "text-destructive"
                   : "text-muted-foreground hover:text-foreground"
               )}
               aria-label="Like"

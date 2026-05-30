@@ -21,7 +21,8 @@ let tokens: TokenState = {
 function setAuthCookie(token: string): void {
   if (typeof document === 'undefined') return;
   const maxAge = 60 * 60 * 24 * 7;
-  document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax`;
+  const secureFlag = location.protocol === 'https:' ? ' Secure;' : '';
+  document.cookie = `${AUTH_COOKIE_NAME}=${encodeURIComponent(token)}; path=/; max-age=${maxAge}; SameSite=Lax;${secureFlag}`;
 }
 
 function removeAuthCookie(): void {

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
 import { useCreateHabit, useCreateGoal } from "@/hooks";
 import { listArticles } from "@/api";
@@ -28,7 +29,7 @@ export function ExploreClient({ initialArticles }: ExploreClientProps) {
   const [query, setQuery] = useState("");
 
   // Fetch real articles from API
-  const { data: articlesData } = useQuery({
+  const { data: articlesData, isLoading: articlesLoading } = useQuery({
     queryKey: ['articles', 'explore'],
     queryFn: () => listArticles({ limit: 20 }),
     initialData: initialArticles,
@@ -74,7 +75,7 @@ export function ExploreClient({ initialArticles }: ExploreClientProps) {
           </div>
 
           <Tabs defaultValue="articles" className="w-full">
-            <TabsList className="mb-6">
+            <TabsList className="mb-6 flex-wrap h-auto">
               {(['articles', 'habits', 'goals', 'community'] as const).map((tab) => (
                 <TabsTrigger key={tab} value={tab}>
                   {tab.charAt(0).toUpperCase() + tab.slice(1)}
@@ -85,11 +86,30 @@ export function ExploreClient({ initialArticles }: ExploreClientProps) {
             {/* Articles */}
             <TabsContent value="articles" className="space-y-6">
               <FeaturedCard />
-              <div className="grid gap-4 md:grid-cols-2">
-                {filteredArticles.map((article) => (
-                  <ArticleCard key={article.id} article={article} />
-                ))}
-              </div>
+              {articlesLoading ? (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {[1, 2, 3, 4].map((i) => (
+                    <div key={i} className="space-y-3">
+                      <Skeleton className="h-5 w-3/4" />
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-4 w-2/3" />
+                    </div>
+                  ))}
+                </div>
+              ) : filteredArticles.length === 0 ? (
+                <div className="flex flex-col items-center justify-center py-16 text-center">
+                  <Search className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
+                  <p className="text-sm text-muted-foreground">
+                    {query.trim() ? `No results for "${query.trim()}"` : 'No articles available.'}
+                  </p>
+                </div>
+              ) : (
+                <div className="grid gap-4 md:grid-cols-2">
+                  {filteredArticles.map((article) => (
+                    <ArticleCard key={article.id} article={article} />
+                  ))}
+                </div>
+              )}
             </TabsContent>
 
             {/* Habits */}

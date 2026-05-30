@@ -16,14 +16,14 @@ interface ActivityFilterBarProps {
 
 export function ActivityFilterBar({ filter, onFilterChange }: ActivityFilterBarProps) {
   return (
-    <div className="flex gap-1">
+    <div className="flex flex-wrap gap-1">
       {ACTIVITY_FILTERS.map((f) => (
         <Button
           key={f.value}
           variant={filter === f.value ? 'default' : 'ghost'}
           size="sm"
           onClick={() => onFilterChange(f.value)}
-          className="h-7 text-xs"
+          className="h-7 text-xs px-2 sm:px-3"
         >
           {f.label}
         </Button>

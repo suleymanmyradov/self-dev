@@ -74,6 +74,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
             variant="ghost"
             onClick={handleToggleSave}
             disabled={saveItem.isPending || removeSavedItem.isPending}
+            aria-label={isSaved ? "Unsave article" : "Save article"}
           >
             {isSaved ? (
               <BookmarkCheck className="h-4 w-4 text-primary" />

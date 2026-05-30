@@ -3,13 +3,13 @@ import { formatRelativeTime } from "@/lib/time-format";
 import type { Activity, ActivityType } from "@/api";
 
 const ACTIVITY_ICONS: Record<ActivityType, React.ReactNode> = {
-  habit_completed: <CheckCircle className="h-4 w-4 text-green-500" />,
-  goal_created: <Target className="h-4 w-4 text-blue-500" />,
-  goal_completed: <CheckCircle className="h-4 w-4 text-green-500" />,
-  article_saved: <Bookmark className="h-4 w-4 text-purple-500" />,
-  check_in_completed: <ClipboardCheck className="h-4 w-4 text-emerald-500" />,
-  check_in_missed: <ClipboardX className="h-4 w-4 text-orange-500" />,
-  weekly_review_generated: <BarChart3 className="h-4 w-4 text-blue-500" />,
+  habit_completed: <CheckCircle className="h-4 w-4 text-growth" aria-hidden="true" />,
+  goal_created: <Target className="h-4 w-4 text-calm" aria-hidden="true" />,
+  goal_completed: <CheckCircle className="h-4 w-4 text-growth" aria-hidden="true" />,
+  article_saved: <Bookmark className="h-4 w-4 text-primary" aria-hidden="true" />,
+  check_in_completed: <ClipboardCheck className="h-4 w-4 text-success" aria-hidden="true" />,
+  check_in_missed: <ClipboardX className="h-4 w-4 text-energy" aria-hidden="true" />,
+  weekly_review_generated: <BarChart3 className="h-4 w-4 text-calm" aria-hidden="true" />,
 };
 
 interface ActivityItemProps {
@@ -27,9 +27,9 @@ export function ActivityItem({ activity }: ActivityItemProps) {
             <p className="truncate text-xs text-muted-foreground">{activity.description}</p>
           </div>
         </div>
-        <span className="ml-3 shrink-0 text-xs text-muted-foreground">
+        <time dateTime={activity.createdAt} className="ml-3 shrink-0 text-xs text-muted-foreground">
           {formatRelativeTime(activity.createdAt)}
-        </span>
+        </time>
       </div>
     </li>
   );

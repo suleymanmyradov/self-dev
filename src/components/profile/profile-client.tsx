@@ -9,6 +9,7 @@ import { useProfile } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
@@ -134,8 +135,33 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
 
   if (isLoading) {
     return (
-      <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-        Loading profile...
+      <div className="h-full flex flex-col">
+        <div className="flex-1 overflow-y-auto no-scrollbar">
+          <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-8 space-y-6">
+            <Skeleton className="h-8 w-48" />
+            <Skeleton className="h-4 w-72" />
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <Skeleton className="h-16 w-16 rounded-full" />
+                <Skeleton className="h-10 flex-1" />
+              </div>
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-10 w-full" />
+              <Skeleton className="h-24 w-full" />
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!isLoading && !profile) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-sm text-muted-foreground mb-4">Failed to load profile.</p>
+          <Button onClick={() => window.location.reload()}>Retry</Button>
+        </div>
       </div>
     );
   }

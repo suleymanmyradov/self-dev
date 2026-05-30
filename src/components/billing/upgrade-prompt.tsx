@@ -130,9 +130,11 @@ export const UpgradePrompt = memo(function UpgradePrompt({
           <div className="grid gap-1.5 mb-3">
             {FEEDBACK_REASONS.map((reason) => (
               <button
+                type="button"
                 key={reason}
                 onClick={() => setSelectedReason(reason)}
-                className={`text-left text-xs rounded-lg border px-2.5 py-1.5 transition-colors ${
+                aria-pressed={selectedReason === reason}
+                className={`text-left text-xs rounded-lg border px-2.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 ${
                   selectedReason === reason
                     ? "border-energy bg-energy/5"
                     : "border-border hover:border-border/80"
@@ -177,8 +179,10 @@ export const UpgradePrompt = memo(function UpgradePrompt({
           </Button>
           {onDismiss && (
             <button
+              type="button"
               onClick={handleDismiss}
-              className="text-muted-foreground hover:text-foreground"
+              aria-label="Dismiss upgrade prompt"
+              className="text-muted-foreground hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 rounded-md"
             >
               <X className="h-3.5 w-3.5" />
             </button>
@@ -203,8 +207,10 @@ export const UpgradePrompt = memo(function UpgradePrompt({
           </div>
           {onDismiss && (
             <button
+              type="button"
               onClick={handleDismiss}
-              className="text-muted-foreground hover:text-foreground shrink-0"
+              aria-label="Dismiss upgrade prompt"
+              className="text-muted-foreground hover:text-foreground shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 rounded-md"
             >
               <X className="h-4 w-4" />
             </button>

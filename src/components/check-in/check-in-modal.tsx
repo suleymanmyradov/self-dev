@@ -2,7 +2,7 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Check, X, Smile, Meh, Frown, AlertTriangle, Zap, Battery, BatteryLow } from "lucide-react";
@@ -28,16 +28,16 @@ export type CheckInModalProps = {
 };
 
 const MOOD_OPTIONS: { value: CheckInMood; label: string; icon: LucideIcon; color: string }[] = [
-  { value: 'great', label: 'Great', icon: Smile, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-  { value: 'okay', label: 'Okay', icon: Meh, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-  { value: 'low', label: 'Low', icon: Frown, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
-  { value: 'stressed', label: 'Stressed', icon: AlertTriangle, color: 'bg-red-100 text-red-700 hover:bg-red-200' },
+  { value: 'great', label: 'Great', icon: Smile, color: 'bg-growth/10 text-growth hover:bg-growth/20' },
+  { value: 'okay', label: 'Okay', icon: Meh, color: 'bg-calm/10 text-calm hover:bg-calm/20' },
+  { value: 'low', label: 'Low', icon: Frown, color: 'bg-energy/10 text-energy hover:bg-energy/20' },
+  { value: 'stressed', label: 'Stressed', icon: AlertTriangle, color: 'bg-destructive/10 text-destructive hover:bg-destructive/20' },
 ];
 
 const ENERGY_OPTIONS: { value: CheckInEnergy; label: string; icon: LucideIcon; color: string }[] = [
-  { value: 'high', label: 'High', icon: Zap, color: 'bg-green-100 text-green-700 hover:bg-green-200' },
-  { value: 'medium', label: 'Medium', icon: Battery, color: 'bg-blue-100 text-blue-700 hover:bg-blue-200' },
-  { value: 'low', label: 'Low', icon: BatteryLow, color: 'bg-orange-100 text-orange-700 hover:bg-orange-200' },
+  { value: 'high', label: 'High', icon: Zap, color: 'bg-growth/10 text-growth hover:bg-growth/20' },
+  { value: 'medium', label: 'Medium', icon: Battery, color: 'bg-calm/10 text-calm hover:bg-calm/20' },
+  { value: 'low', label: 'Low', icon: BatteryLow, color: 'bg-energy/10 text-energy hover:bg-energy/20' },
 ];
 
 const BLOCKER_OPTIONS: { value: CheckInBlocker; label: string }[] = [
@@ -97,9 +97,12 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby="check-in-description">
         <DialogHeader>
           <DialogTitle>Check In</DialogTitle>
+          <DialogDescription id="check-in-description">
+            Log your daily habit check-in, mood, and energy level.
+          </DialogDescription>
         </DialogHeader>
         
         {habit && (
@@ -113,24 +116,24 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
         {!status ? (
           <div className="space-y-3">
             <p className="text-sm text-muted-foreground">How did it go today?</p>
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Button
                 variant="outline"
                 size="lg"
-                className="h-20 flex flex-col gap-2 border-2 hover:border-green-500 hover:bg-green-50 transition-all"
+                className="h-20 flex flex-col gap-2 border-2 hover:border-growth hover:bg-growth/5 transition-all"
                 onClick={() => setStatus('completed')}
               >
-                <Check className="h-6 w-6 text-green-600" />
-                <span className="font-semibold">I did it ✅</span>
+                <Check className="h-6 w-6 text-growth" aria-hidden="true" />
+                <span className="font-semibold"><span className="sr-only">I did it</span><span aria-hidden="true"> ✅</span></span>
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="h-20 flex flex-col gap-2 border-2 hover:border-red-500 hover:bg-red-50 transition-all"
+                className="h-20 flex flex-col gap-2 border-2 hover:border-destructive hover:bg-destructive/5 transition-all"
                 onClick={() => setStatus('missed')}
               >
-                <X className="h-6 w-6 text-red-600" />
-                <span className="font-semibold">I missed it ❌</span>
+                <X className="h-6 w-6 text-destructive" aria-hidden="true" />
+                <span className="font-semibold"><span className="sr-only">I missed it</span><span aria-hidden="true"> ❌</span></span>
               </Button>
             </div>
           </div>
@@ -138,7 +141,7 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
           <div className="space-y-4">
             <div>
               <p className="text-sm font-medium mb-2">How are you feeling?</p>
-              <div className="grid grid-cols-2 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {MOOD_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   return (
@@ -148,8 +151,9 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
                       size="sm"
                       className={cn(mood === option.value ? option.color : "")}
                       onClick={() => setMood(option.value)}
+                      aria-pressed={mood === option.value}
                     >
-                      <Icon className="mr-2 h-4 w-4" />
+                      <Icon className="mr-2 h-4 w-4" aria-hidden="true" />
                       {option.label}
                     </Button>
                   );
@@ -159,7 +163,7 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
 
             <div>
               <p className="text-sm font-medium mb-2">Energy level?</p>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {ENERGY_OPTIONS.map((option) => {
                   const Icon = option.icon;
                   return (
@@ -169,8 +173,9 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
                       size="sm"
                       className={cn(energy === option.value ? option.color : "")}
                       onClick={() => setEnergy(option.value)}
+                      aria-pressed={energy === option.value}
                     >
-                      <Icon className="mr-2 h-4 w-4" />
+                      <Icon className="mr-2 h-4 w-4" aria-hidden="true" />
                       {option.label}
                     </Button>
                   );
@@ -214,6 +219,7 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
                     size="sm"
                     className="justify-start"
                     onClick={() => setBlocker(option.value as CheckInBlocker)}
+                    aria-pressed={blocker === option.value}
                   >
                     {option.label}
                   </Button>

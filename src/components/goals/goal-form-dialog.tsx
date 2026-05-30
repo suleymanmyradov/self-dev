@@ -58,9 +58,10 @@ export function GoalFormDialog({
             />
           </div>
           <div className="grid gap-1">
-            <label className="text-sm font-medium">Category</label>
+            <label htmlFor="goal-category" className="text-sm font-medium">Category</label>
             <select
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
+              id="goal-category"
+              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2"
               value={form.category}
               onChange={(e) => onCategoryChange(e.target.value as GoalFormValues["category"])}
             >
@@ -92,7 +93,7 @@ export function GoalFormDialog({
                 step="5"
                 value={form.progress ?? 0}
                 onChange={(e) => onProgressChange(Number(e.target.value))}
-                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary"
+                className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2"
               />
               <Progress value={form.progress ?? 0} className="h-2" />
               <div className="flex gap-2">

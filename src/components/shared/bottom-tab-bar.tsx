@@ -26,6 +26,7 @@ export const BottomTabBar = memo(function BottomTabBar() {
             <Link
               key={tab.href}
               href={tab.href}
+              aria-current={isActive ? "page" : undefined}
               className={cn(
                 "flex flex-col items-center justify-center gap-0.5 rounded-lg px-3.5 py-2 text-xs font-medium transition-all",
                 isActive
@@ -33,7 +34,7 @@ export const BottomTabBar = memo(function BottomTabBar() {
                   : "text-muted-foreground hover:bg-muted/60 hover:text-foreground",
               )}
             >
-              <tab.icon className="h-5 w-5" />
+              <tab.icon className="h-5 w-5" aria-hidden="true" />
               <span className="text-[0.65rem]">{tab.label}</span>
             </Link>
           );

@@ -46,6 +46,7 @@ export default function ArticleSaveButton({ articleId }: ArticleSaveButtonProps)
       variant="ghost"
       onClick={handleToggleSave}
       disabled={saveItem.isPending || removeSavedItem.isPending}
+      aria-label={isSaved ? "Remove from saved" : "Save article"}
       className="shrink-0"
     >
       {isSaved ? (

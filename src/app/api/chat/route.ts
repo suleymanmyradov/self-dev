@@ -13,22 +13,32 @@ const ChatRequestSchema = z.object({
 });
 
 /**
- * Validate auth token (Bearer check).
- * In production, verify the token signature against your auth service.
+ * Validate auth token by calling the backend auth service.
+ * Rejects any token that cannot be verified server-side.
  */
-function validateAuth(request: Request): boolean {
+async function validateAuth(request: Request): Promise<boolean> {
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) {
     return false;
   }
   const token = authHeader.slice(7);
-  // Minimum sanity check: token must exist and have reasonable length
   if (!token || token.length < 10) {
     return false;
   }
-  // TODO: Integrate with your auth service to verify token validity
-  // For now, we accept any non-empty Bearer token (improve before production!)
-  return true;
+
+  try {
+    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
+    const base = apiUrl.startsWith("/")
+      ? `${request.headers.get("x-forwarded-proto") || "http"}://${request.headers.get("host") || "localhost"}${apiUrl}`
+      : apiUrl;
+    const res = await fetch(`${base}/auth/verify`, {
+      method: "GET",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+    return res.ok;
+  } catch {
+    return false;
+  }
 }
 
 /**
@@ -59,7 +69,7 @@ function checkRateLimit(clientId: string): { allowed: boolean; retryAfter?: numb
 
 export async function POST(req: Request) {
   // 1. Auth check
-  if (!validateAuth(req)) {
+  if (!(await validateAuth(req))) {
     return Response.json(
       { error: "Unauthorized" },
       { status: 401, headers: { "WWW-Authenticate": "Bearer" } }

@@ -224,8 +224,11 @@ function NotificationsList() {
           return (
             <div
               key={n.id}
+              role="button"
+              tabIndex={0}
+              onKeyDown={(e) => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); } }}
               className={cn(
-                "flex gap-3 rounded-md p-3 text-sm hover:bg-accent",
+                "flex gap-3 rounded-md p-3 text-sm hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2",
                 !n.read && "bg-accent/50"
               )}
             >

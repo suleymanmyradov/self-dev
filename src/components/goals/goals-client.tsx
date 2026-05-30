@@ -6,6 +6,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GoalCard } from "@/components/goals/goal-card";
 import { listArticles } from "@/api";
@@ -14,7 +15,7 @@ const GoalFormDialog = dynamic(() => import("@/components/goals/goal-form-dialog
 import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useGoalForm, useConfirmDelete, useBillingOverview } from "@/hooks";
 import type { Goal, GoalsResponse } from "@/api";
 import Link from "next/link";
-import { Plus, Target, Trophy } from "lucide-react";
+import { Plus, Target, Trophy, Sparkles } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntitlements, useTrackUpgradeEvent } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
@@ -208,6 +209,27 @@ export function GoalsClient({ initialGoals }: GoalsClientProps) {
             ))}
           </section>
 
+          {/* Empty State */}
+          {goals.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
+                <Target className="h-8 w-8 text-muted-foreground" />
+              </div>
+              <h3 className="text-lg font-semibold">No goals yet</h3>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
+                Create your first goal to start turning intentions into actionable plans.
+              </p>
+              <Button
+                variant="energy"
+                size="sm"
+                className="mt-4"
+                onClick={() => setCreateOpen(true)}
+              >
+                <Plus className="mr-2 h-4 w-4" /> Create Goal
+              </Button>
+            </div>
+          )}
+
           {/* Goal limit upgrade prompt */}
           {goalLimitReached && (
             <div className="mt-4">
@@ -223,20 +245,22 @@ export function GoalsClient({ initialGoals }: GoalsClientProps) {
           )}
 
           {/* Recommended Articles */}
-          <section className="mt-8">
-            <h2 className="text-lg font-semibold">Recommended Reading</h2>
-            <p className="text-sm text-muted-foreground">Articles to help you achieve your goals:</p>
-            <ul className="mt-3 space-y-2">
-              {articles.map((a) => (
-                <li key={a.id} className="text-sm">
-                  <Link href={`/article/${a.id}`} className="underline-offset-2 hover:underline">
-                    {a.title}
-                  </Link>
-                  <span className="ml-2 text-muted-foreground">· {a.category?.name ?? 'Uncategorized'}</span>
-                </li>
-              ))}
-            </ul>
-          </section>
+          {articles.length > 0 && (
+            <section className="mt-8">
+              <h2 className="text-lg font-semibold">Recommended Reading</h2>
+              <p className="text-sm text-muted-foreground">Articles to help you achieve your goals:</p>
+              <ul className="mt-3 space-y-2">
+                {articles.map((a) => (
+                  <li key={a.id} className="text-sm">
+                    <Link href={`/article/${a.id}`} className="underline-offset-2 hover:underline">
+                      {a.title}
+                    </Link>
+                    <span className="ml-2 text-muted-foreground">· {a.category?.name ?? 'Uncategorized'}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          )}
 
           <p className="mt-6 text-xs text-muted-foreground">
             Tip: Link habits to your goals to turn big outcomes into small daily actions your coach can track.

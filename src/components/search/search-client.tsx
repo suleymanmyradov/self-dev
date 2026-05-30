@@ -1,6 +1,7 @@
 "use client"
 
 import * as React from "react"
+import DOMPurify from "isomorphic-dompurify"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
 import { Badge } from "@/components/ui/badge"
@@ -63,7 +64,9 @@ export function SearchClient() {
 
         <div className="flex gap-2 mb-6 flex-wrap">
           <button
+            type="button"
             onClick={() => handleFilterChange(undefined)}
+            aria-pressed={!filterType}
             className={`px-3 py-1 text-xs rounded-lg border transition-colors ${
               !filterType
                 ? "bg-primary text-primary-foreground border-primary"
@@ -74,8 +77,10 @@ export function SearchClient() {
           </button>
           {(["article", "goal", "habit", "conversation"] as SearchResultType[]).map((type) => (
             <button
+              type="button"
               key={type}
               onClick={() => handleFilterChange(type)}
+              aria-pressed={filterType === type}
               className={`px-3 py-1 text-xs rounded-lg border capitalize transition-colors ${
                 filterType === type
                   ? "bg-primary text-primary-foreground border-primary"
@@ -127,7 +132,12 @@ export function SearchClient() {
                     {result.highlight && (
                       <div
                         className="text-xs text-muted-foreground mt-1 line-clamp-1"
-                        dangerouslySetInnerHTML={{ __html: result.highlight }}
+                        dangerouslySetInnerHTML={{
+                          __html: DOMPurify.sanitize(result.highlight, {
+                            ALLOWED_TAGS: ["b", "em", "strong", "mark", "span"],
+                            ALLOWED_ATTR: ["class"],
+                          }),
+                        }}
                       />
                     )}
                   </div>

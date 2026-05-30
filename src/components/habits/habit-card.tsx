@@ -66,7 +66,7 @@ export const HabitCard = memo(function HabitCard({ habit: h, onEdit, onDelete, o
               </Badge>
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" size="icon-sm" className="h-8 w-8">
+                  <Button variant="ghost" size="icon-sm" className="h-8 w-8" aria-label="Open actions menu">
                     <MoreHorizontal className="h-4 w-4" />
                   </Button>
                 </DropdownMenuTrigger>
@@ -96,7 +96,7 @@ export const HabitCard = memo(function HabitCard({ habit: h, onEdit, onDelete, o
                 </span>
               )}
             </div>
-            <div className="flex gap-1">
+            <div className="flex flex-wrap gap-1">
               {Array.from({ length: 28 }).map((_, i) => {
                 const intensity = Math.min(3, Math.floor((h.streak + i * 0.5) % 4));
                 const colors = [
@@ -108,6 +108,7 @@ export const HabitCard = memo(function HabitCard({ habit: h, onEdit, onDelete, o
                 return (
                   <div
                     key={i}
+                    aria-hidden="true"
                     className={cn(
                       "h-3 w-2.5 rounded-sm transition-colors",
                       colors[intensity]

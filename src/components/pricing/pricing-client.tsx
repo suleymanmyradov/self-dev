@@ -72,8 +72,23 @@ export function PricingClient() {
       { planCode: "pro", billingInterval },
       {
         onSuccess: (data) => {
-          if (data.data?.checkoutUrl) {
-            window.location.href = data.data.checkoutUrl;
+          const url = data.data?.checkoutUrl;
+          if (url) {
+            try {
+              const parsed = new URL(url);
+              const allowedHosts = [
+                "checkout.stripe.com",
+                "pay.stripe.com",
+                "checkout.link.co",
+              ];
+              if (allowedHosts.includes(parsed.hostname)) {
+                window.location.href = parsed.toString();
+              } else {
+                console.error("[Pricing] Blocked unexpected redirect:", parsed.hostname);
+              }
+            } catch {
+              console.error("[Pricing] Invalid checkout URL");
+            }
           }
         },
       }
@@ -121,9 +136,13 @@ export function PricingClient() {
               Monthly
             </button>
             <button
-              onClick={() => setBillingInterval("annual")}
+              type="button"
+              role="switch"
+              aria-checked={billingInterval === "annual"}
+              aria-label="Toggle annual billing"
+              onClick={() => setBillingInterval(billingInterval === "annual" ? "monthly" : "annual")}
               className={cn(
-                "relative rounded-full p-1 transition-colors",
+                "relative rounded-full p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2",
                 billingInterval === "annual" ? "bg-primary/15" : "bg-muted"
               )}
             >

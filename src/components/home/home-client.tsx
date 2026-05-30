@@ -143,7 +143,7 @@ export function HomeClient({ initialCategories, initialArticles, initialHabits, 
           {suggestions.length > 0 && !suggestionsLoading && (
             <div className="mb-6">
               <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="h-4 w-4 text-amber-500" />
+                <Lightbulb className="h-4 w-4 text-energy" />
                 <h3 className="text-sm font-medium">Suggestions for you</h3>
               </div>
               <div className="space-y-3">
@@ -198,7 +198,7 @@ export function HomeClient({ initialCategories, initialArticles, initialHabits, 
                 <p className="text-muted-foreground/60 text-xs">Try selecting a different category</p>
               </div>
             ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                 {articles.map((a, i) => (
                   <ArticleCardGrid
                     key={a.id}

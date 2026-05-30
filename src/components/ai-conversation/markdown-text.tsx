@@ -130,15 +130,26 @@ const defaultComponents = memoizeMarkdownComponents({
       {...props}
     />
   ),
-  a: ({ className, ...props }) => (
-    <a
-      className={cn(
-        "aui-md-a font-medium text-primary underline underline-offset-4",
-        className,
-      )}
-      {...props}
-    />
-  ),
+  a: ({ href, className, ...props }) => {
+    const isSafe =
+      typeof href === "string" &&
+      (href.startsWith("http://") ||
+        href.startsWith("https://") ||
+        href.startsWith("/") ||
+        href.startsWith("#"));
+    return (
+      <a
+        href={isSafe ? href : "#"}
+        rel="noopener noreferrer"
+        target="_blank"
+        className={cn(
+          "aui-md-a font-medium text-primary underline underline-offset-4",
+          className,
+        )}
+        {...props}
+      />
+    );
+  },
   blockquote: ({ className, ...props }) => (
     <blockquote
       className={cn("aui-md-blockquote border-l-2 pl-6 italic", className)}

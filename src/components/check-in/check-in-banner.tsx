@@ -21,7 +21,13 @@ export function CheckInBanner({ habits, todayCheckIns = [], onCheckInAll }: Chec
     return { checkedCount, remainingCount, allChecked: remainingCount === 0 && habits.length > 0 };
   }, [habits, todayCheckIns]);
 
-  if (habits.length === 0) return null;
+  if (habits.length === 0) {
+    return (
+      <div className="card-elevated rounded-lg p-4 text-sm text-muted-foreground">
+        No habits yet. Create one to start checking in daily.
+      </div>
+    );
+  }
 
   return (
     <div className={cn(

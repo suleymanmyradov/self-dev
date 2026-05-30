@@ -37,7 +37,7 @@ export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelet
         "data-[deleting=true]:opacity-0 data-[deleting=true]:-translate-y-2 data-[deleting=true]:scale-[0.98]"
       )}
     >
-      <div className="flex items-start gap-4">
+      <div className="flex flex-col sm:flex-row items-start gap-4">
         {/* Progress indicator */}
         <div className={cn(
           "flex flex-col items-center justify-center rounded-xl p-3 min-w-[60px]",
@@ -95,9 +95,11 @@ export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelet
               <div className="mt-2 flex gap-1">
                 {[25, 50, 75].map((preset) => (
                   <button
+                    type="button"
                     key={preset}
                     onClick={() => onProgressChange(goal.id, preset)}
-                    className="text-xs px-2 py-0.5 rounded border border-border hover:bg-accent transition-colors"
+                    aria-label={`Set progress to ${preset}%`}
+                    className="text-xs px-3 py-1.5 rounded-md border border-border hover:bg-accent transition-colors min-h-[2rem]"
                   >
                     {preset}%
                   </button>
@@ -137,7 +139,7 @@ export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelet
           />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button variant="ghost" size="icon-sm" className="h-8 w-8">
+              <Button variant="ghost" size="icon-sm" className="h-8 w-8" aria-label="Open actions menu">
                 <MoreHorizontal className="h-4 w-4" />
               </Button>
             </DropdownMenuTrigger>

@@ -109,7 +109,7 @@ export function HabitFormDialog({
                   type="checkbox"
                   checked={!!form.completed}
                   onChange={(e) => setForm((f) => ({ ...f, completed: e.target.checked }))}
-                  className="h-4 w-4"
+                  className="h-4 w-4 rounded focus:ring-2 focus:ring-ring/50 focus:ring-offset-2"
                 />
                 <label htmlFor="form-completed" className="text-sm">
                   Completed today

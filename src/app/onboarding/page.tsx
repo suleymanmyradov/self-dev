@@ -293,14 +293,14 @@ Rules:
                 </div>
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Category</label>
-                  <div className="grid grid-cols-3 gap-2">
+                  <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {GOAL_CATEGORIES.map((cat) => (
                       <button
                         key={cat}
                         type="button"
                         onClick={() => update('goalCategory', cat)}
                         className={cn(
-                          'rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-all',
+                          'rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2',
                           state.goalCategory === cat
                             ? 'border-primary bg-primary/10 text-primary'
                             : 'border-border/60 bg-background hover:border-border hover:bg-muted/40'
@@ -358,7 +358,7 @@ Rules:
                       type="button"
                       onClick={() => update('blocker', option === state.blocker ? '' : option)}
                       className={cn(
-                        'w-full rounded-lg border px-4 py-3 text-left text-sm font-medium transition-all',
+                        'w-full rounded-lg border px-4 py-3 text-left text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2',
                         state.blocker === option
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border/60 bg-background hover:border-border hover:bg-muted/40'
@@ -397,7 +397,7 @@ Rules:
                     type="button"
                     onClick={() => update('dailyMinutes', value)}
                     className={cn(
-                      'rounded-lg border px-4 py-3 text-sm font-medium transition-all',
+                      'rounded-lg border px-4 py-3 text-sm font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2',
                       state.dailyMinutes === value
                         ? 'border-primary bg-primary/10 text-primary'
                         : 'border-border/60 bg-background hover:border-border hover:bg-muted/40'
@@ -428,7 +428,7 @@ Rules:
                     type="button"
                     onClick={() => update('accountabilityStyle', style)}
                     className={cn(
-                      'w-full rounded-xl border p-4 text-left transition-all',
+                      'w-full rounded-xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2',
                       state.accountabilityStyle === style
                         ? 'border-primary bg-primary/10'
                         : 'border-border/60 bg-background hover:border-border hover:bg-muted/40'
@@ -467,14 +467,14 @@ Rules:
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Daily check-in time</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-3 sm:grid-cols-4 gap-2">
                   {CHECK_IN_HOURS.map((hour) => (
                     <button
                       key={hour}
                       type="button"
                       onClick={() => update('checkInTime', hour)}
                       className={cn(
-                        'rounded-lg border px-2 py-2 text-xs font-medium transition-all',
+                        'rounded-lg border px-2 py-2 text-xs font-medium transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2',
                         state.checkInTime === hour
                           ? 'border-primary bg-primary/10 text-primary'
                           : 'border-border/60 bg-background hover:border-border hover:bg-muted/40'
@@ -520,7 +520,7 @@ Rules:
                         update('habitSuggestions', updated);
                       }}
                       className={cn(
-                        'w-full rounded-xl border p-4 text-left transition-all',
+                        'w-full rounded-xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2',
                         habit.selected
                           ? 'border-primary bg-primary/10'
                           : 'border-border/60 bg-background opacity-60'
@@ -534,8 +534,9 @@ Rules:
                               ? 'border-primary bg-primary text-primary-foreground'
                               : 'border-muted-foreground/40'
                           )}
+                          aria-hidden="true"
                         >
-                          {habit.selected && <Check className="h-3 w-3" />}
+                          {habit.selected && <Check className="h-3 w-3" aria-hidden="true" />}
                         </div>
                         <div>
                           <p className="text-sm font-medium">{habit.name}</p>
