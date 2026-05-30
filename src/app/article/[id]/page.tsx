@@ -1,11 +1,45 @@
 import type { Metadata } from "next";
+import { cache } from "react";
 import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "lucide-react";
-import { getArticle } from "@/api";
+import { getArticle, listArticles } from "@/api";
 import { formatRelativeTime } from "@/lib/time-format";
 import ArticleSaveButton from "./article-save-button";
+
+// =============================================================================
+// Shared server fetch with React cache — dedupes across generateMetadata + page
+// =============================================================================
+
+const fetchArticle = cache(async (id: string) => {
+  try {
+    return await getArticle(id);
+  } catch {
+    return null;
+  }
+});
+
+// =============================================================================
+// Static generation for popular articles
+// =============================================================================
+
+export const revalidate = 3600; // ISR: revalidate every hour
+
+export async function generateStaticParams() {
+  try {
+    const response = await listArticles({ limit: 50 });
+    return (response.data ?? []).map((article) => ({
+      id: article.id,
+    }));
+  } catch {
+    return [];
+  }
+}
+
+// =============================================================================
+// Metadata
+// =============================================================================
 
 export async function generateMetadata({
   params,
@@ -13,7 +47,7 @@ export async function generateMetadata({
   params: Promise<{ id: string }>;
 }): Promise<Metadata> {
   const { id } = await params;
-  const response = await getArticle(id).catch(() => null);
+  const response = await fetchArticle(id);
   const article = response?.data;
 
   return {
@@ -41,7 +75,7 @@ export default async function ArticlePage({
 }) {
   const { id } = await params;
 
-  const response = await getArticle(id).catch(() => null);
+  const response = await fetchArticle(id);
   const article = response?.data;
 
   if (!article) return notFound();

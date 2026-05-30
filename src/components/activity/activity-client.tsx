@@ -1,23 +1,29 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Activity as ActivityIcon } from "lucide-react";
 import { useActivities } from "@/hooks/use-activities";
 import { ActivityItem, ActivityEmptyState, ActivityFilterBar } from "@/components/activity";
-import type { ActivityType } from "@/api";
+import type { ActivityType, ActivityResponse } from "@/api";
 
-export function ActivityClient() {
+interface ActivityClientProps {
+  initialActivities?: ActivityResponse;
+}
+
+export function ActivityClient({ initialActivities }: ActivityClientProps) {
   const [filter, setFilter] = useState<ActivityType | 'all' | 'check_in'>('all');
-  const { data: activities, isLoading, isError, error, refetch, isRefetching } = useActivities();
+  const { data: activities, isLoading, isError, error, refetch, isRefetching } = useActivities(undefined, initialActivities);
 
-  const filteredActivities = filter === 'all'
-    ? activities || []
-    : filter === 'check_in'
-      ? (activities || []).filter(a => a.type === 'check_in_completed' || a.type === 'check_in_missed')
-      : (activities || []).filter(a => a.type === filter);
+  const filteredActivities = useMemo(() => {
+    if (!activities) return [];
+    if (filter === 'all') return activities;
+    if (filter === 'check_in')
+      return activities.filter(a => a.type === 'check_in_completed' || a.type === 'check_in_missed');
+    return activities.filter(a => a.type === filter);
+  }, [activities, filter]);
 
   return (
     <div className="h-full flex flex-col">

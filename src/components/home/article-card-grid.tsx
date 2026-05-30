@@ -9,6 +9,7 @@ import { CATEGORY_COLORS } from "@/lib/constants";
 import { useToggleState } from "@/hooks/use-toggle-state";
 import { Heart, Bookmark } from "lucide-react";
 import { formatRelativeTime } from "@/lib/time-format";
+import { memo } from "react";
 
 export type ArticleCardGridProps = {
   id?: string;
@@ -26,7 +27,7 @@ export type ArticleCardGridProps = {
   index?: number;
 };
 
-export function ArticleCardGrid({
+export const ArticleCardGrid = memo(function ArticleCardGrid({
   id,
   href,
   title,
@@ -65,6 +66,7 @@ export function ArticleCardGrid({
             alt={title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
+            priority={index < 4}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
           {/* Category badge on image */}
@@ -127,4 +129,4 @@ export function ArticleCardGrid({
       </Card>
     </Link>
   );
-}
+});

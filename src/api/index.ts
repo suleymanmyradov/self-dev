@@ -123,8 +123,10 @@ export type {
   // Saved Items Types
   SavedItemType,
   SavedItem,
+  SavedItemDetailed,
   SaveItemRequest,
   SavedItemsResponse,
+  SavedItemsDetailedResponse,
   SavedItemResponse,
   
   // Report Types
@@ -184,7 +186,7 @@ export { listArticles, getArticle, likeArticle, shareArticle, getAuthorArticles 
 export { listActivities } from './activities';
 
 // Saved Items API
-export { listSavedItems, saveItem, removeSavedItem } from './saved';
+export { listSavedItems, listSavedDetailed, saveItem, removeSavedItem } from './saved';
 
 // Conversations API
 export { listConversations, startConversation, getConversation, getMessages, sendMessage } from './conversations';

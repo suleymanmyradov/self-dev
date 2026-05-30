@@ -1,3 +1,4 @@
+import { memo } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -11,7 +12,7 @@ interface PlanAdjustmentCardProps {
   loading?: boolean;
 }
 
-export function PlanAdjustmentCard({ suggestion, onAccept, onDismiss, loading }: PlanAdjustmentCardProps) {
+export const PlanAdjustmentCard = memo(function PlanAdjustmentCard({ suggestion, onAccept, onDismiss, loading }: PlanAdjustmentCardProps) {
   const getAdjustmentTypeColor = (type: string) => {
     switch (type) {
       case "reduce_difficulty":
@@ -122,4 +123,4 @@ export function PlanAdjustmentCard({ suggestion, onAccept, onDismiss, loading }:
       </CardFooter>
     </Card>
   );
-}
+});

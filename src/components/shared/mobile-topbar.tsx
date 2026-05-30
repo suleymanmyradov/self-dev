@@ -1,10 +1,11 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
 import { Bell, Leaf } from 'lucide-react';
 
-export function MobileTopBar() {
+export const MobileTopBar = memo(function MobileTopBar() {
   return (
     <header
       className="fixed top-0 left-0 right-0 z-40 border-b border-border/70 bg-background/90 backdrop-blur md:hidden"
@@ -33,4 +34,4 @@ export function MobileTopBar() {
       </div>
     </header>
   );
-}
+});

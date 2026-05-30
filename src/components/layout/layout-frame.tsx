@@ -7,17 +7,23 @@ import { useUIStore } from "@/store/uiStore"
 import { usePathname } from "next/navigation"
 import { cn } from "@/lib/utils"
 
-export function LayoutFrame({ children }: { children: React.ReactNode }) {
-  const isLeftPanelOpen = useUIStore(s => s.isLeftPanelOpen)
-  const closeLeftPanel = useUIStore(s => s.closeLeftPanel)
+function RouteChangeListener() {
   const pathname = usePathname()
-  // Close any open left nested panel on route change
+  const closeLeftPanel = useUIStore(s => s.closeLeftPanel)
   React.useEffect(() => {
     closeLeftPanel()
   }, [pathname, closeLeftPanel])
+  return null
+}
+
+export function LayoutFrame({ children }: { children: React.ReactNode }) {
+  const isLeftPanelOpen = useUIStore(s => s.isLeftPanelOpen)
+  const closeLeftPanel = useUIStore(s => s.closeLeftPanel)
 
   return (
     <div className="w-full flex-1 min-h-0 overflow-hidden">
+      <RouteChangeListener />
+
       {/* Sidebar rail – always visible */}
       <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[var(--sidebar-width)] border-r border-border/40 bg-background lg:block">
         <SidebarNav />

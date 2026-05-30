@@ -1,10 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useCallback, useState } from "react";
+import { memo, useEffect, useRef, useCallback, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, Sparkles } from "lucide-react";
-import { useTrackUpgradeEvent, useBillingOverview } from "@/hooks";
+import { useTrackUpgradeEvent } from "@/hooks";
 import { cn } from "@/lib/utils";
 import type { UpgradeTrigger, UpgradeSurface } from "@/api";
 
@@ -14,6 +14,7 @@ interface UpgradePromptProps {
   title: string;
   description: string;
   compact?: boolean;
+  isPro?: boolean;
   onDismiss?: () => void;
 }
 
@@ -49,22 +50,20 @@ const FEEDBACK_REASONS = [
   "Other",
 ];
 
-export function UpgradePrompt({
+export const UpgradePrompt = memo(function UpgradePrompt({
   surface,
   trigger,
   title: titleProp,
   description: descProp,
   compact = false,
+  isPro = false,
   onDismiss,
 }: UpgradePromptProps) {
   const trackEvent = useTrackUpgradeEvent();
-  const { data: billing } = useBillingOverview();
   const hasTrackedView = useRef(false);
   const [showFeedback, setShowFeedback] = useState(false);
   const [selectedReason, setSelectedReason] = useState<string | null>(null);
   const [feedbackNote, setFeedbackNote] = useState("");
-
-  const isPro = billing?.subscription?.planCode === "pro";
 
   const title = titleProp || TRIGGER_MESSAGES[trigger]?.title || "Upgrade to Pro";
   const description = descProp || TRIGGER_MESSAGES[trigger]?.description || "Unlock more features with Growth Pro.";
@@ -222,4 +221,4 @@ export function UpgradePrompt({
       </CardContent>
     </Card>
   );
-}
+});

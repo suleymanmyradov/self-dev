@@ -495,6 +495,16 @@ export interface SavedItemsResponse extends ApiResponse<SavedItem[]> {
 
 export type SavedItemResponse = ApiResponse<SavedItem>;
 
+export interface SavedItemDetailed extends SavedItem {
+  article?: Article;
+  habit?: Habit;
+  goal?: Goal;
+}
+
+export interface SavedItemsDetailedResponse extends ApiResponse<SavedItemDetailed[]> {
+  page: PageResponse;
+}
+
 // ============================================
 // Report Types
 // ============================================

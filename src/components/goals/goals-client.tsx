@@ -1,26 +1,34 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GoalCard } from "@/components/goals/goal-card";
-import { GoalFormDialog } from "@/components/goals/goal-form-dialog";
 import { listArticles } from "@/api";
-import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useGoalForm, useConfirmDelete } from "@/hooks";
-import type { Goal } from "@/api";
+
+const GoalFormDialog = dynamic(() => import("@/components/goals/goal-form-dialog").then((mod) => mod.GoalFormDialog));
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useGoalForm, useConfirmDelete, useBillingOverview } from "@/hooks";
+import type { Goal, GoalsResponse } from "@/api";
 import Link from "next/link";
 import { Plus, Target, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntitlements, useTrackUpgradeEvent } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 
-export function GoalsClient() {
+interface GoalsClientProps {
+  initialGoals?: GoalsResponse;
+}
+
+export function GoalsClient({ initialGoals }: GoalsClientProps) {
   // Data fetching
-  const { data: goals = [], isLoading } = useGoals();
+  const { data: goals = [], isLoading } = useGoals(initialGoals);
   const { data: entitlements } = useEntitlements();
+  const { data: billing } = useBillingOverview();
+  const isPro = billing?.subscription?.planCode === "pro";
   const trackUpgradeEvent = useTrackUpgradeEvent();
 
   const { data: articlesData } = useQuery({
@@ -82,11 +90,11 @@ export function GoalsClient() {
     });
   };
 
-  const openEdit = (goal: Goal) => {
+  const openEdit = useCallback((goal: Goal) => {
     setEditingId(goal.id);
     editForm.loadGoal(goal);
     setEditOpen(true);
-  };
+  }, [editForm]);
 
   const handleSaveEdit = () => {
     if (!editingId) return;
@@ -104,9 +112,13 @@ export function GoalsClient() {
     updateProgressMutation.mutate({ id: editingId, progress });
   };
 
-  const handleCardProgressChange = (id: string, progress: number) => {
+  const handleCardProgressChange = useCallback((id: string, progress: number) => {
     updateProgressMutation.mutate({ id, progress });
-  };
+  }, [updateProgressMutation]);
+
+  const handleToggleGoal = useCallback((id: string) => {
+    toggleMutation.mutate(id);
+  }, [toggleMutation]);
 
   const handleDelete = () => {
     const id = deleteConfirm.startDeleting();
@@ -188,7 +200,7 @@ export function GoalsClient() {
                 key={g.id}
                 goal={g}
                 deleting={deleteConfirm.isDeleting(g.id)}
-                onToggle={(id) => toggleMutation.mutate(id)}
+                onToggle={handleToggleGoal}
                 onEdit={openEdit}
                 onDelete={deleteConfirm.confirmDelete}
                 onProgressChange={handleCardProgressChange}
@@ -204,6 +216,7 @@ export function GoalsClient() {
                 trigger="goal_limit"
                 title="Unlock unlimited goals"
                 description="You've reached the Free plan goal limit. Upgrade to Pro to track as many goals as you need."
+                isPro={isPro}
                 onDismiss={() => setGoalLimitReached(false)}
               />
             </div>

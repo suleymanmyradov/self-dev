@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listSavedItems, saveItem, removeSavedItem } from '@/api/saved';
+import { listSavedItems, listSavedDetailed, saveItem, removeSavedItem } from '@/api/saved';
 import type { SaveItemRequest, PageParams } from '@/api';
 
 /**
@@ -10,6 +10,19 @@ export function useSavedItems(params: PageParams = { page: 1, limit: 20 }) {
     queryKey: ['saved', params],
     queryFn: () => listSavedItems(params),
     select: (data) => data.data,
+  });
+}
+
+/**
+ * Hook to fetch saved items with hydrated details (single request, no N+1)
+ */
+export function useSavedItemsDetailed(params: PageParams = { page: 1, limit: 20 }) {
+  return useQuery({
+    queryKey: ['saved-detailed', params],
+    queryFn: () => listSavedDetailed(params),
+    select: (data) => data.data,
+    staleTime: 5 * 60 * 1000,
+    gcTime: 10 * 60 * 1000,
   });
 }
 

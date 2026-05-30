@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
@@ -13,7 +14,7 @@ const tabs = [
   { href: "/profile", label: "Profile", icon: User },
 ];
 
-export function BottomTabBar() {
+export const BottomTabBar = memo(function BottomTabBar() {
   const pathname = usePathname();
 
   return (
@@ -40,4 +41,4 @@ export function BottomTabBar() {
       </nav>
     </div>
   );
-}
+});

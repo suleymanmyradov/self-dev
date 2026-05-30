@@ -5,14 +5,15 @@ import {
   createCheckoutSession,
   createCustomerPortalSession,
 } from '@/api/billing';
-import type { UpgradeEventRequest } from '@/api';
+import type { UpgradeEventRequest, BillingOverviewResponse } from '@/api';
 
-export function useBillingOverview() {
+export function useBillingOverview(initialData?: BillingOverviewResponse) {
   return useQuery({
     queryKey: ['billing', 'overview'],
     queryFn: () => getBillingOverview(),
     select: (data) => data.data,
-    staleTime: 5 * 60 * 1000, // 5 minutes
+    initialData,
+    staleTime: 15 * 60 * 1000, // 15 minutes — billing rarely changes
   });
 }
 

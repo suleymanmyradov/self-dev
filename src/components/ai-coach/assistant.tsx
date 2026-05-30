@@ -33,6 +33,7 @@ export const Assistant = () => {
                 title="Deeper coaching memory"
                 description="Upgrade to Pro for personalized AI coaching that remembers your patterns."
                 compact
+                isPro={isPro}
               />
             </div>
           )}

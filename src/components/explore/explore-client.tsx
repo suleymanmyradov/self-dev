@@ -8,6 +8,7 @@ import { Search } from "lucide-react";
 import { useCreateHabit, useCreateGoal } from "@/hooks";
 import { listArticles } from "@/api";
 import { HABIT_TEMPLATES, GOAL_TEMPLATES } from "@/data/templates";
+import type { ArticlesResponse } from "@/api";
 import {
   ArticleCard,
   FeaturedCard,
@@ -16,7 +17,11 @@ import {
   CommunityCard,
 } from "@/components/explore";
 
-export function ExploreClient() {
+interface ExploreClientProps {
+  initialArticles?: ArticlesResponse;
+}
+
+export function ExploreClient({ initialArticles }: ExploreClientProps) {
   const createHabitMutation = useCreateHabit();
   const createGoalMutation = useCreateGoal();
 
@@ -26,6 +31,7 @@ export function ExploreClient() {
   const { data: articlesData } = useQuery({
     queryKey: ['articles', 'explore'],
     queryFn: () => listArticles({ limit: 20 }),
+    initialData: initialArticles,
   });
 
   const articles = articlesData?.data ?? [];

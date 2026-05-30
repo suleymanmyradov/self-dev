@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { z } from "zod";
 import { useQueryClient } from "@tanstack/react-query";
 import { updateProfile } from "@/api";
@@ -50,23 +50,28 @@ type FormState = {
   avatarUrl: string;
 };
 
-export function ProfileClient() {
+interface ProfileClientProps {
+  initialProfile?: Profile;
+}
+
+export function ProfileClient({ initialProfile }: ProfileClientProps) {
   const queryClient = useQueryClient();
-  const { data: profile, isLoading, error: profileError } = useProfile();
+  const { data: profile, isLoading, error: profileError } = useProfile(initialProfile);
   const [form, setForm] = useState<FormState>({
-    fullName: "",
-    username: "",
-    bio: "",
-    location: "",
-    website: "",
-    interests: "",
-    avatarUrl: "",
+    fullName: initialProfile?.fullName ?? "",
+    username: initialProfile?.username ?? "",
+    bio: initialProfile?.bio ?? "",
+    location: initialProfile?.location ?? "",
+    website: initialProfile?.website ?? "",
+    interests: (initialProfile?.interests ?? []).join(", "),
+    avatarUrl: initialProfile?.avatarUrl ?? "",
   });
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
+  // Only sync form from fetched profile when it differs from initial to avoid loops
   useEffect(() => {
-    if (profile) {
+    if (profile && profile.id !== initialProfile?.id) {
       setForm({
         fullName: profile.fullName ?? "",
         username: profile.username ?? "",
@@ -77,7 +82,7 @@ export function ProfileClient() {
         avatarUrl: profile.avatarUrl ?? "",
       });
     }
-  }, [profile]);
+  }, [profile, initialProfile?.id]);
 
   useEffect(() => {
     if (profileError) {
@@ -89,6 +94,11 @@ export function ProfileClient() {
     const parts = form.fullName.trim().split(/\s+/).filter(Boolean);
     return parts.slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "U";
   }, [form.fullName]);
+
+  const handleChange = useCallback((field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    setForm((prev) => ({ ...prev, [field]: e.target.value }));
+    if (error) setError(null);
+  }, [error]);
 
   const handleSubmit = async () => {
     setError(null);
@@ -157,7 +167,7 @@ export function ProfileClient() {
                     <Input
                       placeholder="https://..."
                       value={form.avatarUrl}
-                      onChange={(e) => setForm((f) => ({ ...f, avatarUrl: e.target.value }))}
+                      onChange={handleChange("avatarUrl")}
                     />
                     <p className="text-xs text-muted-foreground">Paste an image URL for your avatar.</p>
                   </div>
@@ -168,7 +178,7 @@ export function ProfileClient() {
                   <Input
                     placeholder="Your name"
                     value={form.fullName}
-                    onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))}
+                    onChange={handleChange("fullName")}
                   />
                 </div>
 
@@ -177,7 +187,7 @@ export function ProfileClient() {
                   <Input
                     placeholder="username"
                     value={form.username}
-                    onChange={(e) => setForm((f) => ({ ...f, username: e.target.value }))}
+                    onChange={handleChange("username")}
                   />
                 </div>
 
@@ -187,7 +197,7 @@ export function ProfileClient() {
                     placeholder="Tell us about yourself (max 280 characters)"
                     rows={4}
                     value={form.bio}
-                    onChange={(e) => setForm((f) => ({ ...f, bio: e.target.value }))}
+                    onChange={handleChange("bio")}
                   />
                 </div>
 
@@ -197,7 +207,7 @@ export function ProfileClient() {
                     <Input
                       placeholder="City, Country"
                       value={form.location}
-                      onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
+                      onChange={handleChange("location")}
                     />
                   </div>
                   <div className="grid gap-1">
@@ -205,7 +215,7 @@ export function ProfileClient() {
                     <Input
                       placeholder="https://example.com"
                       value={form.website}
-                      onChange={(e) => setForm((f) => ({ ...f, website: e.target.value }))}
+                      onChange={handleChange("website")}
                     />
                   </div>
                 </div>
@@ -215,7 +225,7 @@ export function ProfileClient() {
                   <Input
                     placeholder="e.g., productivity, health, mindfulness"
                     value={form.interests}
-                    onChange={(e) => setForm((f) => ({ ...f, interests: e.target.value }))}
+                    onChange={handleChange("interests")}
                   />
                   <p className="text-xs text-muted-foreground">Comma-separated list.</p>
                 </div>

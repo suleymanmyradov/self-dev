@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback } from "react";
+import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -10,12 +11,15 @@ import { HABIT_CATEGORIES } from "@/lib/constants";
 import { Plus, RotateCcw, Target, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HabitCard } from "@/components/habits/habit-card";
-import { HabitFormDialog } from "@/components/habits/habit-form-dialog";
-import { CheckInModal, type CheckInSubmitData } from "@/components/check-in/check-in-modal";
 import { CheckInBanner } from "@/components/check-in/check-in-banner";
-import type { Habit } from "@/api";
+import type { Habit, HabitsResponse, CheckInsResponse } from "@/api";
+import type { CheckInSubmitData } from "@/components/check-in/check-in-modal";
+
+const HabitFormDialog = dynamic(() => import("@/components/habits/habit-form-dialog").then((mod) => mod.HabitFormDialog));
+const CheckInModal = dynamic(() => import("@/components/check-in/check-in-modal").then((mod) => mod.CheckInModal));
 import {
   useHabits,
+  useTodayCheckIns,
   useCreateHabit,
   useUpdateHabit,
   useDeleteHabit,
@@ -27,13 +31,22 @@ import {
   useCreateCheckIn,
   useEntitlements,
   useTrackUpgradeEvent,
+  useBillingOverview,
 } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 
-export function HabitsClient() {
+interface HabitsClientProps {
+  initialHabits?: HabitsResponse;
+  initialCheckIns?: CheckInsResponse;
+}
+
+export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientProps) {
   // Fetch habits
-  const { data: habits = [], isLoading } = useHabits({ page: 1, limit: 100 });
+  const { data: habits = [], isLoading } = useHabits({ page: 1, limit: 100 }, initialHabits);
+  const { data: todayCheckIns = [] } = useTodayCheckIns(initialCheckIns);
   const { data: entitlements } = useEntitlements();
+  const { data: billing } = useBillingOverview();
+  const isPro = billing?.subscription?.planCode === "pro";
   const trackUpgradeEvent = useTrackUpgradeEvent();
 
   // Mutations
@@ -118,10 +131,10 @@ export function HabitsClient() {
   };
 
   // Check-in handler
-  const handleCheckIn = (habit: Habit) => {
+  const handleCheckIn = useCallback((habit: Habit) => {
     setCheckInHabit(habit);
     setIsCheckInModalOpen(true);
-  };
+  }, []);
 
   const handleSubmitCheckIn = (data: CheckInSubmitData) => {
     checkInMutation.mutate(data, {
@@ -170,6 +183,7 @@ export function HabitsClient() {
           {/* Check-In Banner */}
           <CheckInBanner
             habits={habits}
+            todayCheckIns={todayCheckIns}
             onCheckInAll={() => {
               if (habits.length > 0) {
                 handleCheckIn(habits[0]);
@@ -255,6 +269,7 @@ export function HabitsClient() {
                 trigger="habit_limit"
                 title="Unlock unlimited habits"
                 description="You've reached the Free plan habit limit. Upgrade to Pro to build more daily habits."
+                isPro={isPro}
                 onDismiss={() => setHabitLimitReached(false)}
               />
             </div>

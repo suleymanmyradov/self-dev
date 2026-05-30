@@ -1,15 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listGoals, getGoal, createGoal, updateGoal, deleteGoal, toggleGoal, updateGoalProgress } from '@/api';
-import type { CreateGoalRequest, UpdateGoalRequest } from '@/api';
+import type { CreateGoalRequest, UpdateGoalRequest, GoalsResponse } from '@/api';
 
 /**
  * Hook to fetch all goals
  */
-export function useGoals() {
+export function useGoals(initialData?: GoalsResponse) {
   return useQuery({
     queryKey: ['goals'],
     queryFn: () => listGoals(),
     select: (data) => data.data,
+    initialData,
+    staleTime: 5 * 60 * 1000, // 5 minutes — mutations invalidate cache
   });
 }
 

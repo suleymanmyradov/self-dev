@@ -10,6 +10,7 @@ export function useNotifications(params: PageParams = { page: 1, limit: 20 }) {
     queryKey: ['notifications', params],
     queryFn: () => listNotifications(params),
     select: (data) => data.data,
+    staleTime: 30_000, // 30s — notifications are real-time
   });
 }
 

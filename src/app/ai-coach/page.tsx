@@ -1,5 +1,5 @@
-import { Assistant } from '@/components/ai-coach/assistant';
+import { AssistantLoader } from '@/components/ai-coach/assistant-loader';
 
 export default function AICoachPage() {
-    return <Assistant />;
+  return <AssistantLoader />;
 }

@@ -1,15 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listHabits, getHabit, createHabit, updateHabit, deleteHabit, toggleHabit, resetTodayHabits } from '@/api';
-import type { CreateHabitRequest, UpdateHabitRequest } from '@/api';
+import type { CreateHabitRequest, UpdateHabitRequest, HabitsResponse } from '@/api';
 
 /**
  * Hook to fetch all habits
  */
-export function useHabits(params?: { page?: number; limit?: number }) {
+export function useHabits(params?: { page?: number; limit?: number }, initialData?: HabitsResponse) {
   return useQuery({
     queryKey: ['habits', params],
     queryFn: () => listHabits(params),
     select: (data) => data.data,
+    initialData,
+    staleTime: 5 * 60 * 1000, // 5 minutes — mutations invalidate cache
   });
 }
 

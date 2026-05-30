@@ -9,7 +9,7 @@ export { useHabitFilters } from './use-habit-filters';
 export { useHabitForm, useHabitEditForm } from './use-habit-form';
 export { useConfirmDelete } from './use-confirm-delete';
 export { useToggleState } from './use-toggle-state';
-export { useSavedItems, useSaveItem, useRemoveSavedItem } from './use-saved';
+export { useSavedItems, useSavedItemsDetailed, useSaveItem, useRemoveSavedItem } from './use-saved';
 export { useConversations, useConversation, useMessages, useStartConversation, useSendMessage } from './use-conversations';
 export { useSearch } from './use-search';
 export { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead } from './use-notifications';

@@ -5,17 +5,15 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { CheckCircle2, CircleDashed } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { useTodayCheckIns } from "@/hooks";
-import type { Habit } from "@/api";
+import type { Habit, CheckIn } from "@/api";
 
 export type CheckInBannerProps = {
   habits: Habit[];
+  todayCheckIns?: CheckIn[];
   onCheckInAll: () => void;
 };
 
-export function CheckInBanner({ habits, onCheckInAll }: CheckInBannerProps) {
-  const { data: todayCheckIns = [] } = useTodayCheckIns();
-
+export function CheckInBanner({ habits, todayCheckIns = [], onCheckInAll }: CheckInBannerProps) {
   const { checkedCount, remainingCount, allChecked } = useMemo(() => {
     const checkedHabitIds = new Set(todayCheckIns.map((ci) => ci.habitId));
     const checkedCount = habits.filter((h) => checkedHabitIds.has(h.id)).length;

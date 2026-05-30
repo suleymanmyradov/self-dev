@@ -1,7 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useState, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -9,67 +8,39 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
 import Link from "next/link";
 import { FileText, Target, Repeat, Trash2 } from "lucide-react";
-import { useSavedItems, useRemoveSavedItem } from "@/hooks";
-import { getArticle, getHabit, getGoal } from "@/api";
+import { useSavedItemsDetailed, useRemoveSavedItem } from "@/hooks";
+import type { SavedItemDetailed, Article, Habit, Goal } from "@/api";
 
 export function SavedClient() {
   const [tab, setTab] = useState("articles");
-  const { data: savedItems, isLoading } = useSavedItems({ page: 1, limit: 100 });
+  const { data: savedItems, isLoading } = useSavedItemsDetailed({ page: 1, limit: 100 });
   const removeSaved = useRemoveSavedItem();
 
-  const savedArticleIds = useMemo(
-    () => savedItems?.filter((item) => item.itemType === "article").map((item) => item.itemId) ?? [],
-    [savedItems]
-  );
+  const items = savedItems ?? [];
+  const articles = items
+    .filter((item: SavedItemDetailed) => item.itemType === "article")
+    .map((item: SavedItemDetailed) => item.article)
+    .filter((a): a is Article => Boolean(a));
+  const habits = items
+    .filter((item: SavedItemDetailed) => item.itemType === "habit")
+    .map((item: SavedItemDetailed) => item.habit)
+    .filter((h): h is Habit => Boolean(h));
+  const goals = items
+    .filter((item: SavedItemDetailed) => item.itemType === "goal")
+    .map((item: SavedItemDetailed) => item.goal)
+    .filter((g): g is Goal => Boolean(g));
 
-  const savedHabitIds = useMemo(
-    () => savedItems?.filter((item) => item.itemType === "habit").map((item) => item.itemId) ?? [],
-    [savedItems]
-  );
-
-  const savedGoalIds = useMemo(
-    () => savedItems?.filter((item) => item.itemType === "goal").map((item) => item.itemId) ?? [],
-    [savedItems]
-  );
-
-  const { data: articles = [], isLoading: articlesLoading } = useQuery({
-    queryKey: ["saved-articles", savedArticleIds],
-    queryFn: async () => {
-      const results = await Promise.all(savedArticleIds.map((id) => getArticle(id)));
-      return results.map((r) => r.data);
-    },
-    enabled: savedArticleIds.length > 0,
-  });
-
-  const { data: habits = [], isLoading: habitsLoading } = useQuery({
-    queryKey: ["saved-habits", savedHabitIds],
-    queryFn: async () => {
-      const results = await Promise.all(savedHabitIds.map((id) => getHabit(id)));
-      return results.map((r) => r.data);
-    },
-    enabled: savedHabitIds.length > 0,
-  });
-
-  const { data: goals = [], isLoading: goalsLoading } = useQuery({
-    queryKey: ["saved-goals", savedGoalIds],
-    queryFn: async () => {
-      const results = await Promise.all(savedGoalIds.map((id) => getGoal(id)));
-      return results.map((r) => r.data);
-    },
-    enabled: savedGoalIds.length > 0,
-  });
-
-  const handleRemove = async (savedItemId: string, itemType: string) => {
+  const handleRemove = useCallback(async (savedItemId: string, itemType: string) => {
     try {
       await removeSaved.mutateAsync(savedItemId);
       toast.success(`${itemType} removed from saved`);
     } catch {
       toast.error("Failed to remove saved item");
     }
-  };
+  }, [removeSaved]);
 
   const renderArticles = () => {
-    if (isLoading || articlesLoading) {
+    if (isLoading) {
       return (
         <div className="grid gap-4 md:grid-cols-2">
           {[1, 2, 3].map((i) => (
@@ -103,21 +74,21 @@ export function SavedClient() {
     return (
       <div className="grid gap-4 md:grid-cols-2">
         {articles.map((article) => (
-          <Card key={article.id}>
+          <Card key={article!.id}>
             <CardHeader>
-              <CardTitle className="text-base">{article.title}</CardTitle>
+              <CardTitle className="text-base">{article!.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{article.excerpt}</p>
+              <p className="text-sm text-muted-foreground">{article!.excerpt}</p>
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{article.category?.name ?? 'Uncategorized'}</span>
+                <span className="text-xs text-muted-foreground">{article!.category?.name ?? 'Uncategorized'}</span>
                 <div className="flex items-center gap-2">
-                  <Button asChild size="sm"><Link href={`/article/${article.id}`}>Read</Link></Button>
+                  <Button asChild size="sm"><Link href={`/article/${article!.id}`}>Read</Link></Button>
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={() => {
-                      const savedItem = savedItems?.find((s) => s.itemId === article.id);
+                      const savedItem = savedItems?.find((s) => s.itemId === article!.id);
                       if (savedItem) handleRemove(savedItem.id, "Article");
                     }}
                   >
@@ -133,7 +104,7 @@ export function SavedClient() {
   };
 
   const renderHabits = () => {
-    if (isLoading || habitsLoading) {
+    if (isLoading) {
       return (
         <div className="grid gap-4 md:grid-cols-2">
           {[1, 2, 3].map((i) => (
@@ -167,19 +138,19 @@ export function SavedClient() {
     return (
       <div className="grid gap-4 md:grid-cols-2">
         {habits.map((habit) => (
-          <Card key={habit.id}>
+          <Card key={habit!.id}>
             <CardHeader>
-              <CardTitle className="text-base">{habit.name}</CardTitle>
+              <CardTitle className="text-base">{habit!.name}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{habit.description}</p>
+              <p className="text-sm text-muted-foreground">{habit!.description}</p>
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{habit.category}</span>
+                <span className="text-xs text-muted-foreground">{habit!.category}</span>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => {
-                    const savedItem = savedItems?.find((s) => s.itemId === habit.id);
+                    const savedItem = savedItems?.find((s) => s.itemId === habit!.id);
                     if (savedItem) handleRemove(savedItem.id, "Habit");
                   }}
                 >
@@ -194,7 +165,7 @@ export function SavedClient() {
   };
 
   const renderGoals = () => {
-    if (isLoading || goalsLoading) {
+    if (isLoading) {
       return (
         <div className="grid gap-4 md:grid-cols-2">
           {[1, 2, 3].map((i) => (
@@ -228,19 +199,19 @@ export function SavedClient() {
     return (
       <div className="grid gap-4 md:grid-cols-2">
         {goals.map((goal) => (
-          <Card key={goal.id}>
+          <Card key={goal!.id}>
             <CardHeader>
-              <CardTitle className="text-base">{goal.title}</CardTitle>
+              <CardTitle className="text-base">{goal!.title}</CardTitle>
             </CardHeader>
             <CardContent>
-              <p className="text-sm text-muted-foreground">{goal.description}</p>
+              <p className="text-sm text-muted-foreground">{goal!.description}</p>
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{goal.category}</span>
+                <span className="text-xs text-muted-foreground">{goal!.category}</span>
                 <Button
                   variant="ghost"
                   size="icon"
                   onClick={() => {
-                    const savedItem = savedItems?.find((s) => s.itemId === goal.id);
+                    const savedItem = savedItems?.find((s) => s.itemId === goal!.id);
                     if (savedItem) handleRemove(savedItem.id, "Goal");
                   }}
                 >

@@ -1,15 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSettings, updateSettings } from '@/api/settings';
-import type { UpdateSettingsRequest } from '@/api';
+import type { UpdateSettingsRequest, SettingsResponse } from '@/api';
 
 /**
  * Hook to fetch user settings
  */
-export function useSettings() {
+export function useSettings(initialData?: SettingsResponse) {
   return useQuery({
     queryKey: ['settings'],
     queryFn: () => getSettings(),
     select: (data) => data.data,
+    initialData,
+    staleTime: 10 * 60 * 1000, // 10 minutes — settings rarely change
   });
 }
 

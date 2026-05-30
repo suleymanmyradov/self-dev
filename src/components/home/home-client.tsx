@@ -14,6 +14,7 @@ import type { FeedFilter } from '@/store/feed-filter';
 import { listCategories, listArticles } from '@/api';
 import { useHabits, useTodayCheckIns, usePlanAdjustments, useBillingOverview } from '@/hooks';
 import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
+import type { HabitsResponse, CheckInsResponse, BillingOverviewResponse } from '@/api';
 
 const TAB_TRIGGER_CLASS =
   'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold';
@@ -26,12 +27,19 @@ const DEFAULT_CATEGORIES: { value: FeedFilter; label: string }[] = [
   { value: 'productivity', label: 'Productivity' },
 ];
 
-export function HomeClient() {
+interface HomeClientProps {
+  initialCategories?: Array<{ slug: string; name: string }> | null;
+  initialArticles?: Array<{ id: string; title: string; excerpt?: string; imageUrl?: string; category?: { name: string }; publishedAt: string }> | null;
+  initialHabits?: HabitsResponse;
+  initialCheckIns?: CheckInsResponse;
+}
+
+export function HomeClient({ initialCategories, initialArticles, initialHabits, initialCheckIns }: HomeClientProps) {
   const { filter, setFilter } = useFeedFilter();
 
   // Fetch habits and check-ins for today's widget
-  const { data: habits = [] } = useHabits({ page: 1, limit: 100 });
-  const { data: todayCheckIns = [] } = useTodayCheckIns();
+  const { data: habits = [] } = useHabits({ page: 1, limit: 100 }, initialHabits);
+  const { data: todayCheckIns = [] } = useTodayCheckIns(initialCheckIns);
 
   // Fetch plan adjustment suggestions
   const { suggestions = [], loading: suggestionsLoading, applySuggestion, dismissSuggestion } = usePlanAdjustments();
@@ -48,10 +56,12 @@ export function HomeClient() {
     return { checkedCount, remainingCount, total: habits.length, allChecked: remainingCount === 0 };
   }, [habits, todayCheckIns]);
 
-  // Fetch categories with TanStack Query
+  // Fetch categories with TanStack Query (hydrated from SSR initial data)
   const { data: categoriesData } = useQuery({
     queryKey: ['categories', 'article'],
     queryFn: () => listCategories('article'),
+    initialData: initialCategories ? { data: initialCategories } as { data: typeof initialCategories } : undefined,
+    staleTime: 1000 * 60 * 60, // 1 hour — categories rarely change
   });
 
   const categories = useMemo(() => {
@@ -66,13 +76,15 @@ export function HomeClient() {
     return DEFAULT_CATEGORIES;
   }, [categoriesData]);
 
-  // Fetch articles with TanStack Query
+  // Fetch articles with TanStack Query (hydrated from SSR initial data)
   const { data: articlesData, isLoading } = useQuery({
     queryKey: ['articles', filter],
     queryFn: () => {
       const params = filter !== 'all' ? { category: filter } : undefined;
       return listArticles(params);
     },
+    initialData: filter === 'all' && initialArticles ? { data: initialArticles } as { data: typeof initialArticles } : undefined,
+    staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
   const articles = articlesData?.data ?? [];
@@ -153,6 +165,7 @@ export function HomeClient() {
                     title=""
                     description=""
                     compact
+                    isPro={billing?.subscription?.planCode === "pro"}
                   />
                 </div>
               )}

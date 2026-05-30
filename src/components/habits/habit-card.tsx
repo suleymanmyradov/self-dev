@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
@@ -17,7 +18,7 @@ export type HabitCardProps = {
   deleting?: boolean;
 };
 
-export function HabitCard({ habit: h, onEdit, onDelete, onCheckIn, deleting }: HabitCardProps) {
+export const HabitCard = memo(function HabitCard({ habit: h, onEdit, onDelete, onCheckIn, deleting }: HabitCardProps) {
   const categoryStyle = CATEGORY_COLORS[h.category] || "bg-secondary text-secondary-foreground border-border";
 
   return (
@@ -138,4 +139,4 @@ export function HabitCard({ habit: h, onEdit, onDelete, onCheckIn, deleting }: H
       </div>
     </Card>
   );
-}
+});

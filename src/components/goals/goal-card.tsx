@@ -1,5 +1,6 @@
 "use client";
 
+import { memo } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -21,7 +22,7 @@ export type GoalCardProps = {
   deleting?: boolean;
 };
 
-export function GoalCard({ goal, onToggle, onEdit, onDelete, onProgressChange, deleting }: GoalCardProps) {
+export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelete, onProgressChange, deleting }: GoalCardProps) {
   const due = goal.dueDate ? new Date(goal.dueDate).toLocaleDateString() : undefined;
   const categoryStyle = CATEGORY_COLORS[goal.category] || "bg-secondary text-secondary-foreground border-border";
   const isNearCompletion = goal.progress >= 75 && goal.progress < 100;
@@ -153,4 +154,4 @@ export function GoalCard({ goal, onToggle, onEdit, onDelete, onProgressChange, d
       </div>
     </Card>
   );
-}
+});

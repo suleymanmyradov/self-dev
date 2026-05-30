@@ -1,5 +1,6 @@
 'use client';
 
+import { memo } from 'react';
 import Link from 'next/link';
 import { MoreMenu } from './more-menu';
 import { NavButton } from './nav-button';
@@ -36,7 +37,7 @@ const panelItems: { panel: "notifications"; label: string; icon: LucideIcon }[] 
   { panel: "notifications", label: "Notifications", icon: Bell },
 ];
 
-export function SidebarNav() {
+export const SidebarNav = memo(function SidebarNav() {
   const pathname = usePathname();
   const { isSidebarCollapsed, openLeftPanel, isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUIStore(
     useShallow(s => ({
@@ -136,4 +137,4 @@ export function SidebarNav() {
       </div>
     </TooltipProvider>
   );
-}
+});

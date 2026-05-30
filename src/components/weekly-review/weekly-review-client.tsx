@@ -105,6 +105,7 @@ export function WeeklyReviewClient() {
               title="Unlock your full weekly history"
               description="You've built enough consistency to benefit from a fuller weekly history. Pro unlocks all past reviews."
               compact
+              isPro={isPro}
             />
           )}
         </TabsContent>

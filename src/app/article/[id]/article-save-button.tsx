@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo, useCallback } from 'react';
 import { Bookmark, BookmarkCheck } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useSavedItems, useSaveItem, useRemoveSavedItem } from '@/hooks';
@@ -14,15 +15,14 @@ export default function ArticleSaveButton({ articleId }: ArticleSaveButtonProps)
   const saveItem = useSaveItem();
   const removeSavedItem = useRemoveSavedItem();
 
-  const isSaved = savedItems?.some(
-    (item) => item.itemType === 'article' && item.itemId === articleId
+  const savedArticleItems = useMemo(
+    () => savedItems?.filter((item) => item.itemType === 'article' && item.itemId === articleId),
+    [savedItems, articleId]
   );
+  const isSaved = useMemo(() => (savedArticleItems?.length ?? 0) > 0, [savedArticleItems]);
+  const savedItem = useMemo(() => savedArticleItems?.[0], [savedArticleItems]);
 
-  const handleToggleSave = async () => {
-    const savedItem = savedItems?.find(
-      (item) => item.itemType === 'article' && item.itemId === articleId
-    );
-
+  const handleToggleSave = useCallback(async () => {
     if (savedItem) {
       try {
         await removeSavedItem.mutateAsync(savedItem.id);
@@ -38,7 +38,7 @@ export default function ArticleSaveButton({ articleId }: ArticleSaveButtonProps)
         toast.error('Failed to save article');
       }
     }
-  };
+  }, [savedItem, articleId, removeSavedItem, saveItem]);
 
   return (
     <Button

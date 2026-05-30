@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { z } from "zod";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,7 +11,7 @@ import { FormField } from "@/components/form-field";
 import { useQueryClient } from "@tanstack/react-query";
 import { updateProfile } from "@/api";
 import { useSettings, useUpdateSettings, useCoachingProfile, useBillingOverview, useCreateCustomerPortalSession, useProfile } from "@/hooks";
-import type { UpdateProfileRequest, AccountabilityStyle, PreferredTone, DifficultyPreference } from "@/api";
+import type { UpdateProfileRequest, AccountabilityStyle, PreferredTone, DifficultyPreference, Profile, Settings, SettingsResponse } from "@/api";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { Crown, Sparkles } from "lucide-react";
 import Link from "next/link";
@@ -27,12 +27,17 @@ const accountSchema = z.object({
 
 type AccountFormData = z.infer<typeof accountSchema>;
 
-export function SettingsClient() {
+interface SettingsClientProps {
+  initialSettings?: SettingsResponse;
+  initialProfile?: Profile;
+}
+
+export function SettingsClient({ initialSettings, initialProfile }: SettingsClientProps) {
   const queryClient = useQueryClient();
-  const { data: settings, isLoading: settingsLoading } = useSettings();
+  const { data: settings, isLoading: settingsLoading } = useSettings(initialSettings);
   const updateSettings = useUpdateSettings();
   const { profile: coachingProfile, updatePreferences, loading: coachingLoading } = useCoachingProfile();
-  const { data: profile, isLoading: profileLoading, error: profileError } = useProfile();
+  const { data: profile, isLoading: profileLoading, error: profileError } = useProfile(initialProfile);
 
   useEffect(() => {
     if (profileError) {
@@ -40,27 +45,28 @@ export function SettingsClient() {
     }
   }, [profileError]);
   const [formData, setFormData] = useState<AccountFormData>({
-    username: "",
-    email: "",
+    username: initialProfile?.username ?? "",
+    email: initialProfile?.email ?? "",
   });
   const [errors, setErrors] = useState<Partial<Record<keyof AccountFormData, string>>>({});
   const [saving, setSaving] = useState(false);
 
+  // Sync form only when fetched profile differs from initial
   useEffect(() => {
-    if (profile) {
+    if (profile && profile.id !== initialProfile?.id) {
       setFormData({
         username: profile.username,
         email: profile.email,
       });
     }
-  }, [profile]);
+  }, [profile, initialProfile?.id]);
 
-  const updateField = (field: keyof AccountFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
+  const updateField = useCallback((field: keyof AccountFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
     setFormData((prev) => ({ ...prev, [field]: e.target.value }));
     if (errors[field]) {
       setErrors((prev) => ({ ...prev, [field]: undefined }));
     }
-  };
+  }, [errors]);
 
   const handleSave = async (e: React.FormEvent) => {
     e.preventDefault();

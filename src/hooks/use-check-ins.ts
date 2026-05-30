@@ -1,13 +1,14 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createCheckIn, getTodayCheckIns } from '@/api/check-ins';
-import type { CreateCheckInRequest } from '@/api';
+import type { CreateCheckInRequest, CheckInsResponse } from '@/api';
 
-export function useTodayCheckIns() {
+export function useTodayCheckIns(initialData?: CheckInsResponse) {
   return useQuery({
     queryKey: ['checkIns', 'today'],
     queryFn: () => getTodayCheckIns(),
     select: (data) => data.data,
-    staleTime: 60_000, // 1 minute - check-ins only change after user submits, which invalidates queries
+    initialData,
+    staleTime: 2 * 60 * 1000, // 2 minutes — mutations invalidate cache
   });
 }
 

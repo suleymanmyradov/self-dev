@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { memo, useState, useCallback } from "react";
 import Image from "next/image";
 import Link from "next/link";
 import { Card } from "@/components/ui/card";
@@ -27,7 +27,7 @@ export type ArticleCardProps = {
   onSave?: (id: string) => void;
 };
 
-export function ArticleCard({ 
+export const ArticleCard = memo(function ArticleCard({ 
   id, 
   href, 
   title, 
@@ -160,4 +160,4 @@ export function ArticleCard({
       </Card>
     </Link>
   );
-}
+});
