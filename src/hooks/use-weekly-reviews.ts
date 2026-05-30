@@ -1,5 +1,12 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { generateWeeklyReview, getCurrentWeeklyReview, getWeeklyReview, listWeeklyReviews } from '@/api/weekly-reviews';
+import { toast } from 'sonner';
+import { ApiError } from '@/api/axios-client';
+
+function handleMutationError(error: unknown) {
+  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
+  toast.error(message);
+}
 
 export function useCurrentWeeklyReview() {
   return useQuery({
@@ -33,6 +40,8 @@ export function useGenerateWeeklyReview() {
     mutationFn: generateWeeklyReview,
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['weeklyReviews'] });
+      toast.success('Weekly review generated successfully');
     },
+    onError: handleMutationError,
   });
 }

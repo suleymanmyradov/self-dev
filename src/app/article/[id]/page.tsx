@@ -15,7 +15,8 @@ import ArticleSaveButton from "./article-save-button";
 const fetchArticle = cache(async (id: string) => {
   try {
     return await getArticle(id);
-  } catch {
+  } catch (error) {
+    console.error(`[ArticlePage] Failed to fetch article ${id}:`, error);
     return null;
   }
 });
@@ -32,7 +33,8 @@ export async function generateStaticParams() {
     return (response.data ?? []).map((article) => ({
       id: article.id,
     }));
-  } catch {
+  } catch (error) {
+    console.error('[ArticlePage] Failed to generate static params:', error);
     return [];
   }
 }

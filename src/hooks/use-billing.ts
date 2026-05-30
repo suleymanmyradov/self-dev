@@ -6,6 +6,13 @@ import {
   createCustomerPortalSession,
 } from '@/api/billing';
 import type { UpgradeEventRequest, BillingOverviewResponse } from '@/api';
+import { toast } from 'sonner';
+import { ApiError } from '@/api/axios-client';
+
+function handleMutationError(error: unknown) {
+  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
+  toast.error(message);
+}
 
 export function useBillingOverview(initialData?: BillingOverviewResponse) {
   return useQuery({
@@ -28,6 +35,7 @@ export function useEntitlements() {
 export function useTrackUpgradeEvent() {
   return useMutation({
     mutationFn: (data: UpgradeEventRequest) => trackUpgradeEvent(data),
+    onError: handleMutationError,
   });
 }
 
@@ -38,11 +46,13 @@ export function useCreateCheckoutSession() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['billing'] });
     },
+    onError: handleMutationError,
   });
 }
 
 export function useCreateCustomerPortalSession() {
   return useMutation({
     mutationFn: createCustomerPortalSession,
+    onError: handleMutationError,
   });
 }

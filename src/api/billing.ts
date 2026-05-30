@@ -1,4 +1,11 @@
-import api from './client';
+import api from './axios-client';
+import {
+  BillingOverviewResponseSchema,
+  UpgradeEventRequestSchema,
+  UpgradeEventResponseSchema,
+  CheckoutSessionResponseSchema,
+  PortalSessionResponseSchema,
+} from '@/lib/validation';
 import type {
   BillingOverviewResponse,
   UpgradeEventRequest,
@@ -15,20 +22,25 @@ const ENDPOINTS = {
 };
 
 export async function getBillingOverview(): Promise<BillingOverviewResponse> {
-  return api.get(ENDPOINTS.OVERVIEW);
+  const response = await api.get<unknown>(ENDPOINTS.OVERVIEW);
+  return BillingOverviewResponseSchema.parse(response);
 }
 
 export async function trackUpgradeEvent(data: UpgradeEventRequest): Promise<UpgradeEventResponse> {
-  return api.post(ENDPOINTS.UPGRADE_EVENTS, data);
+  const validated = UpgradeEventRequestSchema.parse(data);
+  const response = await api.post<unknown>(ENDPOINTS.UPGRADE_EVENTS, validated);
+  return UpgradeEventResponseSchema.parse(response);
 }
 
 export async function createCheckoutSession(data: {
   planCode: string;
   billingInterval: 'monthly' | 'annual';
 }): Promise<CheckoutSessionResponse> {
-  return api.post(ENDPOINTS.CHECKOUT, data);
+  const response = await api.post<unknown>(ENDPOINTS.CHECKOUT, data);
+  return CheckoutSessionResponseSchema.parse(response);
 }
 
 export async function createCustomerPortalSession(): Promise<PortalSessionResponse> {
-  return api.post(ENDPOINTS.PORTAL, {});
+  const response = await api.post<unknown>(ENDPOINTS.PORTAL, {});
+  return PortalSessionResponseSchema.parse(response);
 }

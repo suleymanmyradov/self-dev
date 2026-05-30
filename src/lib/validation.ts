@@ -1,0 +1,723 @@
+import { z } from 'zod';
+
+// ============================================
+// Common Schemas
+// ============================================
+
+export const PageParamsSchema = z.object({
+  page: z.number().int().positive().optional(),
+  limit: z.number().int().positive().max(100).optional(),
+}).catchall(z.union([z.string(), z.number(), z.boolean(), z.undefined()]));
+
+export const PageResponseSchema = z.object({
+  total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  limit: z.number().int().positive(),
+  totalPages: z.number().int().nonnegative(),
+});
+
+export function ApiResponseSchema<T extends z.ZodTypeAny>(dataSchema: T) {
+  return z.object({
+    data: dataSchema,
+    page: PageResponseSchema.optional(),
+  });
+}
+
+// ============================================
+// Auth Schemas
+// ============================================
+
+export const LoginRequestSchema = z.object({
+  email: z.string().email('Invalid email address').min(1, 'Email is required'),
+  password: z.string().min(8, 'Password must be at least 8 characters'),
+});
+
+export const RegisterRequestSchema = z.object({
+  username: z.string().min(3, 'Username must be at least 3 characters').max(30, 'Username too long'),
+  email: z.string().email('Invalid email address'),
+  password: z.string().min(8, 'Password must be at least 8 characters').max(128, 'Password too long'),
+  fullName: z.string().min(1, 'Full name is required').max(100, 'Name too long'),
+});
+
+export const ProfileSchema = z.object({
+  id: z.string(),
+  fullName: z.string(),
+  username: z.string(),
+  email: z.string(),
+  bio: z.string().optional(),
+  location: z.string().optional(),
+  website: z.string().optional(),
+  interests: z.array(z.string()).optional(),
+  avatarUrl: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const ProfileResponseSchema = ApiResponseSchema(ProfileSchema);
+
+export const UpdateProfileRequestSchema = z.object({
+  fullName: z.string().min(1).max(100).optional(),
+  bio: z.string().max(500).optional(),
+  location: z.string().max(100).optional(),
+  website: z.string().max(200).optional(),
+  interests: z.array(z.string()).optional(),
+  avatarUrl: z.string().optional(),
+});
+
+export const AuthResponseSchema = z.object({
+  accessToken: z.string(),
+  refreshToken: z.string(),
+  expiresIn: z.number().int().positive(),
+  user: ProfileSchema,
+});
+
+// ============================================
+// Goal Schemas
+// ============================================
+
+export const GoalCategorySchema = z.enum(['productivity', 'health', 'mindfulness']);
+
+export const GoalSchema = z.object({
+  id: z.string(),
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000),
+  category: GoalCategorySchema,
+  dueDate: z.string().optional(),
+  progress: z.number().min(0).max(100),
+  completed: z.boolean(),
+  relatedHabitIds: z.array(z.string()).optional(),
+  userId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const CreateGoalRequestSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  description: z.string().max(2000),
+  category: GoalCategorySchema,
+  dueDate: z.string().optional(),
+  relatedHabitIds: z.array(z.string()).optional(),
+});
+
+export const UpdateGoalRequestSchema = z.object({
+  title: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  category: GoalCategorySchema.optional(),
+  dueDate: z.string().optional(),
+  relatedHabitIds: z.array(z.string()).optional(),
+});
+
+export const UpdateGoalProgressRequestSchema = z.object({
+  progress: z.number().min(0).max(100),
+});
+
+export const GoalsResponseSchema = ApiResponseSchema(z.array(GoalSchema)).extend({
+  page: PageResponseSchema,
+});
+
+export const GoalResponseSchema = ApiResponseSchema(GoalSchema);
+
+// ============================================
+// Habit Schemas
+// ============================================
+
+export const HabitCategorySchema = z.enum(['productivity', 'health', 'mindfulness']);
+
+export const HabitSchema = z.object({
+  id: z.string(),
+  name: z.string().min(1).max(200),
+  description: z.string().max(2000),
+  streak: z.number().int().nonnegative(),
+  completed: z.boolean(),
+  category: HabitCategorySchema,
+  userId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const CreateHabitRequestSchema = z.object({
+  name: z.string().min(1, 'Name is required').max(200),
+  description: z.string().max(2000),
+  category: HabitCategorySchema,
+});
+
+export const UpdateHabitRequestSchema = z.object({
+  name: z.string().min(1).max(200).optional(),
+  description: z.string().max(2000).optional(),
+  category: HabitCategorySchema.optional(),
+});
+
+export const HabitsResponseSchema = ApiResponseSchema(z.array(HabitSchema)).extend({
+  page: PageResponseSchema,
+});
+
+export const HabitResponseSchema = ApiResponseSchema(HabitSchema);
+
+// ============================================
+// Check-In Schemas
+// ============================================
+
+export const CheckInStatusSchema = z.enum(['completed', 'missed']);
+export const CheckInMoodSchema = z.enum(['great', 'okay', 'low', 'stressed']);
+export const CheckInEnergySchema = z.enum(['high', 'medium', 'low']);
+export const CheckInBlockerSchema = z.enum(['lack_of_time', 'low_motivation', 'too_distracted', 'unclear_plan', 'other']);
+
+export const CheckInSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  habitId: z.string(),
+  status: CheckInStatusSchema,
+  mood: CheckInMoodSchema.optional(),
+  energy: CheckInEnergySchema.optional(),
+  blocker: CheckInBlockerSchema.optional(),
+  note: z.string().max(2000).optional(),
+  createdAt: z.string(),
+});
+
+export const CreateCheckInRequestSchema = z.object({
+  habitId: z.string(),
+  status: CheckInStatusSchema,
+  mood: CheckInMoodSchema.optional(),
+  energy: CheckInEnergySchema.optional(),
+  blocker: CheckInBlockerSchema.optional(),
+  note: z.string().max(2000).optional(),
+});
+
+export const CreateCheckInResponseDataSchema = z.object({
+  checkIn: CheckInSchema,
+  habit: HabitSchema,
+  aiFeedback: z.string().optional(),
+});
+
+export const CheckInsResponseSchema = ApiResponseSchema(z.array(CheckInSchema));
+export const CheckInResponseSchema = ApiResponseSchema(CheckInSchema);
+
+// ============================================
+// Article Schemas
+// ============================================
+
+export const ArticleCategorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+});
+
+export const ArticleSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  excerpt: z.string(),
+  content: z.string(),
+  category: ArticleCategorySchema.optional(),
+  readTime: z.number().int().nonnegative(),
+  imageUrl: z.string(),
+  author: z.string(),
+  publishedAt: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const ArticlesResponseSchema = ApiResponseSchema(z.array(ArticleSchema)).extend({
+  page: PageResponseSchema,
+});
+
+export const ArticleResponseSchema = ApiResponseSchema(ArticleSchema);
+
+export const ListArticlesParamsSchema = PageParamsSchema.extend({
+  category: z.string().optional(),
+});
+
+export const LikeArticleResponseSchema = z.object({
+  success: z.boolean(),
+  newLikeCount: z.number().int(),
+});
+
+export const ShareArticleResponseSchema = z.object({
+  success: z.boolean(),
+});
+
+// ============================================
+// Activity Schemas
+// ============================================
+
+export const ActivityTypeSchema = z.enum([
+  'habit_completed', 'goal_created', 'goal_completed', 'article_saved',
+  'check_in_completed', 'check_in_missed', 'weekly_review_generated',
+]);
+
+export const ActivitySchema = z.object({
+  id: z.string(),
+  type: ActivityTypeSchema,
+  title: z.string(),
+  description: z.string(),
+  metadata: z.string().optional(),
+  userId: z.string(),
+  createdAt: z.string(),
+});
+
+export const ActivityResponseSchema = ApiResponseSchema(z.array(ActivitySchema)).extend({
+  page: PageResponseSchema,
+});
+
+// ============================================
+// Conversation Schemas
+// ============================================
+
+export const ConversationTypeSchema = z.enum(['coach', 'therapist']);
+export const MessageRoleSchema = z.enum(['user', 'assistant']);
+
+export const MessageSchema = z.object({
+  id: z.string(),
+  content: z.string(),
+  role: MessageRoleSchema,
+  conversationId: z.string(),
+  createdAt: z.string(),
+});
+
+export const ConversationSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  type: ConversationTypeSchema,
+  lastMessage: z.string(),
+  userId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const ConversationDetailSchema = ConversationSchema.extend({
+  messages: z.array(MessageSchema),
+});
+
+export const StartConversationRequestSchema = z.object({
+  type: ConversationTypeSchema,
+  title: z.string().optional(),
+  initialMessage: z.string().optional(),
+});
+
+export const SendMessageRequestSchema = z.object({
+  content: z.string().min(1, 'Message cannot be empty').max(5000),
+});
+
+export const ConversationsResponseSchema = ApiResponseSchema(z.array(ConversationSchema)).extend({
+  page: PageResponseSchema,
+});
+
+export const ConversationResponseSchema = ApiResponseSchema(ConversationSchema);
+export const ConversationDetailResponseSchema = ApiResponseSchema(ConversationDetailSchema);
+
+export const MessagesResponseSchema = ApiResponseSchema(z.array(MessageSchema)).extend({
+  page: PageResponseSchema,
+});
+
+export const MessageResponseSchema = ApiResponseSchema(MessageSchema);
+
+// ============================================
+// Settings Schemas
+// ============================================
+
+export const SettingsSchema = z.object({
+  id: z.string(),
+  theme: z.enum(['light', 'dark', 'system']),
+  language: z.string(),
+  timezone: z.string(),
+  emailNotifications: z.boolean(),
+  pushNotifications: z.boolean(),
+  habitReminders: z.boolean(),
+  goalReminders: z.boolean(),
+  accountabilityStyle: z.enum(['gentle', 'balanced', 'strict']),
+  checkInTime: z.string(),
+  onboardingCompleted: z.boolean(),
+  userId: z.string(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const UpdateSettingsRequestSchema = z.object({
+  theme: z.enum(['light', 'dark', 'system']).optional(),
+  language: z.string().optional(),
+  timezone: z.string().optional(),
+  emailNotifications: z.boolean().optional(),
+  pushNotifications: z.boolean().optional(),
+  habitReminders: z.boolean().optional(),
+  goalReminders: z.boolean().optional(),
+  accountabilityStyle: z.enum(['gentle', 'balanced', 'strict']).optional(),
+  checkInTime: z.string().optional(),
+  onboardingCompleted: z.boolean().optional(),
+});
+
+export const SettingsResponseSchema = ApiResponseSchema(SettingsSchema);
+
+// ============================================
+// Notification Schemas
+// ============================================
+
+export const NotificationTypeSchema = z.enum([
+  'habit_reminder', 'goal_deadline', 'achievement', 'system',
+  'missed_check_in', 'weekly_review', 'encouragement', 'ai_feedback',
+]);
+
+export const NotificationSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  message: z.string(),
+  type: NotificationTypeSchema,
+  read: z.boolean(),
+  userId: z.string(),
+  createdAt: z.string(),
+});
+
+export const NotificationsResponseSchema = ApiResponseSchema(z.array(NotificationSchema)).extend({
+  page: PageResponseSchema,
+});
+
+// ============================================
+// Search Schemas
+// ============================================
+
+export const SearchResultTypeSchema = z.enum(['article', 'goal', 'habit', 'conversation']);
+
+export const SearchResultSchema = z.object({
+  id: z.string(),
+  type: SearchResultTypeSchema,
+  title: z.string(),
+  description: z.string(),
+  score: z.number(),
+  highlight: z.string().optional(),
+});
+
+export const SearchResponseSchema = ApiResponseSchema(z.array(SearchResultSchema)).extend({
+  page: PageResponseSchema,
+});
+
+export const SearchParamsSchema = PageParamsSchema.extend({
+  q: z.string().min(1).max(200),
+  type: SearchResultTypeSchema.optional(),
+});
+
+// ============================================
+// Saved Items Schemas
+// ============================================
+
+export const SavedItemTypeSchema = z.enum(['article', 'goal', 'habit']);
+
+export const SavedItemSchema = z.object({
+  id: z.string(),
+  itemType: SavedItemTypeSchema,
+  itemId: z.string(),
+  userId: z.string(),
+  createdAt: z.string(),
+});
+
+export const SaveItemRequestSchema = z.object({
+  itemType: SavedItemTypeSchema,
+  itemId: z.string(),
+});
+
+export const SavedItemsResponseSchema = ApiResponseSchema(z.array(SavedItemSchema)).extend({
+  page: PageResponseSchema,
+});
+
+export const SavedItemResponseSchema = ApiResponseSchema(SavedItemSchema);
+
+export const SavedItemDetailedSchema = SavedItemSchema.extend({
+  article: ArticleSchema.optional(),
+  habit: HabitSchema.optional(),
+  goal: GoalSchema.optional(),
+});
+
+export const SavedItemsDetailedResponseSchema = ApiResponseSchema(z.array(SavedItemDetailedSchema)).extend({
+  page: PageResponseSchema,
+});
+
+// ============================================
+// Report Schemas
+// ============================================
+
+export const ReportTypeSchema = z.enum(['bug', 'feedback', 'abuse']);
+
+export const ReportRequestSchema = z.object({
+  type: ReportTypeSchema,
+  title: z.string().min(1).max(200),
+  description: z.string().min(1).max(5000),
+  email: z.string().email().optional(),
+});
+
+// ============================================
+// Category Schemas
+// ============================================
+
+export const EntityTypeSchema = z.enum(['article', 'habit', 'goal']);
+
+export const CategorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+  entityType: EntityTypeSchema,
+  sortOrder: z.number().int(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const CategoriesResponseSchema = ApiResponseSchema(z.array(CategorySchema));
+
+// ============================================
+// Personalization Schemas
+// ============================================
+
+export const AccountabilityStyleSchema = z.enum(['gentle', 'balanced', 'strict']);
+export const PreferredToneSchema = z.enum(['supportive', 'direct', 'warm', 'practical', 'challenging']);
+export const DifficultyPreferenceSchema = z.enum(['easy', 'adaptive', 'ambitious']);
+export const AdjustmentTypeSchema = z.enum(['reduce_difficulty', 'increase_difficulty', 'change_time', 'clarify_plan', 'pause', 'keep_same']);
+export const SuggestionStatusSchema = z.enum(['pending', 'accepted', 'dismissed', 'applied']);
+export const SuggestionSourceSchema = z.enum(['check_in', 'weekly_review', 'assistant', 'pattern_analysis']);
+
+export const CoachingProfileSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  accountabilityStyle: AccountabilityStyleSchema,
+  preferredTone: PreferredToneSchema,
+  difficultyPreference: DifficultyPreferenceSchema,
+  primaryMotivation: z.string().optional(),
+  commonBlockers: z.array(z.string()),
+  coachingNotes: z.record(z.unknown()),
+  lastContextRefreshAt: z.string().optional(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const PlanAdjustmentSuggestionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  goalId: z.string().optional(),
+  habitId: z.string().optional(),
+  source: SuggestionSourceSchema,
+  adjustmentType: AdjustmentTypeSchema,
+  reason: z.string(),
+  suggestion: z.string(),
+  status: SuggestionStatusSchema,
+  metadata: z.record(z.unknown()),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const PersonalizationContextSchema = z.object({
+  profile: CoachingProfileSchema,
+  activeGoals: z.array(GoalSchema),
+  activeHabits: z.array(HabitSchema),
+  recentCheckIns: z.array(CheckInSchema),
+  latestWeeklyReview: z.lazy(() => WeeklyReviewSchema).optional(),
+  pendingSuggestions: z.array(PlanAdjustmentSuggestionSchema),
+  patternInsights: z.record(z.string()),
+});
+
+export const UpdateCoachingProfilePreferencesRequestSchema = z.object({
+  accountabilityStyle: AccountabilityStyleSchema,
+  preferredTone: PreferredToneSchema,
+  difficultyPreference: DifficultyPreferenceSchema,
+});
+
+export const CreatePlanAdjustmentSuggestionRequestSchema = z.object({
+  goalId: z.string().optional(),
+  habitId: z.string().optional(),
+  source: SuggestionSourceSchema,
+  adjustmentType: AdjustmentTypeSchema,
+  reason: z.string(),
+  suggestion: z.string(),
+  metadata: z.record(z.unknown()).optional(),
+});
+
+export const UpdatePlanAdjustmentSuggestionStatusRequestSchema = z.object({
+  status: SuggestionStatusSchema,
+});
+
+export const ApplyPlanAdjustmentSuggestionRequestSchema = z.object({
+  id: z.string(),
+});
+
+export const GeneratePersonalizedCoachingRequestSchema = z.object({
+  userMessage: z.string().min(1).max(5000),
+  context: z.string().optional(),
+});
+
+export const GeneratePersonalizedCoachingResponseSchema = z.object({
+  coachingResponse: z.string(),
+  context: z.string().optional(),
+});
+
+export const CoachingProfileResponseSchema = ApiResponseSchema(CoachingProfileSchema);
+export const PersonalizationContextResponseSchema = ApiResponseSchema(PersonalizationContextSchema);
+export const PlanAdjustmentSuggestionsResponseSchema = ApiResponseSchema(z.array(PlanAdjustmentSuggestionSchema)).extend({
+  total: z.number().int(),
+});
+export const PlanAdjustmentSuggestionResponseSchema = ApiResponseSchema(PlanAdjustmentSuggestionSchema);
+export const PersonalizedCoachingResponseSchema = ApiResponseSchema(GeneratePersonalizedCoachingResponseSchema);
+
+// ============================================
+// Weekly Review Schemas
+// ============================================
+
+export const WeeklyReviewAdjustmentTypeSchema = z.enum([
+  'keep_same', 'reduce_difficulty', 'change_time', 'clarify_plan', 'pause_habit',
+]);
+
+export const WeeklyReviewHabitBreakdownSchema = z.object({
+  habitId: z.string(),
+  habitName: z.string(),
+  category: z.string().optional(),
+  totalCheckIns: z.number().int(),
+  completedCount: z.number().int(),
+  missedCount: z.number().int(),
+  completionRate: z.number(),
+  lastCheckInAt: z.string().optional(),
+});
+
+export const WeeklyReviewAdjustmentSchema = z.object({
+  habitId: z.string().optional(),
+  habitName: z.string(),
+  adjustmentType: WeeklyReviewAdjustmentTypeSchema,
+  reason: z.string(),
+  suggestion: z.string(),
+});
+
+export const WeeklyReviewNextWeekPlanSchema = z.object({
+  focus: z.string(),
+  commitments: z.array(z.string()),
+  risks: z.array(z.string()),
+  recoveryActions: z.array(z.string()),
+});
+
+export const WeeklyReviewSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  weekStart: z.string(),
+  weekEnd: z.string(),
+  totalHabits: z.number().int(),
+  completedCheckIns: z.number().int(),
+  missedCheckIns: z.number().int(),
+  completionRate: z.number(),
+  bestDay: z.string().optional(),
+  hardestDay: z.string().optional(),
+  topBlocker: z.string().optional(),
+  moodSummary: z.record(z.number()),
+  energySummary: z.record(z.number()),
+  habitBreakdown: z.array(WeeklyReviewHabitBreakdownSchema),
+  aiSummary: z.string().optional(),
+  suggestedAdjustments: z.array(WeeklyReviewAdjustmentSchema),
+  nextWeekPlan: WeeklyReviewNextWeekPlanSchema,
+  generatedAt: z.string(),
+});
+
+export const WeeklyReviewResponseSchema = ApiResponseSchema(WeeklyReviewSchema);
+export const WeeklyReviewsResponseSchema = ApiResponseSchema(z.array(WeeklyReviewSchema)).extend({
+  page: PageResponseSchema,
+});
+
+// ============================================
+// Billing Schemas
+// ============================================
+
+export const PlanSchema = z.object({
+  id: z.string(),
+  code: z.enum(['free', 'pro']),
+  name: z.string(),
+  description: z.string().optional(),
+  priceMonthlyCents: z.number().int(),
+  priceAnnualCents: z.number().int(),
+  activeGoalLimit: z.number().int().optional(),
+  activeHabitLimit: z.number().int().optional(),
+  weeklyReviewHistoryLimit: z.number().int().optional(),
+  planAdjustmentLimit: z.number().int().optional(),
+  personalizedAiEnabled: z.boolean(),
+  isActive: z.boolean(),
+});
+
+export const UserSubscriptionSchema = z.object({
+  id: z.string(),
+  userId: z.string(),
+  planId: z.string(),
+  planCode: z.enum(['free', 'pro']),
+  planName: z.string(),
+  status: z.enum(['free', 'trialing', 'active', 'past_due', 'canceled', 'expired']),
+  billingInterval: z.enum(['monthly', 'annual']).optional(),
+  currentPeriodStart: z.string().optional(),
+  currentPeriodEnd: z.string().optional(),
+  trialEnd: z.string().optional(),
+  cancelAtPeriodEnd: z.boolean(),
+  stripeCustomerId: z.string().optional(),
+  stripeSubscriptionId: z.string().optional(),
+});
+
+export const EntitlementsSchema = z.object({
+  planCode: z.enum(['free', 'pro']),
+  status: z.string(),
+  activeGoalLimit: z.number().int().optional(),
+  activeHabitLimit: z.number().int().optional(),
+  weeklyReviewHistoryLimit: z.number().int().optional(),
+  planAdjustmentLimit: z.number().int().optional(),
+  personalizedAiEnabled: z.boolean(),
+  canCreateGoal: z.boolean(),
+  canCreateHabit: z.boolean(),
+  canViewWeeklyReviewHistory: z.boolean(),
+  canUsePersonalizedAi: z.boolean(),
+  canCreatePlanAdjustment: z.boolean(),
+  currentActiveGoals: z.number().int(),
+  currentActiveHabits: z.number().int(),
+  currentPendingAdjustments: z.number().int(),
+});
+
+export const BillingOverviewSchema = z.object({
+  plans: z.array(PlanSchema),
+  subscription: UserSubscriptionSchema,
+  entitlements: EntitlementsSchema,
+  billingMode: z.enum(['disabled', 'fake_door', 'stripe_test', 'stripe_live']),
+});
+
+export const UpgradeEventTypeSchema = z.enum([
+  'prompt_viewed', 'prompt_clicked', 'prompt_dismissed',
+  'checkout_started', 'checkout_completed', 'checkout_canceled',
+]);
+
+export const UpgradeSurfaceSchema = z.enum([
+  'pricing_page', 'settings_billing', 'goal_create_limit', 'habit_create_limit',
+  'weekly_review_history', 'assistant_personalization', 'plan_adjustments', 'weekly_review_value_moment',
+]);
+
+export const UpgradeTriggerSchema = z.enum([
+  'goal_limit', 'habit_limit', 'weekly_history', 'personalized_ai', 'plan_adjustments',
+]);
+
+export const UpgradeEventRequestSchema = z.object({
+  eventType: UpgradeEventTypeSchema,
+  surface: UpgradeSurfaceSchema,
+  trigger: UpgradeTriggerSchema.optional(),
+  planCode: z.string().optional(),
+  billingInterval: z.enum(['monthly', 'annual']).optional(),
+  feedbackReason: z.string().optional(),
+  feedbackNote: z.string().optional(),
+  metadataJson: z.string().optional(),
+});
+
+export const BillingOverviewResponseSchema = ApiResponseSchema(BillingOverviewSchema);
+export const UpgradeEventResponseSchema = ApiResponseSchema(z.object({ eventId: z.string() }));
+export const CheckoutSessionResponseSchema = ApiResponseSchema(z.object({ checkoutUrl: z.string() }));
+export const PortalSessionResponseSchema = ApiResponseSchema(z.object({ portalUrl: z.string() }));
+
+export const PlanLimitErrorSchema = z.object({
+  code: z.literal('plan_limit_reached'),
+  message: z.string(),
+  limit: z.enum(['active_goals', 'active_habits', 'weekly_review_history', 'plan_adjustments', 'personalized_ai']),
+  upgradeTrigger: UpgradeTriggerSchema,
+});
+
+// ============================================
+// Chat API Route Schemas
+// ============================================
+
+export const ChatRequestSchema = z.object({
+  messages: z.array(z.any()).min(1).max(50),
+  system: z.string().max(5000).optional(),
+  tools: z.record(z.any()).optional(),
+});
+
+export const RefreshRequestSchema = z.object({
+  refreshToken: z.string().min(1),
+});

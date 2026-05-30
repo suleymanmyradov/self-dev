@@ -1,15 +1,22 @@
-import api from './client';
+import api from './axios-client';
+import {
+  CoachingProfileSchema,
+  CoachingProfileResponseSchema,
+  PersonalizationContextResponseSchema,
+  PlanAdjustmentSuggestionSchema,
+  PlanAdjustmentSuggestionsResponseSchema,
+  PlanAdjustmentSuggestionResponseSchema,
+  UpdateCoachingProfilePreferencesRequestSchema,
+  CreatePlanAdjustmentSuggestionRequestSchema,
+  UpdatePlanAdjustmentSuggestionStatusRequestSchema,
+  ApplyPlanAdjustmentSuggestionRequestSchema,
+  GeneratePersonalizedCoachingRequestSchema,
+  PersonalizedCoachingResponseSchema,
+} from '@/lib/validation';
 import type {
-  AccountabilityStyle,
-  DifficultyPreference,
-  PreferredTone,
   CoachingProfile,
-  CoachingProfileResponse,
   PersonalizationContext,
-  PersonalizationContextResponse,
   PlanAdjustmentSuggestion,
-  PlanAdjustmentSuggestionsResponse,
-  PlanAdjustmentSuggestionResponse,
   UpdateCoachingProfilePreferencesRequest,
   CreatePlanAdjustmentSuggestionRequest,
   UpdatePlanAdjustmentSuggestionStatusRequest,
@@ -27,9 +34,9 @@ const ENDPOINTS = {
 };
 
 export interface UpsertCoachingProfileRequest {
-  accountabilityStyle: AccountabilityStyle;
-  preferredTone: PreferredTone;
-  difficultyPreference: DifficultyPreference;
+  accountabilityStyle: 'gentle' | 'balanced' | 'strict';
+  preferredTone: 'supportive' | 'direct' | 'warm' | 'practical' | 'challenging';
+  difficultyPreference: 'easy' | 'adaptive' | 'ambitious';
   primaryMotivation?: string;
   commonBlockers?: string[];
   coachingNotes?: Record<string, unknown>;
@@ -39,8 +46,9 @@ export interface UpsertCoachingProfileRequest {
  * Get coaching profile
  */
 export async function getCoachingProfile(): Promise<CoachingProfile> {
-  const response = await api.get<CoachingProfileResponse>(ENDPOINTS.COACHING_PROFILE);
-  return response.data;
+  const response = await api.get<unknown>(ENDPOINTS.COACHING_PROFILE);
+  const parsed = CoachingProfileResponseSchema.parse(response);
+  return parsed.data;
 }
 
 /**
@@ -49,8 +57,9 @@ export async function getCoachingProfile(): Promise<CoachingProfile> {
 export async function upsertCoachingProfile(
   data: UpsertCoachingProfileRequest
 ): Promise<CoachingProfile> {
-  const response = await api.post<CoachingProfileResponse>(ENDPOINTS.COACHING_PROFILE, data);
-  return response.data;
+  const response = await api.post<unknown>(ENDPOINTS.COACHING_PROFILE, data);
+  const parsed = CoachingProfileResponseSchema.parse(response);
+  return parsed.data;
 }
 
 /**
@@ -59,27 +68,31 @@ export async function upsertCoachingProfile(
 export async function updateCoachingProfilePreferences(
   data: UpdateCoachingProfilePreferencesRequest
 ): Promise<CoachingProfile> {
-  const response = await api.put<CoachingProfileResponse>(ENDPOINTS.COACHING_PROFILE_PREFERENCES, data);
-  return response.data;
+  const validated = UpdateCoachingProfilePreferencesRequestSchema.parse(data);
+  const response = await api.put<unknown>(ENDPOINTS.COACHING_PROFILE_PREFERENCES, validated);
+  const parsed = CoachingProfileResponseSchema.parse(response);
+  return parsed.data;
 }
 
 /**
  * Get personalization context
  */
 export async function getPersonalizationContext(forceRefresh = false): Promise<PersonalizationContext> {
-  const response = await api.get<PersonalizationContextResponse>(
+  const response = await api.get<unknown>(
     ENDPOINTS.PERSONALIZATION_CONTEXT,
     { forceRefresh }
   );
-  return response.data;
+  const parsed = PersonalizationContextResponseSchema.parse(response);
+  return parsed.data;
 }
 
 /**
  * Get pending plan adjustment suggestions
  */
 export async function getPendingPlanAdjustmentSuggestions(): Promise<PlanAdjustmentSuggestion[]> {
-  const response = await api.get<PlanAdjustmentSuggestionsResponse>(ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS);
-  return response.data;
+  const response = await api.get<unknown>(ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS);
+  const parsed = PlanAdjustmentSuggestionsResponseSchema.parse(response);
+  return parsed.data;
 }
 
 /**
@@ -88,8 +101,10 @@ export async function getPendingPlanAdjustmentSuggestions(): Promise<PlanAdjustm
 export async function createPlanAdjustmentSuggestion(
   data: CreatePlanAdjustmentSuggestionRequest
 ): Promise<PlanAdjustmentSuggestion> {
-  const response = await api.post<PlanAdjustmentSuggestionResponse>(ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS, data);
-  return response.data;
+  const validated = CreatePlanAdjustmentSuggestionRequestSchema.parse(data);
+  const response = await api.post<unknown>(ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS, validated);
+  const parsed = PlanAdjustmentSuggestionResponseSchema.parse(response);
+  return parsed.data;
 }
 
 /**
@@ -99,11 +114,13 @@ export async function updatePlanAdjustmentSuggestionStatus(
   suggestionId: string,
   data: UpdatePlanAdjustmentSuggestionStatusRequest
 ): Promise<PlanAdjustmentSuggestion> {
-  const response = await api.put<PlanAdjustmentSuggestionResponse>(
-    `${ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS}/${suggestionId}/status`,
-    data
+  const validated = UpdatePlanAdjustmentSuggestionStatusRequestSchema.parse(data);
+  const response = await api.put<unknown>(
+    `${ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS}/${encodeURIComponent(suggestionId)}/status`,
+    validated
   );
-  return response.data;
+  const parsed = PlanAdjustmentSuggestionResponseSchema.parse(response);
+  return parsed.data;
 }
 
 /**
@@ -112,10 +129,12 @@ export async function updatePlanAdjustmentSuggestionStatus(
 export async function applyPlanAdjustmentSuggestion(
   data: ApplyPlanAdjustmentSuggestionRequest
 ): Promise<PlanAdjustmentSuggestion> {
-  const response = await api.post<PlanAdjustmentSuggestionResponse>(
-    `${ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS}/${data.id}/apply`
+  const validated = ApplyPlanAdjustmentSuggestionRequestSchema.parse(data);
+  const response = await api.post<unknown>(
+    `${ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS}/${encodeURIComponent(validated.id)}/apply`
   );
-  return response.data;
+  const parsed = PlanAdjustmentSuggestionResponseSchema.parse(response);
+  return parsed.data;
 }
 
 /**
@@ -124,5 +143,8 @@ export async function applyPlanAdjustmentSuggestion(
 export async function generatePersonalizedCoaching(
   data: GeneratePersonalizedCoachingRequest
 ): Promise<GeneratePersonalizedCoachingResponse> {
-  return api.post<GeneratePersonalizedCoachingResponse>(ENDPOINTS.PERSONALIZED_COACHING, data);
+  const validated = GeneratePersonalizedCoachingRequestSchema.parse(data);
+  const response = await api.post<unknown>(ENDPOINTS.PERSONALIZED_COACHING, validated);
+  const parsed = PersonalizedCoachingResponseSchema.parse(response);
+  return parsed.data;
 }

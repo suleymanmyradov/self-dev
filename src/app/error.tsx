@@ -3,6 +3,7 @@
 import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw } from 'lucide-react';
+import { isProd } from '@/lib/config';
 
 export default function Error({
   error,
@@ -12,8 +13,21 @@ export default function Error({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Error:', error);
+    if (isProd) {
+      // In production, send to error tracking service (e.g., Sentry)
+      // console.error is suppressed in production to avoid leaking internals
+      // eslint-disable-next-line no-console
+      console.error('Error digest:', error.digest);
+    } else {
+      // eslint-disable-next-line no-console
+      console.error('Error:', error);
+    }
   }, [error]);
+
+  // Sanitize error message in production to prevent information leakage
+  const displayMessage = isProd
+    ? 'An unexpected error occurred. Please try again.'
+    : (error.message || 'An unexpected error occurred. Please try again.');
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
@@ -22,8 +36,13 @@ export default function Error({
         <h2 className="text-xl font-semibold">Something went wrong!</h2>
       </div>
       <p className="text-muted-foreground text-center max-w-md">
-        {error.message || 'An unexpected error occurred. Please try again.'}
+        {displayMessage}
       </p>
+      {!isProd && error.digest && (
+        <p className="text-xs text-muted-foreground font-mono">
+          Digest: {error.digest}
+        </p>
+      )}
       <Button onClick={reset} variant="outline" className="gap-2">
         <RefreshCw className="h-4 w-4" />
         Try again

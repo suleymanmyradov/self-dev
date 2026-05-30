@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { register } from '@/api';
+import { RegisterRequestSchema } from '@/lib/validation';
 import { useAuthStore } from '@/store/auth';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -19,11 +21,13 @@ export default function RegisterPage() {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   const registerMutation = useMutation({
     mutationFn: register,
     onSuccess: (data) => {
       setAuthUser(data.user, data.accessToken, data.refreshToken);
+      toast.success('Account created successfully');
       router.push('/onboarding');
     },
     onError: (err: Error) => {
@@ -34,28 +38,33 @@ export default function RegisterPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-
-    if (!fullName.trim() || !username.trim() || !email.trim() || !password.trim()) {
-      setError('Please fill in all fields.');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters.');
-      return;
-    }
+    setFieldErrors({});
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
       return;
     }
 
-    registerMutation.mutate({
+    const raw = {
       fullName: fullName.trim(),
       username: username.trim(),
       email: email.trim(),
       password,
-    });
+    };
+    const validated = RegisterRequestSchema.safeParse(raw);
+
+    if (!validated.success) {
+      const errors: Record<string, string[]> = {};
+      validated.error.errors.forEach((err) => {
+        const path = err.path[0] as string;
+        if (!errors[path]) errors[path] = [];
+        errors[path].push(err.message);
+      });
+      setFieldErrors(errors);
+      return;
+    }
+
+    registerMutation.mutate(validated.data);
   };
 
   return (
@@ -82,7 +91,14 @@ export default function RegisterPage() {
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
                 disabled={registerMutation.isPending}
+                aria-invalid={!!fieldErrors.fullName}
+                aria-describedby={fieldErrors.fullName ? 'fullName-error' : undefined}
               />
+              {fieldErrors.fullName && (
+                <p id="fullName-error" className="text-xs text-destructive">
+                  {fieldErrors.fullName[0]}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label htmlFor="username" className="text-sm font-medium">
@@ -95,7 +111,14 @@ export default function RegisterPage() {
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
                 disabled={registerMutation.isPending}
+                aria-invalid={!!fieldErrors.username}
+                aria-describedby={fieldErrors.username ? 'username-error' : undefined}
               />
+              {fieldErrors.username && (
+                <p id="username-error" className="text-xs text-destructive">
+                  {fieldErrors.username[0]}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label htmlFor="email" className="text-sm font-medium">
@@ -108,7 +131,14 @@ export default function RegisterPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={registerMutation.isPending}
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               />
+              {fieldErrors.email && (
+                <p id="email-error" className="text-xs text-destructive">
+                  {fieldErrors.email[0]}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
@@ -121,7 +151,14 @@ export default function RegisterPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={registerMutation.isPending}
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? 'password-error' : undefined}
               />
+              {fieldErrors.password && (
+                <p id="password-error" className="text-xs text-destructive">
+                  {fieldErrors.password[0]}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label htmlFor="confirmPassword" className="text-sm font-medium">

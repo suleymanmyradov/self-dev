@@ -1,6 +1,8 @@
-import { api } from './client';
+import api from './axios-client';
+import { CategoriesResponseSchema } from '@/lib/validation';
 import type { CategoriesResponse, EntityType } from './types';
 
-export async function listCategories(entityType?: EntityType): Promise<CategoriesResponse> {
-  return api.get<CategoriesResponse>('/categories', entityType ? { entityType } : undefined);
+export async function listCategories(entityType: EntityType): Promise<CategoriesResponse> {
+  const response = await api.get<unknown>('/categories', { entityType });
+  return CategoriesResponseSchema.parse(response);
 }

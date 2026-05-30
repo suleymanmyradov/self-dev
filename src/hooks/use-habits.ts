@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listHabits, getHabit, createHabit, updateHabit, deleteHabit, toggleHabit, resetTodayHabits } from '@/api';
 import type { CreateHabitRequest, UpdateHabitRequest, HabitsResponse } from '@/api';
+import { toast } from 'sonner';
+import { ApiError } from '@/api/axios-client';
+
+function handleMutationError(error: unknown) {
+  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
+  toast.error(message);
+}
 
 /**
  * Hook to fetch all habits
@@ -32,12 +39,14 @@ export function useHabit(id: string) {
  */
 export function useCreateHabit() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (data: CreateHabitRequest) => createHabit(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      toast.success('Habit created successfully');
     },
+    onError: handleMutationError,
   });
 }
 
@@ -46,13 +55,15 @@ export function useCreateHabit() {
  */
 export function useUpdateHabit() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateHabitRequest }) => updateHabit(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
       queryClient.invalidateQueries({ queryKey: ['habits', variables.id] });
+      toast.success('Habit updated successfully');
     },
+    onError: handleMutationError,
   });
 }
 
@@ -61,12 +72,14 @@ export function useUpdateHabit() {
  */
 export function useDeleteHabit() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: string) => deleteHabit(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      toast.success('Habit deleted successfully');
     },
+    onError: handleMutationError,
   });
 }
 
@@ -75,13 +88,14 @@ export function useDeleteHabit() {
  */
 export function useToggleHabit() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: string) => toggleHabit(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
       queryClient.invalidateQueries({ queryKey: ['habits', id] });
     },
+    onError: handleMutationError,
   });
 }
 
@@ -90,11 +104,13 @@ export function useToggleHabit() {
  */
 export function useResetTodayHabits() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: () => resetTodayHabits(),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
+      toast.success('Habits reset for today');
     },
+    onError: handleMutationError,
   });
 }

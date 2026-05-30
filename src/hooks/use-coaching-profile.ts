@@ -4,6 +4,8 @@ import type {
   CoachingProfile,
   UpdateCoachingProfilePreferencesRequest,
 } from '../api';
+import { toast } from 'sonner';
+import { ApiError } from '@/api/axios-client';
 
 export function useCoachingProfile() {
   const [profile, setProfile] = useState<CoachingProfile | null>(null);
@@ -22,7 +24,9 @@ export function useCoachingProfile() {
       }
     } catch (err) {
       if (isMounted.current) {
-        setError(err instanceof Error ? err.message : 'Failed to load coaching profile');
+        const message = err instanceof ApiError ? err.message : 'Failed to load coaching profile';
+        setError(message);
+        toast.error(message);
       }
     } finally {
       if (isMounted.current) {
@@ -47,9 +51,12 @@ export function useCoachingProfile() {
       setError(null);
       const profile = await updateCoachingProfilePreferences(data);
       setProfile(profile);
+      toast.success('Coaching preferences updated');
       return profile;
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to update coaching profile');
+      const message = err instanceof ApiError ? err.message : 'Failed to update coaching profile';
+      setError(message);
+      toast.error(message);
       throw err;
     } finally {
       setLoading(false);

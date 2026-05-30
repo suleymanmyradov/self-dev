@@ -9,6 +9,13 @@ import type {
   CreatePlanAdjustmentSuggestionRequest,
   UpdatePlanAdjustmentSuggestionStatusRequest,
 } from '../api';
+import { toast } from 'sonner';
+import { ApiError } from '@/api/axios-client';
+
+function handleMutationError(error: unknown) {
+  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
+  toast.error(message);
+}
 
 export function usePlanAdjustments(autoLoad = true) {
   const queryClient = useQueryClient();
@@ -24,7 +31,9 @@ export function usePlanAdjustments(autoLoad = true) {
     mutationFn: (data: CreatePlanAdjustmentSuggestionRequest) => createPlanAdjustmentSuggestion(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plan-adjustments'] });
+      toast.success('Suggestion created successfully');
     },
+    onError: handleMutationError,
   });
 
   const updateStatusMutation = useMutation({
@@ -32,14 +41,18 @@ export function usePlanAdjustments(autoLoad = true) {
       updatePlanAdjustmentSuggestionStatus(suggestionId, data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plan-adjustments'] });
+      toast.success('Suggestion status updated');
     },
+    onError: handleMutationError,
   });
 
   const applySuggestionMutation = useMutation({
     mutationFn: (suggestionId: string) => applyPlanAdjustmentSuggestion({ id: suggestionId }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['plan-adjustments'] });
+      toast.success('Suggestion applied successfully');
     },
+    onError: handleMutationError,
   });
 
   const createSuggestion = async (data: CreatePlanAdjustmentSuggestionRequest) => {
@@ -68,7 +81,7 @@ export function usePlanAdjustments(autoLoad = true) {
   return {
     suggestions,
     loading,
-    error: error instanceof Error ? error.message : null,
+    error: error instanceof ApiError ? error.message : null,
     total: suggestions.length,
     createSuggestion,
     updateStatus,

@@ -4,6 +4,7 @@ import { useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
+import { isProd } from '@/lib/config';
 
 export default function GoalsError({
   error,
@@ -13,8 +14,15 @@ export default function GoalsError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Goals error:', error);
+    if (!isProd) {
+      // eslint-disable-next-line no-console
+      console.error('Goals error:', error);
+    }
   }, [error]);
+
+  const displayMessage = isProd
+    ? 'Could not load your goals. Please try again.'
+    : (error.message || 'Could not load your goals. Please try again.');
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
@@ -23,7 +31,7 @@ export default function GoalsError({
         <h2 className="text-xl font-semibold">Failed to load goals</h2>
       </div>
       <p className="text-muted-foreground text-center max-w-md">
-        {error.message || 'Could not load your goals. Please try again.'}
+        {displayMessage}
       </p>
       <div className="flex gap-2">
         <Button onClick={reset} variant="outline" className="gap-2">

@@ -1,4 +1,10 @@
-import api from './client';
+import api from './axios-client';
+import {
+  CheckInSchema,
+  CreateCheckInRequestSchema,
+  CreateCheckInResponseDataSchema,
+  CheckInsResponseSchema,
+} from '@/lib/validation';
 import type { CheckIn, CreateCheckInRequest, CreateCheckInResponseData, PageParams, ApiResponse } from './types';
 
 const ENDPOINTS = {
@@ -8,13 +14,18 @@ const ENDPOINTS = {
 };
 
 export async function createCheckIn(data: CreateCheckInRequest): Promise<ApiResponse<CreateCheckInResponseData>> {
-  return api.post(ENDPOINTS.CHECK_INS, data);
+  const validated = CreateCheckInRequestSchema.parse(data);
+  const response = await api.post<unknown>(ENDPOINTS.CHECK_INS, validated);
+  const parsed = CreateCheckInResponseDataSchema.parse(response);
+  return { data: parsed };
 }
 
 export async function getTodayCheckIns(): Promise<ApiResponse<CheckIn[]>> {
-  return api.get(ENDPOINTS.TODAY);
+  const response = await api.get<unknown>(ENDPOINTS.TODAY);
+  return CheckInsResponseSchema.parse(response);
 }
 
 export async function getCheckInHistory(params: { habitId?: string } & PageParams): Promise<ApiResponse<CheckIn[]>> {
-  return api.get(ENDPOINTS.HISTORY, params);
+  const response = await api.get<unknown>(ENDPOINTS.HISTORY, params);
+  return CheckInsResponseSchema.parse(response);
 }

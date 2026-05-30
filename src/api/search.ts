@@ -1,16 +1,9 @@
-import api from './client';
-import type {
-  SearchResponse,
-  SearchParams,
-} from './types';
+import api from './axios-client';
+import { SearchResponseSchema, SearchParamsSchema } from '@/lib/validation';
+import type { SearchResponse, SearchParams } from './types';
 
-const ENDPOINTS = {
-  SEARCH: '/search',
-};
-
-/**
- * Search across content
- */
 export async function search(params: SearchParams): Promise<SearchResponse> {
-  return api.get<SearchResponse>(ENDPOINTS.SEARCH, params);
+  const validated = SearchParamsSchema.parse(params);
+  const response = await api.get<unknown>('/search', validated);
+  return SearchResponseSchema.parse(response);
 }

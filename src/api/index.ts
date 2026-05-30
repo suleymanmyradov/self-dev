@@ -1,6 +1,6 @@
 // API Client
-export { api, ApiError } from './client';
-export type { RequestOptions } from './client';
+export { api, ApiError } from './axios-client';
+export type { RequestOptions } from './axios-client';
 
 // Auth Tokens (SSR-safe, no React dependency)
 export { getAccessToken, getRefreshToken, clearTokens, setAuthTokens } from '@/lib/auth-tokens';
@@ -12,7 +12,7 @@ export type {
   PageResponse,
   ApiResponse,
   EmptyResponse,
-  
+
   // Goal Types
   Goal,
   GoalCategory,
@@ -21,7 +21,7 @@ export type {
   UpdateGoalProgressRequest,
   GoalsResponse,
   GoalResponse,
-  
+
   // Habit Types
   Habit,
   HabitCategory,
@@ -45,12 +45,12 @@ export type {
   RegisterRequest,
   RefreshRequest,
   AuthResponse,
-  
+
   // Profile Types
   Profile,
   UpdateProfileRequest,
   ProfileResponse,
-  
+
   // Article Types
   Article,
   ArticlesResponse,
@@ -61,12 +61,12 @@ export type {
   ShareArticleRequest,
   ShareArticleResponse,
   GetAuthorArticlesParams,
-  
+
   // Activity Types
   ActivityType,
   Activity,
   ActivityResponse,
-  
+
   // Conversation Types
   ConversationType,
   MessageRole,
@@ -81,13 +81,13 @@ export type {
   MessagesResponse,
   MessageResponse,
   ListConversationsParams,
-  
+
   // Settings Types
   AccountabilityStyle,
   Settings,
   UpdateSettingsRequest,
   SettingsResponse,
-  
+
   // Personalization Types
   PreferredTone,
   DifficultyPreference,
@@ -108,18 +108,18 @@ export type {
   PlanAdjustmentSuggestionsResponse,
   PlanAdjustmentSuggestionResponse,
   PersonalizedCoachingResponse,
-  
+
   // Notification Types
   NotificationType,
   Notification,
   NotificationsResponse,
-  
+
   // Search Types
   SearchResultType,
   SearchResult,
   SearchResponse,
   SearchParams,
-  
+
   // Saved Items Types
   SavedItemType,
   SavedItem,
@@ -128,7 +128,7 @@ export type {
   SavedItemsResponse,
   SavedItemsDetailedResponse,
   SavedItemResponse,
-  
+
   // Report Types
   ReportType,
   ReportRequest,

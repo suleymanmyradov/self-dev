@@ -7,8 +7,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { login } from '@/api';
+import { LoginRequestSchema } from '@/lib/validation';
 import { useAuthStore } from '@/store/auth';
 import Link from 'next/link';
+import { toast } from 'sonner';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -16,12 +18,13 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   const loginMutation = useMutation({
     mutationFn: login,
     onSuccess: (data) => {
-      // Single call to set user and tokens in Zustand store
       setAuth(data.user, data.accessToken, data.refreshToken);
+      toast.success('Logged in successfully');
       router.push('/habits');
     },
     onError: (err: Error) => {
@@ -32,13 +35,23 @@ export default function LoginPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
-    
-    if (!email.trim() || !password.trim()) {
-      setError('Please enter both email and password.');
+    setFieldErrors({});
+
+    const raw = { email: email.trim(), password };
+    const validated = LoginRequestSchema.safeParse(raw);
+
+    if (!validated.success) {
+      const errors: Record<string, string[]> = {};
+      validated.error.errors.forEach((err) => {
+        const path = err.path[0] as string;
+        if (!errors[path]) errors[path] = [];
+        errors[path].push(err.message);
+      });
+      setFieldErrors(errors);
       return;
     }
 
-    loginMutation.mutate({ email: email.trim(), password });
+    loginMutation.mutate(validated.data);
   };
 
   return (
@@ -65,7 +78,14 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 disabled={loginMutation.isPending}
+                aria-invalid={!!fieldErrors.email}
+                aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               />
+              {fieldErrors.email && (
+                <p id="email-error" className="text-xs text-destructive">
+                  {fieldErrors.email[0]}
+                </p>
+              )}
             </div>
             <div className="space-y-2">
               <label htmlFor="password" className="text-sm font-medium">
@@ -78,7 +98,14 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 disabled={loginMutation.isPending}
+                aria-invalid={!!fieldErrors.password}
+                aria-describedby={fieldErrors.password ? 'password-error' : undefined}
               />
+              {fieldErrors.password && (
+                <p id="password-error" className="text-xs text-destructive">
+                  {fieldErrors.password[0]}
+                </p>
+              )}
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">

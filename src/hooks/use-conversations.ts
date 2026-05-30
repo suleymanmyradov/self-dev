@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listConversations, startConversation, getConversation, getMessages, sendMessage } from '@/api/conversations';
 import type { StartConversationRequest, SendMessageRequest, ListConversationsParams, PageParams } from '@/api';
+import { toast } from 'sonner';
+import { ApiError } from '@/api/axios-client';
+
+function handleMutationError(error: unknown) {
+  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
+  toast.error(message);
+}
 
 /**
  * Hook to fetch conversations
@@ -42,12 +49,13 @@ export function useMessages(conversationId: string, params: PageParams = { page:
  */
 export function useStartConversation() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (data: StartConversationRequest) => startConversation(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
+    onError: handleMutationError,
   });
 }
 
@@ -56,12 +64,13 @@ export function useStartConversation() {
  */
 export function useSendMessage() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ conversationId, data }: { conversationId: string; data: SendMessageRequest }) =>
       sendMessage(conversationId, data),
     onSuccess: (_, { conversationId }) => {
       queryClient.invalidateQueries({ queryKey: ['conversations', conversationId, 'messages'] });
     },
+    onError: handleMutationError,
   });
 }

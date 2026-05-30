@@ -1,4 +1,8 @@
-import api from './client';
+import api from './axios-client';
+import {
+  SettingsResponseSchema,
+  UpdateSettingsRequestSchema,
+} from '@/lib/validation';
 import type {
   SettingsResponse,
   UpdateSettingsRequest,
@@ -12,12 +16,15 @@ const ENDPOINTS = {
  * Get user settings
  */
 export async function getSettings(): Promise<SettingsResponse> {
-  return api.get<SettingsResponse>(ENDPOINTS.SETTINGS);
+  const response = await api.get<unknown>(ENDPOINTS.SETTINGS);
+  return SettingsResponseSchema.parse(response);
 }
 
 /**
  * Update user settings
  */
 export async function updateSettings(data: UpdateSettingsRequest): Promise<SettingsResponse> {
-  return api.put<SettingsResponse>(ENDPOINTS.SETTINGS, data);
+  const validated = UpdateSettingsRequestSchema.parse(data);
+  const response = await api.put<unknown>(ENDPOINTS.SETTINGS, validated);
+  return SettingsResponseSchema.parse(response);
 }

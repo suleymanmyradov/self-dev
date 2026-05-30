@@ -48,7 +48,7 @@ export const SidebarNav = memo(function SidebarNav() {
       closeLeftPanel: s.closeLeftPanel,
     }))
   );
-  const { data: unreadCount = 0 } = useUnreadCount();
+  const unreadCount = useUnreadCount();
 
   const handlePanelClick = (panel: "notifications") => {
     if (isLeftPanelOpen && leftPanelType === panel) {

@@ -1,45 +1,31 @@
-import api from './client';
+import api from './axios-client';
+import {
+  SavedItemsResponseSchema,
+  SavedItemsDetailedResponseSchema,
+  SaveItemRequestSchema,
+} from '@/lib/validation';
 import type {
   SavedItemsResponse,
   SavedItemsDetailedResponse,
-  SavedItemResponse,
   SaveItemRequest,
   PageParams,
 } from './types';
 
-const ENDPOINTS = {
-  SAVED: '/saved',
-  SAVED_ITEM: (id: string) => `/saved/${id}`,
-};
-
-const ENDPOINTS_DETAILED = {
-  SAVED_DETAILED: '/saved/detailed',
-};
-
-/**
- * List saved items with pagination
- */
 export async function listSavedItems(params: PageParams = { page: 1, limit: 20 }): Promise<SavedItemsResponse> {
-  return api.get<SavedItemsResponse>(ENDPOINTS.SAVED, params);
+  const response = await api.get<unknown>('/saved', params);
+  return SavedItemsResponseSchema.parse(response);
 }
 
-/**
- * List saved items with hydrated details (single request, no N+1)
- */
 export async function listSavedDetailed(params: PageParams = { page: 1, limit: 20 }): Promise<SavedItemsDetailedResponse> {
-  return api.get<SavedItemsDetailedResponse>(ENDPOINTS_DETAILED.SAVED_DETAILED, params);
+  const response = await api.get<unknown>('/saved/detailed', params);
+  return SavedItemsDetailedResponseSchema.parse(response);
 }
 
-/**
- * Save an item
- */
-export async function saveItem(data: SaveItemRequest): Promise<SavedItemResponse> {
-  return api.post<SavedItemResponse>(ENDPOINTS.SAVED, data);
+export async function saveItem(data: SaveItemRequest): Promise<void> {
+  const validated = SaveItemRequestSchema.parse(data);
+  await api.post('/saved', validated);
 }
 
-/**
- * Remove a saved item
- */
 export async function removeSavedItem(id: string): Promise<void> {
-  return api.delete(ENDPOINTS.SAVED_ITEM(id));
+  await api.delete(`/saved/${encodeURIComponent(id)}`);
 }

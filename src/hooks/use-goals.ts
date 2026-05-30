@@ -1,6 +1,13 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listGoals, getGoal, createGoal, updateGoal, deleteGoal, toggleGoal, updateGoalProgress } from '@/api';
 import type { CreateGoalRequest, UpdateGoalRequest, GoalsResponse } from '@/api';
+import { toast } from 'sonner';
+import { ApiError } from '@/api/axios-client';
+
+function handleMutationError(error: unknown) {
+  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
+  toast.error(message);
+}
 
 /**
  * Hook to fetch all goals
@@ -32,12 +39,14 @@ export function useGoal(id: string) {
  */
 export function useCreateGoal() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (data: CreateGoalRequest) => createGoal(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      toast.success('Goal created successfully');
     },
+    onError: handleMutationError,
   });
 }
 
@@ -46,13 +55,15 @@ export function useCreateGoal() {
  */
 export function useUpdateGoal() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, data }: { id: string; data: UpdateGoalRequest }) => updateGoal(id, data),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });
+      toast.success('Goal updated successfully');
     },
+    onError: handleMutationError,
   });
 }
 
@@ -61,12 +72,14 @@ export function useUpdateGoal() {
  */
 export function useDeleteGoal() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: string) => deleteGoal(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
+      toast.success('Goal deleted successfully');
     },
+    onError: handleMutationError,
   });
 }
 
@@ -75,13 +88,14 @@ export function useDeleteGoal() {
  */
 export function useToggleGoal() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: (id: string) => toggleGoal(id),
     onSuccess: (_, id) => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals', id] });
     },
+    onError: handleMutationError,
   });
 }
 
@@ -90,12 +104,13 @@ export function useToggleGoal() {
  */
 export function useUpdateGoalProgress() {
   const queryClient = useQueryClient();
-  
+
   return useMutation({
     mutationFn: ({ id, progress }: { id: string; progress: number }) => updateGoalProgress(id, progress),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });
     },
+    onError: handleMutationError,
   });
 }

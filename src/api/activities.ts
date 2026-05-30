@@ -1,16 +1,8 @@
-import api from './client';
-import type {
-  ActivityResponse,
-  PageParams,
-} from './types';
+import api from './axios-client';
+import { ActivityResponseSchema } from '@/lib/validation';
+import type { ActivityResponse, PageParams } from './types';
 
-const ENDPOINTS = {
-  ACTIVITIES: '/activities',
-};
-
-/**
- * List activities with pagination
- */
 export async function listActivities(params: PageParams = { page: 1, limit: 20 }): Promise<ActivityResponse> {
-  return api.get<ActivityResponse>(ENDPOINTS.ACTIVITIES, params);
+  const response = await api.get<unknown>('/activities', params);
+  return ActivityResponseSchema.parse(response);
 }
