@@ -1,31 +1,19 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import { z } from "zod";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/sonner";
 import { FormField } from "@/components/form-field";
-import { useQueryClient } from "@tanstack/react-query";
-import { updateProfile } from "@/api";
 import { useSettings, useUpdateSettings, useCoachingProfile, useBillingOverview, useCreateCustomerPortalSession, useProfile } from "@/hooks";
-import type { UpdateProfileRequest, AccountabilityStyle, PreferredTone, DifficultyPreference, Profile, Settings, SettingsResponse } from "@/api";
+import type { AccountabilityStyle, PreferredTone, DifficultyPreference, Profile, SettingsResponse } from "@/api";
+import { updateProfile } from "@/api";
+import { useQueryClient } from "@tanstack/react-query";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { Crown, Sparkles } from "lucide-react";
 import Link from "next/link";
-
-const accountSchema = z.object({
-  username: z
-    .string()
-    .min(2, "Username must be at least 2 characters")
-    .max(50, "Username must be less than 50 characters")
-    .regex(/^[a-zA-Z0-9_]+$/, "Only letters, numbers, and underscores allowed"),
-  email: z.string().email("Invalid email address"),
-});
-
-type AccountFormData = z.infer<typeof accountSchema>;
 
 interface SettingsClientProps {
   initialSettings?: SettingsResponse;
@@ -39,69 +27,59 @@ export function SettingsClient({ initialSettings, initialProfile }: SettingsClie
   const { profile: coachingProfile, updatePreferences, loading: coachingLoading } = useCoachingProfile();
   const { data: profile, isLoading: profileLoading, error: profileError } = useProfile(initialProfile);
 
+  const usernameRef = useRef<HTMLInputElement>(null);
+  const emailRef = useRef<HTMLInputElement>(null);
+  const [errors, setErrors] = useState<Partial<Record<"username" | "email", string>>>({});
+  const [saving, setSaving] = useState(false);
+
+  // Sync refs when profile loads
+  useEffect(() => {
+    if (profile) {
+      if (usernameRef.current) usernameRef.current.value = profile.username ?? "";
+      if (emailRef.current) emailRef.current.value = profile.email ?? "";
+    }
+  }, [profile?.id]);
+
   useEffect(() => {
     if (profileError) {
       toast.error("Failed to load profile");
     }
   }, [profileError]);
-  const [formData, setFormData] = useState<AccountFormData>({
-    username: initialProfile?.username ?? "",
-    email: initialProfile?.email ?? "",
-  });
-  const [errors, setErrors] = useState<Partial<Record<keyof AccountFormData, string>>>({});
-  const [saving, setSaving] = useState(false);
 
-  // Sync form only when fetched profile differs from initial
-  useEffect(() => {
-    if (profile && profile.id !== initialProfile?.id) {
-      setFormData({
-        username: profile.username,
-        email: profile.email,
-      });
-    }
-  }, [profile, initialProfile?.id]);
+  const handleSave = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setErrors({});
 
-  const updateField = useCallback((field: keyof AccountFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
-    setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-    if (errors[field]) {
-      setErrors((prev) => ({ ...prev, [field]: undefined }));
-    }
-  }, [errors]);
+      const username = usernameRef.current?.value.trim() ?? "";
+      const email = emailRef.current?.value.trim() ?? "";
 
-  const handleSave = async (e: React.FormEvent) => {
-    e.preventDefault();
+      const fieldErrors: Partial<Record<"username" | "email", string>> = {};
+      if (username.length < 2) {
+        fieldErrors.username = "Username must be at least 2 characters";
+      }
+      if (!email.includes("@")) {
+        fieldErrors.email = "Invalid email address";
+      }
 
-    const result = accountSchema.safeParse({
-      username: formData.username.trim(),
-      email: formData.email.trim(),
-    });
+      if (Object.keys(fieldErrors).length > 0) {
+        setErrors(fieldErrors);
+        return;
+      }
 
-    if (!result.success) {
-      const fieldErrors: Partial<Record<keyof AccountFormData, string>> = {};
-      result.error.issues.forEach((issue) => {
-        const field = issue.path[0] as keyof AccountFormData;
-        fieldErrors[field] = issue.message;
-      });
-      setErrors(fieldErrors);
-      return;
-    }
-
-    setSaving(true);
-    const payload = result.data;
-
-    try {
-      const profilePayload: UpdateProfileRequest = {
-        fullName: profile?.fullName || payload.username,
-      };
-      await updateProfile(profilePayload);
-      queryClient.invalidateQueries({ queryKey: ["profile"] });
-      toast.success("Settings saved successfully");
-    } catch {
-      toast.error("Failed to save settings");
-    } finally {
-      setSaving(false);
-    }
-  };
+      setSaving(true);
+      try {
+        await updateProfile({ fullName: username });
+        queryClient.invalidateQueries({ queryKey: ["profile"] });
+        toast.success("Settings saved successfully");
+      } catch {
+        toast.error("Failed to save settings");
+      } finally {
+        setSaving(false);
+      }
+    },
+    [queryClient]
+  );
 
   const handleSettingToggle = async (
     key: "emailNotifications" | "pushNotifications" | "habitReminders" | "goalReminders",
@@ -122,9 +100,9 @@ export function SettingsClient({ initialSettings, initialProfile }: SettingsClie
   ) => {
     try {
       await updatePreferences({
-        accountabilityStyle: field === "accountabilityStyle" ? value as AccountabilityStyle : coachingProfile?.accountabilityStyle || "balanced",
-        preferredTone: field === "preferredTone" ? value as PreferredTone : coachingProfile?.preferredTone || "supportive",
-        difficultyPreference: field === "difficultyPreference" ? value as DifficultyPreference : coachingProfile?.difficultyPreference || "adaptive",
+        accountabilityStyle: field === "accountabilityStyle" ? (value as AccountabilityStyle) : coachingProfile?.accountabilityStyle || "balanced",
+        preferredTone: field === "preferredTone" ? (value as PreferredTone) : coachingProfile?.preferredTone || "supportive",
+        difficultyPreference: field === "difficultyPreference" ? (value as DifficultyPreference) : coachingProfile?.difficultyPreference || "adaptive",
       });
       toast.success("Coaching preferences updated");
     } catch {
@@ -152,8 +130,8 @@ export function SettingsClient({ initialSettings, initialProfile }: SettingsClie
                 <FormField
                   id="username"
                   label="Username"
-                  value={formData.username}
-                  onChange={updateField("username")}
+                  ref={usernameRef}
+                  defaultValue={profile?.username ?? ""}
                   placeholder="yourname"
                   error={errors.username}
                   disabled={isLoading}
@@ -161,9 +139,9 @@ export function SettingsClient({ initialSettings, initialProfile }: SettingsClie
                 <FormField
                   id="email"
                   label="Email"
+                  ref={emailRef}
                   type="email"
-                  value={formData.email}
-                  onChange={updateField("email")}
+                  defaultValue={profile?.email ?? ""}
                   placeholder="you@example.com"
                   error={errors.email}
                   disabled={isLoading}
@@ -264,49 +242,61 @@ export function SettingsClient({ initialSettings, initialProfile }: SettingsClie
                     <span className="text-sm font-medium">Accountability Style</span>
                     <p className="text-xs text-muted-foreground mb-3">How strict should your AI coach be?</p>
                     <div className="flex gap-2">
-                      {(["gentle", "balanced", "strict"] as AccountabilityStyle[]).map((style) => (
-                        <Button
+                      {(["gentle", "balanced", "strict"] as const).map((style) => (
+                        <button
                           key={style}
-                          variant={coachingProfile?.accountabilityStyle === style ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleCoachingPreferenceChange("accountabilityStyle", style)}
+                          type="button"
+                          onClick={() => handleCoachingPreferenceChange("accountabilityStyle", style as AccountabilityStyle)}
+                          className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-colors ${
+                            coachingProfile?.accountabilityStyle === style
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border hover:bg-accent"
+                          }`}
                         >
-                          {style.charAt(0).toUpperCase() + style.slice(1)}
-                        </Button>
+                          {style}
+                        </button>
                       ))}
                     </div>
                   </div>
-                  <Separator />
+
                   <div>
-                    <span className="text-sm font-medium">Communication Tone</span>
-                    <p className="text-xs text-muted-foreground mb-3">How should your AI coach communicate with you?</p>
-                    <div className="flex flex-wrap gap-2">
-                      {(["supportive", "direct", "warm", "practical", "challenging"] as PreferredTone[]).map((tone) => (
-                        <Button
+                    <span className="text-sm font-medium">Preferred Tone</span>
+                    <p className="text-xs text-muted-foreground mb-3">What tone do you want your coach to use?</p>
+                    <div className="flex gap-2">
+                      {(["supportive", "direct", "motivational"] as const).map((tone) => (
+                        <button
                           key={tone}
-                          variant={coachingProfile?.preferredTone === tone ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleCoachingPreferenceChange("preferredTone", tone)}
+                          type="button"
+                          onClick={() => handleCoachingPreferenceChange("preferredTone", tone as PreferredTone)}
+                          className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-colors ${
+                            coachingProfile?.preferredTone === tone
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border hover:bg-accent"
+                          }`}
                         >
-                          {tone.charAt(0).toUpperCase() + tone.slice(1)}
-                        </Button>
+                          {tone}
+                        </button>
                       ))}
                     </div>
                   </div>
-                  <Separator />
+
                   <div>
                     <span className="text-sm font-medium">Difficulty Preference</span>
-                    <p className="text-xs text-muted-foreground mb-3">How challenging should your goals and habits be?</p>
+                    <p className="text-xs text-muted-foreground mb-3">How challenging should your plans be?</p>
                     <div className="flex gap-2">
-                      {(["easy", "adaptive", "ambitious"] as DifficultyPreference[]).map((difficulty) => (
-                        <Button
-                          key={difficulty}
-                          variant={coachingProfile?.difficultyPreference === difficulty ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => handleCoachingPreferenceChange("difficultyPreference", difficulty)}
+                      {(["easy", "adaptive", "challenging"] as const).map((diff) => (
+                        <button
+                          key={diff}
+                          type="button"
+                          onClick={() => handleCoachingPreferenceChange("difficultyPreference", diff as DifficultyPreference)}
+                          className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-colors ${
+                            coachingProfile?.difficultyPreference === diff
+                              ? "bg-primary text-primary-foreground border-primary"
+                              : "border-border hover:bg-accent"
+                          }`}
                         >
-                          {difficulty.charAt(0).toUpperCase() + difficulty.slice(1)}
-                        </Button>
+                          {diff}
+                        </button>
                       ))}
                     </div>
                   </div>
@@ -321,12 +311,9 @@ export function SettingsClient({ initialSettings, initialProfile }: SettingsClie
 }
 
 function BillingSection() {
-  const { data: billing, isLoading } = useBillingOverview();
+  const { data: billing } = useBillingOverview();
+  const { data: profile } = useProfile();
   const portalMutation = useCreateCustomerPortalSession();
-
-  if (isLoading) {
-    return <p className="text-sm text-muted-foreground">Loading plan info...</p>;
-  }
 
   const subscription = billing?.subscription;
   const isPro = subscription?.planCode === "pro";
@@ -373,7 +360,11 @@ function BillingSection() {
               {subscription?.currentPeriodEnd && (
                 <p className="text-xs text-muted-foreground">
                   {subscription.cancelAtPeriodEnd ? "Access until" : "Renews on"}{" "}
-                  {new Date(subscription.currentPeriodEnd).toLocaleDateString()}
+                  {new Date(subscription.currentPeriodEnd).toLocaleDateString("en-US", {
+                    month: "short",
+                    day: "numeric",
+                    year: "numeric",
+                  })}
                 </p>
               )}
             </div>
@@ -384,24 +375,18 @@ function BillingSection() {
               disabled={portalMutation.isPending}
             >
               <Crown className="mr-1.5 h-3.5 w-3.5" />
-              Manage billing
+              Manage
             </Button>
           </div>
         </>
       )}
 
-      {!isPro && (
+      {(profile as unknown as { subscriptionStatus?: string } | undefined)?.subscriptionStatus === "canceling" && (
         <>
           <Separator />
-          <div className="rounded-lg bg-energy/5 border border-energy/20 p-3">
-            <p className="text-xs text-muted-foreground">
-              Upgrade to Pro for unlimited goals, full weekly review history, and personalized AI coaching.
-              {" "}
-              <Link href="/pricing" className="text-energy hover:underline">
-                View plans
-              </Link>
-            </p>
-          </div>
+          <p className="text-xs text-muted-foreground">
+            Your subscription will cancel at the end of the current period.
+          </p>
         </>
       )}
     </>

@@ -9,17 +9,16 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, CircleDashed, ArrowRight, Lightbulb } from 'lucide-react';
-import { useFeedFilter } from '@/store/feed-filter';
-import type { FeedFilter } from '@/store/feed-filter';
 import { listCategories, listArticles } from '@/api';
 import { useHabits, useTodayCheckIns, usePlanAdjustments, useBillingOverview } from '@/hooks';
 import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
 import type { HabitsResponse, CheckInsResponse, BillingOverviewResponse } from '@/api';
+import { useSearchParamState } from '@/lib/url-state';
 
 const TAB_TRIGGER_CLASS =
   'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold';
 
-const DEFAULT_CATEGORIES: { value: FeedFilter; label: string }[] = [
+const DEFAULT_CATEGORIES: { value: string; label: string }[] = [
   { value: 'all', label: 'All' },
   { value: 'philosophy', label: 'Philosophy' },
   { value: 'habits', label: 'Habits' },
@@ -35,7 +34,7 @@ interface HomeClientProps {
 }
 
 export function HomeClient({ initialCategories, initialArticles, initialHabits, initialCheckIns }: HomeClientProps) {
-  const { filter, setFilter } = useFeedFilter();
+  const [filter, setFilter] = useSearchParamState('category', 'all');
 
   // Fetch habits and check-ins for today's widget
   const { data: habits = [] } = useHabits({ page: 1, limit: 100 }, initialHabits);
@@ -68,8 +67,8 @@ export function HomeClient({ initialCategories, initialArticles, initialHabits, 
     const cats = categoriesData?.data;
     if (cats && cats.length > 0) {
       const mapped = [
-        { value: 'all' as FeedFilter, label: 'All' },
-        ...cats.map((c) => ({ value: c.slug as FeedFilter, label: c.name })),
+        { value: 'all', label: 'All' },
+        ...cats.map((c) => ({ value: c.slug, label: c.name })),
       ];
       return mapped;
     }
@@ -83,7 +82,7 @@ export function HomeClient({ initialCategories, initialArticles, initialHabits, 
       const params = filter !== 'all' ? { category: filter } : undefined;
       return listArticles(params);
     },
-    initialData: filter === 'all' && initialArticles ? { data: initialArticles } as { data: typeof initialArticles } : undefined,
+    initialData: initialArticles ? { data: initialArticles } as { data: typeof initialArticles } : undefined,
     staleTime: 1000 * 60 * 5, // 5 minutes
   });
 
@@ -174,7 +173,7 @@ export function HomeClient({ initialCategories, initialArticles, initialHabits, 
 
           <Tabs
             value={filter}
-            onValueChange={(v) => setFilter(v as FeedFilter)}
+            onValueChange={(v) => setFilter(v)}
             className="mt-2 mb-6 w-full"
           >
             <TabsList className="h-auto w-fit bg-secondary/50 p-1 rounded-lg">

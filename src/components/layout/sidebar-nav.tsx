@@ -39,15 +39,15 @@ const panelItems: { panel: "notifications"; label: string; icon: LucideIcon }[] 
 
 export const SidebarNav = memo(function SidebarNav() {
   const pathname = usePathname();
-  const { isSidebarCollapsed, openLeftPanel, isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUIStore(
+  const { isSidebarCollapsed, isLeftPanelOpen, leftPanelType } = useUIStore(
     useShallow(s => ({
       isSidebarCollapsed: s.isSidebarCollapsed,
-      openLeftPanel: s.openLeftPanel,
       isLeftPanelOpen: s.isLeftPanelOpen,
       leftPanelType: s.leftPanelType,
-      closeLeftPanel: s.closeLeftPanel,
     }))
   );
+  const openLeftPanel = useUIStore(s => s.openLeftPanel);
+  const closeLeftPanel = useUIStore(s => s.closeLeftPanel);
   const unreadCount = useUnreadCount();
 
   const handlePanelClick = (panel: "notifications") => {

@@ -1,11 +1,12 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 import type { Habit } from '@/api';
+import { useSearchParamState } from '@/lib/url-state';
 
 export type SortBy = 'streak' | 'name';
 
 export function useHabitFilters(habits: Habit[]) {
-  const [categoryFilter, setCategoryFilter] = useState<string>('all');
-  const [sortBy, setSortBy] = useState<SortBy>('streak');
+  const [categoryFilter, setCategoryFilter] = useSearchParamState('category', 'all');
+  const [sortBy, setSortBy] = useSearchParamState('sort', 'streak');
 
   const visibleHabits = useMemo(() => {
     const safeHabits = habits || [];

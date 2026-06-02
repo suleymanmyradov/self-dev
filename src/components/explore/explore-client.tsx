@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
@@ -17,16 +17,48 @@ import {
   GoalTemplateCard,
   CommunityCard,
 } from "@/components/explore";
+import { useSearchParamState } from "@/lib/url-state";
 
 interface ExploreClientProps {
   initialArticles?: ArticlesResponse;
+}
+
+function useDebounceValue<T>(value: T, delay: number): T {
+  const [debouncedValue, setDebouncedValue] = useState(value);
+  useEffect(() => {
+    const handler = setTimeout(() => setDebouncedValue(value), delay);
+    return () => clearTimeout(handler);
+  }, [value, delay]);
+  return debouncedValue;
 }
 
 export function ExploreClient({ initialArticles }: ExploreClientProps) {
   const createHabitMutation = useCreateHabit();
   const createGoalMutation = useCreateGoal();
 
-  const [query, setQuery] = useState("");
+  const [tab, setTab] = useSearchParamState("tab", "articles");
+  const [urlQuery, setUrlQuery] = useSearchParamState("q");
+
+  // Local input state for responsiveness; sync to URL after debounce
+  const [inputValue, setInputValue] = useState(urlQuery);
+  const debouncedInput = useDebounceValue(inputValue, 300);
+
+  // Push debounced input to URL
+  useEffect(() => {
+    if (debouncedInput !== urlQuery) {
+      setUrlQuery(debouncedInput);
+    }
+  }, [debouncedInput, urlQuery, setUrlQuery]);
+
+  // Sync input from URL on external changes (back/forward, bookmark)
+  useEffect(() => {
+    setInputValue((prev) => {
+      if (urlQuery !== prev) return urlQuery;
+      return prev;
+    });
+  }, [urlQuery]);
+
+  const query = urlQuery;
 
   // Fetch real articles from API
   const { data: articlesData, isLoading: articlesLoading } = useQuery({
@@ -67,18 +99,18 @@ export function ExploreClient({ initialArticles }: ExploreClientProps) {
               <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
               <Input
                 placeholder="Search articles, habits, goals..."
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
+                value={inputValue}
+                onChange={(e) => setInputValue(e.target.value)}
                 className="pl-10 bg-background/80 backdrop-blur"
               />
             </div>
           </div>
 
-          <Tabs defaultValue="articles" className="w-full">
+          <Tabs value={tab} onValueChange={setTab} className="w-full">
             <TabsList className="mb-6 flex-wrap h-auto">
-              {(['articles', 'habits', 'goals', 'community'] as const).map((tab) => (
-                <TabsTrigger key={tab} value={tab}>
-                  {tab.charAt(0).toUpperCase() + tab.slice(1)}
+              {(['articles', 'habits', 'goals', 'community'] as const).map((tabValue) => (
+                <TabsTrigger key={tabValue} value={tabValue}>
+                  {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}
                 </TabsTrigger>
               ))}
             </TabsList>

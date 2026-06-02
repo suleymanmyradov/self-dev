@@ -1,4 +1,3 @@
-import '@/lib/storage-shim';
 import type React from 'react';
 import type { Metadata } from 'next';
 import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
@@ -7,6 +6,7 @@ import './globals.css';
 import { LayoutFrame } from '@/components/layout/layout-frame';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
+import { StoreHydrator } from '@/components/providers/store-hydrator';
 import { ViewportWatcher } from '@/components/shared/viewport-watcher';
 import { MobileTopBar } from '@/components/shared/mobile-topbar';
 import { BottomTabBar } from '@/components/shared/bottom-tab-bar';
@@ -44,6 +44,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     disableTransitionOnChange
                 >
                     <QueryProvider>
+                        <StoreHydrator />
                         <ViewportWatcher />
                         <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
                             <MobileTopBar />

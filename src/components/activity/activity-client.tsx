@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -9,20 +9,23 @@ import { RefreshCw, Activity as ActivityIcon } from "lucide-react";
 import { useActivities } from "@/hooks/use-activities";
 import { ActivityItem, ActivityEmptyState, ActivityFilterBar } from "@/components/activity";
 import type { ActivityType, ActivityResponse } from "@/api";
+import { useSearchParamState } from "@/lib/url-state";
+
+type FilterValue = ActivityType | "all" | "check_in";
 
 interface ActivityClientProps {
   initialActivities?: ActivityResponse;
 }
 
 export function ActivityClient({ initialActivities }: ActivityClientProps) {
-  const [filter, setFilter] = useState<ActivityType | 'all' | 'check_in'>('all');
+  const [filter, setFilter] = useSearchParamState("filter", "all") as [FilterValue, (v: string) => void];
   const { data: activities, isLoading, isError, error, refetch, isRefetching } = useActivities(undefined, initialActivities);
 
   const filteredActivities = useMemo(() => {
     if (!activities) return [];
-    if (filter === 'all') return activities;
-    if (filter === 'check_in')
-      return activities.filter(a => a.type === 'check_in_completed' || a.type === 'check_in_missed');
+    if (filter === "all") return activities;
+    if (filter === "check_in")
+      return activities.filter(a => a.type === "check_in_completed" || a.type === "check_in_missed");
     return activities.filter(a => a.type === filter);
   }, [activities, filter]);
 
@@ -42,7 +45,7 @@ export function ActivityClient({ initialActivities }: ActivityClientProps) {
               disabled={isRefetching}
               className="shrink-0"
             >
-              <RefreshCw className={`h-4 w-4 ${isRefetching ? 'animate-spin' : ''}`} />
+              <RefreshCw className={`h-4 w-4 ${isRefetching ? "animate-spin" : ""}`} />
             </Button>
           </header>
 
@@ -50,7 +53,7 @@ export function ActivityClient({ initialActivities }: ActivityClientProps) {
             <CardHeader>
               <div className="flex items-center justify-between">
                 <CardTitle>Recent</CardTitle>
-                <ActivityFilterBar filter={filter} onFilterChange={setFilter} />
+                <ActivityFilterBar filter={filter} onFilterChange={setFilter as (f: FilterValue) => void} />
               </div>
             </CardHeader>
             <CardContent>
@@ -70,7 +73,7 @@ export function ActivityClient({ initialActivities }: ActivityClientProps) {
               ) : isError ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <ActivityIcon className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-sm text-muted-foreground mb-4">{error?.message ?? 'Failed to load activities'}</p>
+                  <p className="text-sm text-muted-foreground mb-4">{error?.message ?? "Failed to load activities"}</p>
                   <Button variant="outline" size="sm" onClick={() => refetch()}>
                     Try again
                   </Button>

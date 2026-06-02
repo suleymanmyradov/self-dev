@@ -1,6 +1,5 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -16,49 +15,9 @@ import {
   ACCOUNTABILITY_STYLE_TONES,
   CHECK_IN_HOURS,
   DAILY_COMMITMENT_OPTIONS,
-  type AccountabilityStyle,
 } from '@/lib/constants';
-import type { GoalCategory } from '@/api/types';
+import { useOnboardingStore, TOTAL_STEPS } from '@/store/onboarding';
 import { ArrowLeft, ArrowRight, Check, Loader2, Sparkles } from 'lucide-react';
-
-// ─── Types ────────────────────────────────────────────────────────────────────
-
-type HabitSuggestion = {
-  name: string;
-  description: string;
-  selected: boolean;
-};
-
-type OnboardingState = {
-  // Step 1: Goal
-  goalTitle: string;
-  goalCategory: GoalCategory;
-  // Step 2: Motivation
-  motivation: string;
-  // Step 3: Blockers
-  blocker: string;
-  // Step 4: Time commitment
-  dailyMinutes: number;
-  // Step 5: Accountability style
-  accountabilityStyle: AccountabilityStyle;
-  // Step 6: Check-in time
-  checkInTime: string;
-  // Step 7: Habit suggestions (generated)
-  habitSuggestions: HabitSuggestion[];
-};
-
-const TOTAL_STEPS = 7;
-
-const initialState: OnboardingState = {
-  goalTitle: '',
-  goalCategory: 'productivity',
-  motivation: '',
-  blocker: '',
-  dailyMinutes: 30,
-  accountabilityStyle: 'balanced',
-  checkInTime: '09:00',
-  habitSuggestions: [],
-};
 
 // ─── Step header component ────────────────────────────────────────────────────
 
@@ -87,13 +46,20 @@ function StepHeader({ step, total }: { step: number; total: number }) {
 
 export default function OnboardingPage() {
   const router = useRouter();
-  const [step, setStep] = useState(1);
-  const [state, setState] = useState<OnboardingState>(initialState);
-  const [loadingHabits, setLoadingHabits] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const step = useOnboardingStore((s) => s.step);
+  const state = useOnboardingStore((s) => s.data);
+  const loadingHabits = useOnboardingStore((s) => s.loadingHabits);
+  const error = useOnboardingStore((s) => s.error);
+  const updateField = useOnboardingStore((s) => s.updateField);
+  const nextStep = useOnboardingStore((s) => s.nextStep);
+  const prevStep = useOnboardingStore((s) => s.prevStep);
+  const setLoadingHabits = useOnboardingStore((s) => s.setLoadingHabits);
+  const setError = useOnboardingStore((s) => s.setError);
+  const setHabitSuggestions = useOnboardingStore((s) => s.setHabitSuggestions);
+  const toggleHabitSelection = useOnboardingStore((s) => s.toggleHabitSelection);
 
-  const update = <K extends keyof OnboardingState>(key: K, value: OnboardingState[K]) => {
-    setState((prev) => ({ ...prev, [key]: value }));
+  const update = <K extends keyof typeof state>(key: K, value: (typeof state)[K]) => {
+    updateField(key, value);
   };
 
   // ─── Habit AI generation ─────────────────────────────────────────────────
@@ -140,24 +106,20 @@ Rules:
 
       if (!response.ok) throw new Error('Failed to generate habits');
 
-      // Read the streamed text response and parse JSON from it
       const text = await response.text();
-
-      // Extract JSON array from the streamed response
       const jsonMatch = text.match(/\[[\s\S]*\]/);
       if (!jsonMatch) throw new Error('Could not parse habit suggestions');
 
       const parsed: Array<{ name: string; description: string }> = JSON.parse(jsonMatch[0]);
-      const suggestions: HabitSuggestion[] = parsed.slice(0, 3).map((h) => ({
+      const suggestions = parsed.slice(0, 3).map((h) => ({
         name: h.name,
         description: h.description,
         selected: true,
       }));
 
-      update('habitSuggestions', suggestions);
+      setHabitSuggestions(suggestions);
     } catch {
-      // Fallback to generic suggestions if AI fails
-      const fallback: HabitSuggestion[] = [
+      const fallback = [
         {
           name: `Work on ${state.goalTitle} for ${Math.round(state.dailyMinutes / 3)} minutes`,
           description: 'Set a timer and focus exclusively on this task.',
@@ -174,7 +136,7 @@ Rules:
           selected: true,
         },
       ];
-      update('habitSuggestions', fallback);
+      setHabitSuggestions(fallback);
     } finally {
       setLoadingHabits(false);
     }
@@ -198,7 +160,6 @@ Rules:
   const handleFinish = async () => {
     setError(null);
     try {
-      // 1. Create the goal
       await doCreateGoal({
         title: state.goalTitle,
         description: state.motivation
@@ -207,7 +168,6 @@ Rules:
         category: state.goalCategory,
       });
 
-      // 2. Create selected habits
       const selectedHabits = state.habitSuggestions.filter((h) => h.selected);
       for (const habit of selectedHabits) {
         await doCreateHabit({
@@ -217,14 +177,12 @@ Rules:
         });
       }
 
-      // 3. Save onboarding preferences
       await doUpdateSettings({
         accountabilityStyle: state.accountabilityStyle,
         checkInTime: state.checkInTime,
         onboardingCompleted: true,
       });
 
-      // 4. Navigate to habits
       router.push('/habits');
     } catch {
       setError('Something went wrong. Please try again.');
@@ -237,7 +195,7 @@ Rules:
     switch (step) {
       case 1: return state.goalTitle.trim().length >= 3;
       case 2: return state.motivation.trim().length >= 3;
-      case 3: return true; // blocker is optional
+      case 3: return true;
       case 4: return true;
       case 5: return true;
       case 6: return true;
@@ -248,19 +206,15 @@ Rules:
 
   const handleNext = async () => {
     if (step === 6) {
-      // Generate habits before showing step 7
       await generateHabits();
     }
-    setStep((s) => Math.min(s + 1, TOTAL_STEPS));
+    nextStep();
   };
-
-  const handleBack = () => setStep((s) => Math.max(s - 1, 1));
 
   // ─── Render steps ─────────────────────────────────────────────────────────
 
   return (
     <div className="min-h-screen flex items-center justify-center p-4 bg-background">
-      {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 overflow-hidden">
         <div className="absolute -top-32 -right-32 h-96 w-96 rounded-full bg-ambient-energy opacity-20 blur-3xl" />
         <div className="absolute -bottom-32 -left-32 h-80 w-80 rounded-full bg-ambient-growth opacity-20 blur-3xl" />
@@ -323,7 +277,7 @@ Rules:
                   Why does this matter to you?
                 </h2>
                 <p className="mt-2 text-sm text-muted-foreground">
-                  Understanding your "why" makes it easier to stay consistent when motivation dips.
+                  Understanding your &ldquo;why&rdquo; makes it easier to stay consistent when motivation dips.
                 </p>
               </div>
               <div className="space-y-2">
@@ -514,11 +468,7 @@ Rules:
                     <button
                       key={idx}
                       type="button"
-                      onClick={() => {
-                        const updated = [...state.habitSuggestions];
-                        updated[idx] = { ...updated[idx], selected: !updated[idx].selected };
-                        update('habitSuggestions', updated);
-                      }}
+                      onClick={() => toggleHabitSelection(idx)}
                       className={cn(
                         'w-full rounded-xl border p-4 text-left transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2',
                         habit.selected
@@ -566,7 +516,7 @@ Rules:
             <Button
               variant="ghost"
               size="sm"
-              onClick={handleBack}
+              onClick={prevStep}
               disabled={step === 1 || isSubmitting}
               className={cn(step === 1 && 'invisible')}
             >

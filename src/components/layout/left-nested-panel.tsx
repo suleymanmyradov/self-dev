@@ -23,13 +23,13 @@ const typeIcon: Record<NotificationType, LucideIcon> = {
 }
 
 export function LeftNestedPanel() {
-  const { isLeftPanelOpen, leftPanelType, closeLeftPanel } = useUIStore(
+  const { isLeftPanelOpen, leftPanelType } = useUIStore(
     useShallow(s => ({
       isLeftPanelOpen: s.isLeftPanelOpen,
       leftPanelType: s.leftPanelType,
-      closeLeftPanel: s.closeLeftPanel,
     }))
   )
+  const closeLeftPanel = useUIStore(s => s.closeLeftPanel)
   const [shouldRender, setShouldRender] = React.useState(false)
   const [show, setShow] = React.useState(false)
   const animationFrameId = React.useRef<number>(undefined as unknown as number)
@@ -144,7 +144,11 @@ function relativeTime(dateStr: string): string {
   if (hrs < 24) return `${hrs}h ago`
   const days = Math.floor(hrs / 24)
   if (days < 7) return `${days}d ago`
-  return new Date(dateStr).toLocaleDateString()
+  return new Date(dateStr).toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  })
 }
 
 function NotificationsList() {

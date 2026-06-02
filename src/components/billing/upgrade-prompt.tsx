@@ -1,10 +1,11 @@
 "use client";
 
-import { memo, useEffect, useRef, useCallback, useState } from "react";
+import { memo, useEffect, useRef, useCallback } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, Sparkles } from "lucide-react";
 import { useTrackUpgradeEvent } from "@/hooks";
+import { useBillingUIStore } from "@/store/billing-ui";
 import { cn } from "@/lib/utils";
 import type { UpgradeTrigger, UpgradeSurface } from "@/api";
 
@@ -41,15 +42,6 @@ const TRIGGER_MESSAGES: Record<UpgradeTrigger, { title: string; description: str
   },
 };
 
-const FEEDBACK_REASONS = [
-  "Too expensive",
-  "Not enough value yet",
-  "I need more time",
-  "Missing a feature I need",
-  "I do not trust AI coaching enough",
-  "Other",
-];
-
 export const UpgradePrompt = memo(function UpgradePrompt({
   surface,
   trigger,
@@ -61,9 +53,6 @@ export const UpgradePrompt = memo(function UpgradePrompt({
 }: UpgradePromptProps) {
   const trackEvent = useTrackUpgradeEvent();
   const hasTrackedView = useRef(false);
-  const [showFeedback, setShowFeedback] = useState(false);
-  const [selectedReason, setSelectedReason] = useState<string | null>(null);
-  const [feedbackNote, setFeedbackNote] = useState("");
 
   const title = titleProp || TRIGGER_MESSAGES[trigger]?.title || "Upgrade to Pro";
   const description = descProp || TRIGGER_MESSAGES[trigger]?.description || "Unlock more features with Growth Pro.";
@@ -92,79 +81,11 @@ export const UpgradePrompt = memo(function UpgradePrompt({
   }, [trackEvent, surface, trigger]);
 
   const handleDismiss = useCallback(() => {
-    setShowFeedback(true);
-  }, []);
-
-  const handleSubmitFeedback = useCallback(() => {
-    trackEvent.mutate({
-      eventType: "prompt_dismissed",
-      surface,
-      trigger,
-      planCode: "pro",
-      feedbackReason: selectedReason || undefined,
-      feedbackNote: feedbackNote || undefined,
-    });
-    setShowFeedback(false);
     onDismiss?.();
-  }, [trackEvent, surface, trigger, selectedReason, feedbackNote, onDismiss]);
-
-  const handleSkipFeedback = useCallback(() => {
-    trackEvent.mutate({
-      eventType: "prompt_dismissed",
-      surface,
-      trigger,
-      planCode: "pro",
-    });
-    setShowFeedback(false);
-    onDismiss?.();
-  }, [trackEvent, surface, trigger, onDismiss]);
+  }, [onDismiss]);
 
   // Don't show to Pro users
   if (isPro) return null;
-
-  if (showFeedback) {
-    return (
-      <Card className="border-energy/20 bg-gradient-to-br from-energy/5 to-transparent">
-        <CardContent className="pt-4 pb-4">
-          <p className="text-sm font-medium mb-2">What would make Pro more valuable for you?</p>
-          <div className="grid gap-1.5 mb-3">
-            {FEEDBACK_REASONS.map((reason) => (
-              <button
-                type="button"
-                key={reason}
-                onClick={() => setSelectedReason(reason)}
-                aria-pressed={selectedReason === reason}
-                className={`text-left text-xs rounded-lg border px-2.5 py-1.5 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 ${
-                  selectedReason === reason
-                    ? "border-energy bg-energy/5"
-                    : "border-border hover:border-border/80"
-                }`}
-              >
-                {reason}
-              </button>
-            ))}
-          </div>
-          {selectedReason === "Other" && (
-            <input
-              type="text"
-              placeholder="Tell us more..."
-              value={feedbackNote}
-              onChange={(e) => setFeedbackNote(e.target.value)}
-              className="w-full text-sm rounded-lg border border-border px-3 py-2 mb-3 bg-background"
-            />
-          )}
-          <div className="flex gap-2">
-            <Button size="sm" variant="energy" onClick={handleSubmitFeedback} disabled={!selectedReason}>
-              Submit
-            </Button>
-            <Button size="sm" variant="ghost" onClick={handleSkipFeedback}>
-              Skip
-            </Button>
-          </div>
-        </CardContent>
-      </Card>
-    );
-  }
 
   if (compact) {
     return (

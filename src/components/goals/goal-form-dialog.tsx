@@ -1,5 +1,6 @@
 "use client";
 
+import { useCallback, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -7,34 +8,47 @@ import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "
 import { Progress } from "@/components/ui/progress";
 import { GOAL_CATEGORIES } from "@/lib/constants";
 import type { GoalFormValues } from "@/lib/validators/goal";
+import { useGoalForm } from "@/hooks";
 
 export type GoalFormDialogProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   mode: "create" | "edit";
-  form: GoalFormValues;
-  error: string | null;
-  onTitleChange: (title: string) => void;
-  onDescriptionChange: (description: string) => void;
-  onCategoryChange: (category: GoalFormValues["category"]) => void;
-  onDueDateChange: (dueDate: string | undefined) => void;
+  initialValues?: Partial<GoalFormValues>;
   onProgressChange?: (progress: number) => void;
-  onSubmit: () => void;
+  onSubmit: (data: {
+    title: string;
+    description: string;
+    category: GoalFormValues["category"];
+    dueDate?: string;
+  }) => void;
 };
 
 export function GoalFormDialog({
   open,
   onOpenChange,
   mode,
-  form,
-  error,
-  onTitleChange,
-  onDescriptionChange,
-  onCategoryChange,
-  onDueDateChange,
+  initialValues,
   onProgressChange,
   onSubmit,
 }: GoalFormDialogProps) {
+  const { form, error, setTitle, setDescription, setCategory, setDueDate, setProgress, reset, validate } =
+    useGoalForm(initialValues);
+
+  // Reset form when dialog opens with new initial values
+  useEffect(() => {
+    if (open) {
+      reset(initialValues);
+    }
+  }, [open, initialValues, reset]);
+
+  const handleSubmit = useCallback(() => {
+    const validated = validate();
+    if (validated) {
+      onSubmit(validated);
+    }
+  }, [validate, onSubmit]);
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-md">
@@ -46,14 +60,14 @@ export function GoalFormDialog({
             <label className="text-sm font-medium">Title</label>
             <Input
               value={form.title}
-              onChange={(e) => onTitleChange(e.target.value)}
+              onChange={(e) => setTitle(e.target.value)}
             />
           </div>
           <div className="grid gap-1">
             <label className="text-sm font-medium">Description</label>
             <Textarea
               value={form.description}
-              onChange={(e) => onDescriptionChange(e.target.value)}
+              onChange={(e) => setDescription(e.target.value)}
               rows={3}
             />
           </div>
@@ -63,7 +77,7 @@ export function GoalFormDialog({
               id="goal-category"
               className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2"
               value={form.category}
-              onChange={(e) => onCategoryChange(e.target.value as GoalFormValues["category"])}
+              onChange={(e) => setCategory(e.target.value as GoalFormValues["category"])}
             >
               {GOAL_CATEGORIES.map((c) => (
                 <option key={c} value={c} className="capitalize">
@@ -77,7 +91,7 @@ export function GoalFormDialog({
             <Input
               type="date"
               value={form.dueDate ?? ""}
-              onChange={(e) => onDueDateChange(e.target.value || undefined)}
+              onChange={(e) => setDueDate(e.target.value || undefined)}
             />
           </div>
           {mode === "edit" && onProgressChange && (
@@ -92,7 +106,11 @@ export function GoalFormDialog({
                 max="100"
                 step="5"
                 value={form.progress ?? 0}
-                onChange={(e) => onProgressChange(Number(e.target.value))}
+                onChange={(e) => {
+                  const progress = Number(e.target.value);
+                  setProgress(progress);
+                  onProgressChange(progress);
+                }}
                 className="w-full h-2 bg-muted rounded-lg appearance-none cursor-pointer accent-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2"
               />
               <Progress value={form.progress ?? 0} className="h-2" />
@@ -103,7 +121,10 @@ export function GoalFormDialog({
                     type="button"
                     variant="outline"
                     size="sm"
-                    onClick={() => onProgressChange(preset)}
+                    onClick={() => {
+                      setProgress(preset);
+                      onProgressChange(preset);
+                    }}
                     className={(form.progress ?? 0) === preset ? "border-primary" : ""}
                   >
                     {preset}%
@@ -118,7 +139,7 @@ export function GoalFormDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant={mode === "create" ? "energy" : "default"} onClick={onSubmit}>
+          <Button variant={mode === "create" ? "energy" : "default"} onClick={handleSubmit}>
             {mode === "create" ? "Create" : "Save"}
           </Button>
         </DialogFooter>

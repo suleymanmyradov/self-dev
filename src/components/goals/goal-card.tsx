@@ -23,7 +23,13 @@ export type GoalCardProps = {
 };
 
 export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelete, onProgressChange, deleting }: GoalCardProps) {
-  const due = goal.dueDate ? new Date(goal.dueDate).toLocaleDateString() : undefined;
+  const due = goal.dueDate
+    ? new Date(goal.dueDate).toLocaleDateString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+      })
+    : undefined;
   const categoryStyle = CATEGORY_COLORS[goal.category] || "bg-secondary text-secondary-foreground border-border";
   const isNearCompletion = goal.progress >= 75 && goal.progress < 100;
   const isCompleted = goal.completed || goal.progress >= 100;

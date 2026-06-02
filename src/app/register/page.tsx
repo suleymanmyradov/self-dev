@@ -1,33 +1,37 @@
 'use client';
 
-import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { register } from '@/api';
-import { RegisterRequestSchema } from '@/lib/validation';
 import { useAuthStore } from '@/store/auth';
+import { useRegisterForm } from '@/hooks';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
 export default function RegisterPage() {
   const router = useRouter();
   const setAuthUser = useAuthStore(s => s.login);
-  const [fullName, setFullName] = useState('');
-  const [username, setUsername] = useState('');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [error, setError] = useState<string | null>(null);
-  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
+  const {
+    fullName, setFullName,
+    username, setUsername,
+    email, setEmail,
+    password, setPassword,
+    confirmPassword, setConfirmPassword,
+    error, setError,
+    fieldErrors, setFieldErrors,
+    reset,
+    validate,
+  } = useRegisterForm();
 
   const registerMutation = useMutation({
     mutationFn: register,
     onSuccess: (data) => {
       setAuthUser(data.user, data.accessToken, data.refreshToken);
       toast.success('Account created successfully');
+      reset();
       router.push('/onboarding');
     },
     onError: (err: Error) => {
@@ -40,31 +44,10 @@ export default function RegisterPage() {
     setError(null);
     setFieldErrors({});
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      return;
-    }
+    const validated = validate();
+    if (!validated) return;
 
-    const raw = {
-      fullName: fullName.trim(),
-      username: username.trim(),
-      email: email.trim(),
-      password,
-    };
-    const validated = RegisterRequestSchema.safeParse(raw);
-
-    if (!validated.success) {
-      const errors: Record<string, string[]> = {};
-      validated.error.errors.forEach((err) => {
-        const path = err.path[0] as string;
-        if (!errors[path]) errors[path] = [];
-        errors[path].push(err.message);
-      });
-      setFieldErrors(errors);
-      return;
-    }
-
-    registerMutation.mutate(validated.data);
+    registerMutation.mutate(validated);
   };
 
   return (

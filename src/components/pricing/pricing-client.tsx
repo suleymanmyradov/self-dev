@@ -1,16 +1,16 @@
 "use client";
 
-import { useState } from "react";
-import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Check, Sparkles, Zap } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBillingOverview, useTrackUpgradeEvent, useCreateCheckoutSession } from "@/hooks";
+import { useBillingUIStore } from "@/store/billing-ui";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { FakeDoorFeedbackDialog } from "@/components/billing/fake-door-feedback-dialog";
 import type { Plan } from "@/api";
+import { useSearchParamEnum } from "@/lib/url-state";
 
 const FREE_FEATURES = [
   "1 active goal",
@@ -36,11 +36,17 @@ function formatPrice(cents: number): string {
 }
 
 export function PricingClient() {
-  const searchParams = useSearchParams();
-  const [billingInterval, setBillingInterval] = useState<"monthly" | "annual">(
-    (searchParams.get("interval") as "monthly" | "annual") ?? "annual"
+  const [billingInterval, setBillingInterval] = useSearchParamEnum<"monthly" | "annual">(
+    "interval",
+    ["monthly", "annual"] as const,
+    "annual"
   );
-  const [fakeDoorOpen, setFakeDoorOpen] = useState(false);
+  const { fakeDoorOpen, openFakeDoor, closeFakeDoor, fakeDoorBillingInterval } = useBillingUIStore((s) => ({
+    fakeDoorOpen: s.fakeDoorOpen,
+    openFakeDoor: s.openFakeDoor,
+    closeFakeDoor: s.closeFakeDoor,
+    fakeDoorBillingInterval: s.fakeDoorBillingInterval,
+  }));
 
   const { data: billing, isLoading } = useBillingOverview();
   const trackEvent = useTrackUpgradeEvent();
@@ -63,7 +69,7 @@ export function PricingClient() {
     if (isStripeMode) {
       handleCheckout();
     } else {
-      setFakeDoorOpen(true);
+      openFakeDoor(billingInterval);
     }
   };
 
@@ -316,8 +322,8 @@ export function PricingClient() {
       {billing?.plans && (
         <FakeDoorFeedbackDialog
           open={fakeDoorOpen}
-          onOpenChange={setFakeDoorOpen}
-          billingInterval={billingInterval}
+          onOpenChange={closeFakeDoor}
+          billingInterval={fakeDoorBillingInterval}
           onCheckout={handleCheckout}
           billingMode={billingMode}
         />

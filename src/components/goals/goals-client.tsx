@@ -10,9 +10,10 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GoalCard } from "@/components/goals/goal-card";
 import { listArticles } from "@/api";
+import { useBillingUIStore } from "@/store/billing-ui";
 
 const GoalFormDialog = dynamic(() => import("@/components/goals/goal-form-dialog").then((mod) => mod.GoalFormDialog));
-import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useGoalForm, useConfirmDelete, useBillingOverview } from "@/hooks";
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useConfirmDelete, useBillingOverview } from "@/hooks";
 import type { Goal, GoalsResponse } from "@/api";
 import Link from "next/link";
 import { Plus, Target, Trophy, Sparkles } from "lucide-react";
@@ -47,71 +48,76 @@ export function GoalsClient({ initialGoals }: GoalsClientProps) {
   const toggleMutation = useToggleGoal();
   const updateProgressMutation = useUpdateGoalProgress();
 
-  // Create form
-  const createForm = useGoalForm();
+  // Billing / upgrade UI from store
+  const { upgradePromptOpen, upgradeSurface, upgradeTrigger, showUpgradePrompt, dismissUpgradePrompt } =
+    useBillingUIStore((s) => ({
+      upgradePromptOpen: s.upgradePromptOpen,
+      upgradeSurface: s.upgradeSurface,
+      upgradeTrigger: s.upgradeTrigger,
+      showUpgradePrompt: s.showUpgradePrompt,
+      dismissUpgradePrompt: s.dismissUpgradePrompt,
+    }));
+
   const [createOpen, setCreateOpen] = useState(false);
 
-  // Edit form
-  const editForm = useGoalForm();
   const [editOpen, setEditOpen] = useState(false);
-  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
   // Delete confirmation
   const deleteConfirm = useConfirmDelete<string>();
 
-  // Handlers
-  const [goalLimitReached, setGoalLimitReached] = useState(false);
-
-  const handleCreate = () => {
-    // Check entitlement before creating
-    if (entitlements && !entitlements.canCreateGoal) {
-      setGoalLimitReached(true);
-      trackUpgradeEvent.mutate({
-        eventType: "prompt_viewed",
-        surface: "goal_create_limit",
-        trigger: "goal_limit",
-        planCode: "pro",
+  const handleCreate = useCallback(
+    (validated: { title: string; description: string; category: string; dueDate?: string }) => {
+      // Check entitlement before creating
+      if (entitlements && !entitlements.canCreateGoal) {
+        showUpgradePrompt("goal_create_limit", "goal_limit");
+        trackUpgradeEvent.mutate({
+          eventType: "prompt_viewed",
+          surface: "goal_create_limit",
+          trigger: "goal_limit",
+          planCode: "pro",
+        });
+        return;
+      }
+      createMutation.mutate({ ...validated, category: validated.category as import("@/api").GoalCategory }, {
+        onSuccess: () => {
+          setCreateOpen(false);
+        },
+        onError: (error: unknown) => {
+          // Check for plan limit error from backend
+          const err = error as { data?: { code?: string } };
+          if (err?.data?.code === "plan_limit_reached") {
+            showUpgradePrompt("goal_create_limit", "goal_limit");
+          }
+        },
       });
-      return;
-    }
-    const validated = createForm.validate();
-    if (!validated) return;
-    createMutation.mutate(validated, {
-      onSuccess: () => {
-        setCreateOpen(false);
-        createForm.reset();
-      },
-      onError: (error: unknown) => {
-        // Check for plan limit error from backend
-        const err = error as { data?: { code?: string } };
-        if (err?.data?.code === "plan_limit_reached") {
-          setGoalLimitReached(true);
-        }
-      },
-    });
-  };
+    },
+    [entitlements, showUpgradePrompt, trackUpgradeEvent, createMutation]
+  );
 
   const openEdit = useCallback((goal: Goal) => {
-    setEditingId(goal.id);
-    editForm.loadGoal(goal);
+    setEditingGoal(goal);
     setEditOpen(true);
-  }, [editForm]);
+  }, []);
 
-  const handleSaveEdit = () => {
-    if (!editingId) return;
-    const validated = editForm.validate();
-    if (!validated) return;
-    updateMutation.mutate(
-      { id: editingId, data: validated },
-      { onSuccess: () => setEditOpen(false) }
-    );
-  };
+  const handleSaveEdit = useCallback(
+    (validated: { title: string; description: string; category: string; dueDate?: string }) => {
+      if (!editingGoal) return;
+      updateMutation.mutate(
+        { id: editingGoal.id, data: { ...validated, category: validated.category as import("@/api").GoalCategory } },
+        { onSuccess: () => setEditOpen(false) }
+      );
+    },
+    [editingGoal, updateMutation]
+  );
 
-  const handleProgressChange = (progress: number) => {
-    if (!editingId) return;
-    editForm.setProgress(progress);
-    updateProgressMutation.mutate({ id: editingId, progress });
-  };
+  const handleProgressChange = useCallback(
+    (progress: number) => {
+      if (!editingGoal) return;
+      updateProgressMutation.mutate({ id: editingGoal.id, progress });
+    },
+    [editingGoal, updateProgressMutation]
+  );
 
   const handleCardProgressChange = useCallback((id: string, progress: number) => {
     updateProgressMutation.mutate({ id, progress });
@@ -231,15 +237,15 @@ export function GoalsClient({ initialGoals }: GoalsClientProps) {
           )}
 
           {/* Goal limit upgrade prompt */}
-          {goalLimitReached && (
+          {upgradePromptOpen && upgradeSurface === "goal_create_limit" && (
             <div className="mt-4">
               <UpgradePrompt
-                surface="goal_create_limit"
-                trigger="goal_limit"
+                surface={upgradeSurface as "goal_create_limit"}
+                trigger={upgradeTrigger as "goal_limit"}
                 title="Unlock unlimited goals"
                 description="You've reached the Free plan goal limit. Upgrade to Pro to track as many goals as you need."
                 isPro={isPro}
-                onDismiss={() => setGoalLimitReached(false)}
+                onDismiss={dismissUpgradePrompt}
               />
             </div>
           )}
@@ -273,12 +279,6 @@ export function GoalsClient({ initialGoals }: GoalsClientProps) {
         open={createOpen}
         onOpenChange={setCreateOpen}
         mode="create"
-        form={createForm.form}
-        error={createForm.error}
-        onTitleChange={createForm.setTitle}
-        onDescriptionChange={createForm.setDescription}
-        onCategoryChange={createForm.setCategory}
-        onDueDateChange={createForm.setDueDate}
         onSubmit={handleCreate}
       />
 
@@ -287,12 +287,13 @@ export function GoalsClient({ initialGoals }: GoalsClientProps) {
         open={editOpen}
         onOpenChange={setEditOpen}
         mode="edit"
-        form={editForm.form}
-        error={editForm.error}
-        onTitleChange={editForm.setTitle}
-        onDescriptionChange={editForm.setDescription}
-        onCategoryChange={editForm.setCategory}
-        onDueDateChange={editForm.setDueDate}
+        initialValues={editingGoal ? {
+          title: editingGoal.title,
+          description: editingGoal.description,
+          category: editingGoal.category,
+          dueDate: editingGoal.dueDate,
+          progress: editingGoal.progress,
+        } : undefined}
         onProgressChange={handleProgressChange}
         onSubmit={handleSaveEdit}
       />

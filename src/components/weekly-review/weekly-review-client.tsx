@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { LoadingState } from "@/components/ui/loading-state";
@@ -16,9 +15,10 @@ import { Sparkles, RotateCcw, Calendar } from "lucide-react";
 import { useCurrentWeeklyReview, useGenerateWeeklyReview, useWeeklyReviews, useBillingOverview } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { FeatureLock } from "@/components/billing/feature-lock";
+import { useSearchParamState } from "@/lib/url-state";
 
 export function WeeklyReviewClient() {
-  const [activeTab, setActiveTab] = useState("overview");
+  const [activeTab, setActiveTab] = useSearchParamState("tab", "overview");
 
   const { data: currentReview, isLoading, error, refetch } = useCurrentWeeklyReview();
   const generateMutation = useGenerateWeeklyReview();

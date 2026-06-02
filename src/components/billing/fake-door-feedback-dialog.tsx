@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sparkles, Mail } from "lucide-react";
 import { useTrackUpgradeEvent } from "@/hooks";
+import { useBillingUIStore } from "@/store/billing-ui";
 
 const FEEDBACK_REASONS = [
   "Too expensive",
@@ -43,8 +44,21 @@ export function FakeDoorFeedbackDialog({
   const [feedbackNote, setFeedbackNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const trackEvent = useTrackUpgradeEvent();
+  const closeFakeDoor = useBillingUIStore((s) => s.closeFakeDoor);
 
   const isStripeMode = billingMode === 'stripe_test' || billingMode === 'stripe_live';
+
+  const handleClose = () => {
+    onOpenChange(false);
+    // Reset local state when dialog fully closes
+    setTimeout(() => {
+      setStep("interest");
+      setEmail("");
+      setSelectedReason(null);
+      setFeedbackNote("");
+      setSubmitted(false);
+    }, 200);
+  };
 
   const handleEarlyAccess = () => {
     if (isStripeMode && onCheckout) {
@@ -78,7 +92,7 @@ export function FakeDoorFeedbackDialog({
         feedbackNote: feedbackNote || undefined,
       });
     }
-    onOpenChange(false);
+    handleClose();
   };
 
   const handleShowFeedback = () => {
@@ -86,7 +100,7 @@ export function FakeDoorFeedbackDialog({
   };
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="flex items-center gap-2">
@@ -146,7 +160,7 @@ export function FakeDoorFeedbackDialog({
             <p className="text-sm text-muted-foreground">
               We will reach out when Growth Pro is ready for you.
             </p>
-            <Button variant="outline" onClick={() => onOpenChange(false)}>
+            <Button variant="outline" onClick={handleClose}>
               Done
             </Button>
           </div>
@@ -187,7 +201,7 @@ export function FakeDoorFeedbackDialog({
               >
                 Submit feedback
               </Button>
-              <Button variant="ghost" onClick={() => onOpenChange(false)}>
+              <Button variant="ghost" onClick={handleClose}>
                 Skip
               </Button>
             </div>

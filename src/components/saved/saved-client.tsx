@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
@@ -10,9 +10,10 @@ import Link from "next/link";
 import { FileText, Target, Repeat, Trash2 } from "lucide-react";
 import { useSavedItemsDetailed, useRemoveSavedItem } from "@/hooks";
 import type { SavedItemDetailed, Article, Habit, Goal } from "@/api";
+import { useSearchParamState } from "@/lib/url-state";
 
 export function SavedClient() {
-  const [tab, setTab] = useState("articles");
+  const [tab, setTab] = useSearchParamState("tab", "articles");
   const { data: savedItems, isLoading } = useSavedItemsDetailed({ page: 1, limit: 100 });
   const removeSaved = useRemoveSavedItem();
 
@@ -81,7 +82,7 @@ export function SavedClient() {
             <CardContent>
               <p className="text-sm text-muted-foreground">{article!.excerpt}</p>
               <div className="mt-3 flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">{article!.category?.name ?? 'Uncategorized'}</span>
+                <span className="text-xs text-muted-foreground">{article!.category?.name ?? "Uncategorized"}</span>
                 <div className="flex items-center gap-2">
                   <Button asChild size="sm"><Link href={`/article/${article!.id}`}>Read</Link></Button>
                   <Button

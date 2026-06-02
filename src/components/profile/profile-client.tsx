@@ -1,10 +1,6 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
-import { z } from "zod";
-import { useQueryClient } from "@tanstack/react-query";
-import { updateProfile } from "@/api";
-import type { Profile, UpdateProfileRequest } from "@/api";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useProfile } from "@/hooks";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,43 +9,9 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
-
-const ProfileSchema = z.object({
-  fullName: z.string().min(2, "Full name must be at least 2 characters"),
-  username: z
-    .string()
-    .min(3, "Username must be at least 3 characters")
-    .regex(/^[a-z0-9_\.\-]+$/i, "Letters, numbers, dot, hyphen, underscore only"),
-  bio: z.string().max(280, "Max 280 characters").optional().default(""),
-  location: z.string().max(60).optional().default(""),
-  website: z
-    .string()
-    .url("Must be a valid URL")
-    .or(z.string().length(0))
-    .optional()
-    .default(""),
-  interests: z
-    .string()
-    .optional()
-    .default("")
-    .transform((s) => s?.split(",").map((v) => v.trim()).filter(Boolean) ?? []),
-  avatarUrl: z
-    .string()
-    .url("Must be a valid image URL")
-    .or(z.string().length(0))
-    .optional()
-    .default(""),
-});
-
-type FormState = {
-  fullName: string;
-  username: string;
-  bio: string;
-  location: string;
-  website: string;
-  interests: string;
-  avatarUrl: string;
-};
+import type { Profile, UpdateProfileRequest } from "@/api";
+import { updateProfile } from "@/api";
+import { useQueryClient } from "@tanstack/react-query";
 
 interface ProfileClientProps {
   initialProfile?: Profile;
@@ -58,32 +20,30 @@ interface ProfileClientProps {
 export function ProfileClient({ initialProfile }: ProfileClientProps) {
   const queryClient = useQueryClient();
   const { data: profile, isLoading, error: profileError } = useProfile(initialProfile);
-  const [form, setForm] = useState<FormState>({
-    fullName: initialProfile?.fullName ?? "",
-    username: initialProfile?.username ?? "",
-    bio: initialProfile?.bio ?? "",
-    location: initialProfile?.location ?? "",
-    website: initialProfile?.website ?? "",
-    interests: (initialProfile?.interests ?? []).join(", "),
-    avatarUrl: initialProfile?.avatarUrl ?? "",
-  });
+
+  const fullNameRef = useRef<HTMLInputElement>(null);
+  const usernameRef = useRef<HTMLInputElement>(null);
+  const bioRef = useRef<HTMLTextAreaElement>(null);
+  const locationRef = useRef<HTMLInputElement>(null);
+  const websiteRef = useRef<HTMLInputElement>(null);
+  const interestsRef = useRef<HTMLInputElement>(null);
+  const avatarUrlRef = useRef<HTMLInputElement>(null);
+
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  // Only sync form from fetched profile when it differs from initial to avoid loops
+  // Sync refs when profile loads
   useEffect(() => {
-    if (profile && profile.id !== initialProfile?.id) {
-      setForm({
-        fullName: profile.fullName ?? "",
-        username: profile.username ?? "",
-        bio: profile.bio ?? "",
-        location: profile.location ?? "",
-        website: profile.website ?? "",
-        interests: (profile.interests ?? []).join(", "),
-        avatarUrl: profile.avatarUrl ?? "",
-      });
+    if (profile) {
+      if (fullNameRef.current) fullNameRef.current.value = profile.fullName ?? "";
+      if (usernameRef.current) usernameRef.current.value = profile.username ?? "";
+      if (bioRef.current) bioRef.current.value = profile.bio ?? "";
+      if (locationRef.current) locationRef.current.value = profile.location ?? "";
+      if (websiteRef.current) websiteRef.current.value = profile.website ?? "";
+      if (interestsRef.current) interestsRef.current.value = (profile.interests ?? []).join(", ");
+      if (avatarUrlRef.current) avatarUrlRef.current.value = profile.avatarUrl ?? "";
     }
-  }, [profile, initialProfile?.id]);
+  }, [profile?.id]);
 
   useEffect(() => {
     if (profileError) {
@@ -92,36 +52,29 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
   }, [profileError]);
 
   const initials = useMemo(() => {
-    const parts = form.fullName.trim().split(/\s+/).filter(Boolean);
+    const fullName = fullNameRef.current?.value ?? "";
+    const parts = fullName.trim().split(/\s+/).filter(Boolean);
     return parts.slice(0, 2).map((p) => p[0]?.toUpperCase()).join("") || "U";
-  }, [form.fullName]);
+  }, [profile?.id]);
 
-  const handleChange = useCallback((field: keyof FormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
-    setForm((prev) => ({ ...prev, [field]: e.target.value }));
-    if (error) setError(null);
-  }, [error]);
-
-  const handleSubmit = async () => {
+  const handleSubmit = useCallback(async () => {
     setError(null);
-    const parsed = ProfileSchema.safeParse({
-      ...form,
-    });
-    if (!parsed.success) {
-      setError(parsed.error.issues[0]?.message ?? "Invalid input");
+
+    const payload: UpdateProfileRequest = {
+      fullName: (fullNameRef.current?.value ?? "").trim(),
+      bio: (bioRef.current?.value ?? "").trim(),
+      location: (locationRef.current?.value ?? "").trim(),
+      website: (websiteRef.current?.value ?? "").trim(),
+      interests: (interestsRef.current?.value ?? "").split(",").map((v) => v.trim()).filter(Boolean),
+      avatarUrl: (avatarUrlRef.current?.value ?? "").trim(),
+    };
+
+    if (!payload.fullName || payload.fullName.length < 2) {
+      setError("Full name must be at least 2 characters");
       return;
     }
 
     setSaving(true);
-    const data = parsed.data;
-    const payload: UpdateProfileRequest = {
-      fullName: data.fullName.trim(),
-      bio: (form.bio || "").trim(),
-      location: (form.location || "").trim(),
-      website: (form.website || "").trim(),
-      interests: data.interests as string[],
-      avatarUrl: (form.avatarUrl || "").trim(),
-    };
-
     try {
       await updateProfile(payload);
       queryClient.invalidateQueries({ queryKey: ["profile"] });
@@ -131,7 +84,7 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
     } finally {
       setSaving(false);
     }
-  };
+  }, [queryClient]);
 
   if (isLoading) {
     return (
@@ -185,15 +138,18 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
               <div className="grid gap-4">
                 <div className="flex items-center gap-4">
                   <Avatar className="h-16 w-16">
-                    <AvatarImage src={form.avatarUrl || undefined} alt={form.fullName || "Avatar"} />
+                    <AvatarImage
+                      src={avatarUrlRef.current?.value || undefined}
+                      alt={fullNameRef.current?.value || "Avatar"}
+                    />
                     <AvatarFallback>{initials}</AvatarFallback>
                   </Avatar>
                   <div className="flex-1 grid gap-1">
                     <label className="text-sm font-medium">Avatar URL</label>
                     <Input
+                      ref={avatarUrlRef}
                       placeholder="https://..."
-                      value={form.avatarUrl}
-                      onChange={handleChange("avatarUrl")}
+                      defaultValue={profile?.avatarUrl ?? ""}
                     />
                     <p className="text-xs text-muted-foreground">Paste an image URL for your avatar.</p>
                   </div>
@@ -202,28 +158,28 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                 <div className="grid gap-1">
                   <label className="text-sm font-medium">Full name</label>
                   <Input
+                    ref={fullNameRef}
                     placeholder="Your name"
-                    value={form.fullName}
-                    onChange={handleChange("fullName")}
+                    defaultValue={profile?.fullName ?? ""}
                   />
                 </div>
 
                 <div className="grid gap-1">
                   <label className="text-sm font-medium">Username</label>
                   <Input
+                    ref={usernameRef}
                     placeholder="username"
-                    value={form.username}
-                    onChange={handleChange("username")}
+                    defaultValue={profile?.username ?? ""}
                   />
                 </div>
 
                 <div className="grid gap-1">
                   <label className="text-sm font-medium">Bio</label>
                   <Textarea
+                    ref={bioRef}
                     placeholder="Tell us about yourself (max 280 characters)"
                     rows={4}
-                    value={form.bio}
-                    onChange={handleChange("bio")}
+                    defaultValue={profile?.bio ?? ""}
                   />
                 </div>
 
@@ -231,17 +187,17 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                   <div className="grid gap-1">
                     <label className="text-sm font-medium">Location</label>
                     <Input
+                      ref={locationRef}
                       placeholder="City, Country"
-                      value={form.location}
-                      onChange={handleChange("location")}
+                      defaultValue={profile?.location ?? ""}
                     />
                   </div>
                   <div className="grid gap-1">
                     <label className="text-sm font-medium">Website</label>
                     <Input
-                      placeholder="https://example.com"
-                      value={form.website}
-                      onChange={handleChange("website")}
+                      ref={websiteRef}
+                      placeholder="https://..."
+                      defaultValue={profile?.website ?? ""}
                     />
                   </div>
                 </div>
@@ -249,25 +205,22 @@ export function ProfileClient({ initialProfile }: ProfileClientProps) {
                 <div className="grid gap-1">
                   <label className="text-sm font-medium">Interests</label>
                   <Input
-                    placeholder="e.g., productivity, health, mindfulness"
-                    value={form.interests}
-                    onChange={handleChange("interests")}
+                    ref={interestsRef}
+                    placeholder="e.g. fitness, reading, coding"
+                    defaultValue={(profile?.interests ?? []).join(", ")}
                   />
-                  <p className="text-xs text-muted-foreground">Comma-separated list.</p>
+                  <p className="text-xs text-muted-foreground">Comma-separated list of interests.</p>
                 </div>
 
-                {error ? <p className="text-sm text-destructive">{error}</p> : null}
+                {error && (
+                  <p className="text-sm text-destructive">{error}</p>
+                )}
               </div>
             </CardContent>
-            <CardFooter className="flex items-center justify-between">
-              <div className="text-xs text-muted-foreground">
-                {profile ? "Your profile is synced with the server." : "Create your profile to personalize the app."}
-              </div>
-              <div className="flex items-center gap-2">
-                <Button onClick={handleSubmit} disabled={saving}>
-                  {saving ? "Saving..." : profile ? "Save Changes" : "Create Profile"}
-                </Button>
-              </div>
+            <CardFooter className="justify-end">
+              <Button onClick={handleSubmit} disabled={saving}>
+                {saving ? "Saving..." : "Save Profile"}
+              </Button>
             </CardFooter>
           </Card>
         </div>

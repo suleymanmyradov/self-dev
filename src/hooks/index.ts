@@ -1,5 +1,5 @@
 export { useActivities } from './use-activities';
-export { useAuth, useAuthSafe } from './use-auth';
+export { useAccessToken } from './use-auth';
 export { useProfile } from './use-profile';
 export { useHydrated } from './use-hydrated';
 export { useGoals, useGoal, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress } from './use-goals';
@@ -25,3 +25,9 @@ export { useCoachingProfile } from './use-coaching-profile';
 export { usePersonalization } from './use-personalization';
 export { usePlanAdjustments } from './use-plan-adjustments';
 export { useBillingOverview, useEntitlements, useTrackUpgradeEvent, useCreateCheckoutSession, useCreateCustomerPortalSession } from './use-billing';
+export { useProfileForm } from './use-profile-form';
+export { useSettingsForm } from './use-settings-form';
+export { useCheckInForm } from './use-check-in-form';
+export { useRegisterForm } from './use-register-form';
+export { useLoginForm } from './use-login-form';
+export { useReportForm } from './use-report-form';

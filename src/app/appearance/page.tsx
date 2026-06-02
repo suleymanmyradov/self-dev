@@ -1,10 +1,11 @@
 "use client";
 
 import { useTheme } from "next-themes";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
+import { useUIStore } from "@/store/uiStore";
 
 // =============================================================================
 // Constants
@@ -25,23 +26,6 @@ const SECONDARY_COLORS: SecondaryColor[] = [
   { name: "Rose", value: "oklch(0.96 0.02 340)", darkValue: "oklch(0.28 0.02 340)" },
 ];
 
-const STORAGE_KEY = "secondary-color";
-const DEFAULT_COLOR = "gray";
-
-// =============================================================================
-// Helper Functions
-// =============================================================================
-
-function getStoredColor(): string {
-  if (typeof localStorage?.getItem !== "function") return DEFAULT_COLOR;
-  return localStorage.getItem(STORAGE_KEY) || DEFAULT_COLOR;
-}
-
-function setStoredColor(color: string): void {
-  if (typeof localStorage?.setItem !== "function") return;
-  localStorage.setItem(STORAGE_KEY, color);
-}
-
 function applyColorToRoot(color: SecondaryColor, isDark: boolean): void {
   const root = document.documentElement;
   root.style.setProperty("--secondary", isDark ? color.darkValue : color.value);
@@ -55,17 +39,11 @@ function applyColorToRoot(color: SecondaryColor, isDark: boolean): void {
 export default function AppearancePage() {
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const [secondaryColor, setSecondaryColor] = useState(DEFAULT_COLOR);
+  const secondaryColor = useUIStore((s) => s.secondaryColor);
+  const setSecondaryColor = useUIStore((s) => s.setSecondaryColor);
 
   // Mount effect
   useEffect(() => setMounted(true), []);
-
-  // Load stored color on mount
-  useEffect(() => {
-    if (!mounted) return;
-    const stored = getStoredColor();
-    setSecondaryColor(stored);
-  }, [mounted]);
 
   // Apply secondary color when theme or color changes
   useEffect(() => {
@@ -75,11 +53,6 @@ export default function AppearancePage() {
     const isDark = theme === "dark" || (theme === "system" && systemTheme === "dark");
     applyColorToRoot(color, isDark);
   }, [mounted, theme, systemTheme, secondaryColor]);
-
-  const handleSecondaryColorChange = useCallback((colorName: string) => {
-    setSecondaryColor(colorName);
-    setStoredColor(colorName);
-  }, []);
 
   const isThemeActive = (value: string): boolean =>
     theme === value || (!theme && value === "system");
@@ -138,7 +111,7 @@ export default function AppearancePage() {
                 {SECONDARY_COLORS.map((color) => (
                   <button
                     key={color.name}
-                    onClick={() => handleSecondaryColorChange(color.name.toLowerCase())}
+                    onClick={() => setSecondaryColor(color.name.toLowerCase())}
                     className={`w-10 h-10 rounded-full border-2 transition-transform hover:scale-105 ${
                       isColorActive(color.name) ? "ring-2 ring-primary ring-offset-2" : ""
                     }`}

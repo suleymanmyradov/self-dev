@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -14,6 +14,8 @@ import { HabitCard } from "@/components/habits/habit-card";
 import { CheckInBanner } from "@/components/check-in/check-in-banner";
 import type { Habit, HabitsResponse, CheckInsResponse } from "@/api";
 import type { CheckInSubmitData } from "@/components/check-in/check-in-modal";
+import { useUIStore } from "@/store/uiStore";
+import { useBillingUIStore } from "@/store/billing-ui";
 
 const HabitFormDialog = dynamic(() => import("@/components/habits/habit-form-dialog").then((mod) => mod.HabitFormDialog));
 const CheckInModal = dynamic(() => import("@/components/check-in/check-in-modal").then((mod) => mod.CheckInModal));
@@ -56,12 +58,22 @@ export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientPro
   const resetMutation = useResetTodayHabits();
   const checkInMutation = useCreateCheckIn();
 
-  // Habit limit state
-  const [habitLimitReached, setHabitLimitReached] = useState(false);
+  // Billing / upgrade UI from store
+  const { upgradePromptOpen, upgradeSurface, upgradeTrigger, showUpgradePrompt, dismissUpgradePrompt } =
+    useBillingUIStore((s) => ({
+      upgradePromptOpen: s.upgradePromptOpen,
+      upgradeSurface: s.upgradeSurface,
+      upgradeTrigger: s.upgradeTrigger,
+      showUpgradePrompt: s.showUpgradePrompt,
+      dismissUpgradePrompt: s.dismissUpgradePrompt,
+    }));
 
-  // Check-in modal state
-  const [checkInHabit, setCheckInHabit] = useState<Habit | undefined>();
-  const [isCheckInModalOpen, setIsCheckInModalOpen] = useState(false);
+  // Check-in modal state from UI store
+  const checkInModalOpen = useUIStore((s) => s.checkInModalOpen);
+  const checkInHabitId = useUIStore((s) => s.checkInHabitId);
+  const openCheckInModal = useUIStore((s) => s.openCheckInModal);
+  const closeCheckInModal = useUIStore((s) => s.closeCheckInModal);
+  const checkInHabit = habits.find((h) => h.id === checkInHabitId);
 
   // Filters
   const { categoryFilter, setCategoryFilter, sortBy, setSortBy, visibleHabits, completionPct } =
@@ -72,7 +84,7 @@ export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientPro
   const handleCreate = () => {
     // Check entitlement before creating
     if (entitlements && !entitlements.canCreateHabit) {
-      setHabitLimitReached(true);
+      showUpgradePrompt("habit_create_limit", "habit_limit");
       trackUpgradeEvent.mutate({
         eventType: "prompt_viewed",
         surface: "habit_create_limit",
@@ -93,7 +105,7 @@ export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientPro
           onError: (error: unknown) => {
             const err = error as { data?: { code?: string } };
             if (err?.data?.code === "plan_limit_reached") {
-              setHabitLimitReached(true);
+              showUpgradePrompt("habit_create_limit", "habit_limit");
             }
           },
         }
@@ -132,15 +144,17 @@ export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientPro
 
   // Check-in handler
   const handleCheckIn = useCallback((habit: Habit) => {
-    setCheckInHabit(habit);
-    setIsCheckInModalOpen(true);
-  }, []);
+    openCheckInModal(habit.id);
+  }, [openCheckInModal]);
 
   const handleSubmitCheckIn = (data: CheckInSubmitData) => {
     checkInMutation.mutate(data, {
+      onSuccess: () => {
+        closeCheckInModal();
+      },
       onError: (error: unknown) => {
-        const errorMessage = error instanceof Error && 'response' in error 
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message 
+        const errorMessage = error instanceof Error && 'response' in error
+          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
           : "Failed to submit check-in";
         toast.error(errorMessage);
       },
@@ -262,15 +276,15 @@ export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientPro
           </section>
 
           {/* Habit limit upgrade prompt */}
-          {habitLimitReached && (
+          {upgradePromptOpen && upgradeSurface === "habit_create_limit" && (
             <div className="mt-4">
               <UpgradePrompt
-                surface="habit_create_limit"
-                trigger="habit_limit"
+                surface={upgradeSurface as "habit_create_limit"}
+                trigger={upgradeTrigger as "habit_limit"}
                 title="Unlock unlimited habits"
                 description="You've reached the Free plan habit limit. Upgrade to Pro to build more daily habits."
                 isPro={isPro}
-                onDismiss={() => setHabitLimitReached(false)}
+                onDismiss={dismissUpgradePrompt}
               />
             </div>
           )}
@@ -335,8 +349,8 @@ export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientPro
 
       {/* Check-In Modal */}
       <CheckInModal
-        open={isCheckInModalOpen}
-        onOpenChange={setIsCheckInModalOpen}
+        open={checkInModalOpen}
+        onOpenChange={closeCheckInModal}
         habit={checkInHabit}
         onSubmit={handleSubmitCheckIn}
         isSubmitting={checkInMutation.isPending}

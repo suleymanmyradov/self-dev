@@ -25,7 +25,7 @@ export type AuthState = {
 
 const useAuthStore = create<AuthState>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       user: null,
       accessToken: null,
       refreshToken: null,
@@ -76,23 +76,20 @@ const useAuthStore = create<AuthState>()(
     {
       name: 'auth',
       storage: createJSONStorage(getSafeStorage),
-      partialize: (state) => ({ 
-        user: state.user, 
+      partialize: (state) => ({
+        user: state.user,
         accessToken: state.accessToken,
         refreshToken: state.refreshToken,
-        isAuthenticated: state.isAuthenticated 
+        isAuthenticated: state.isAuthenticated,
       }),
+      skipHydration: true,
       onRehydrateStorage: () => (state, error) => {
-        if (!error && state) {
+        if (!error && state?.accessToken && state?.refreshToken) {
           // Sync rehydrated tokens to the standalone module so the API client
           // can read them without depending on the Zustand store.
-          if (state.accessToken && state.refreshToken) {
-            setAuthTokens(state.accessToken, state.refreshToken);
-          }
-          Promise.resolve().then(() => {
-            state.setHydrated(true);
-          });
-        } else if (state) {
+          setAuthTokens(state.accessToken, state.refreshToken);
+        }
+        if (state) {
           state.setHydrated(true);
         }
       },
@@ -101,12 +98,6 @@ const useAuthStore = create<AuthState>()(
 );
 
 export { useAuthStore };
-
-// Hook to access auth state - prefer using useAuthStore with atomic selectors:
-//   const login = useAuthStore(s => s.login)
-export function useAuth() {
-  return useAuthStore();
-}
 
 // Hook to get access token for API client
 export function useAccessToken() {
@@ -133,20 +124,4 @@ export function setTokensInStore(accessToken: string, refreshToken: string): voi
 export function clearAuthState(): void {
   clearTokens();
   useAuthStore.getState().logout();
-}
-
-// Convenience hook for profile access (replaces useProfile from profile.tsx)
-export function useProfile() {
-  const user = useAuthStore(s => s.user);
-  const hasHydrated = useAuthStore(s => s.hasHydrated);
-  const setProfile = useAuthStore(s => s.setProfile);
-  const updateProfile = useAuthStore(s => s.updateProfile);
-  const clearProfile = useAuthStore(s => s.clearProfile);
-  return {
-    profile: user,
-    hasHydrated,
-    setProfile,
-    updateProfile,
-    clearProfile,
-  };
 }

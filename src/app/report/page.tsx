@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -8,43 +7,29 @@ import { Textarea } from "@/components/ui/textarea";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { toast } from "@/components/ui/sonner";
 import { submitReport } from "@/api";
-import type { ReportType } from "@/api";
-
-const categoryMap: Record<string, ReportType> = {
-  Bug: "bug",
-  "Abuse / Spam": "abuse",
-  "Content issue": "abuse",
-  Feedback: "feedback",
-  Other: "feedback",
-};
-
-const categories = ["Bug", "Abuse / Spam", "Content issue", "Feedback", "Other"] as const;
-type Category = typeof categories[number];
+import { useReportForm } from "@/hooks";
 
 export default function ReportPage() {
-  const [email, setEmail] = useState("");
-  const [category, setCategory] = useState<Category>("Bug");
-  const [subject, setSubject] = useState("");
-  const [details, setDetails] = useState("");
-  const [submitted, setSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
-
-  const canSubmit = subject.trim().length > 2 && details.trim().length > 10;
+  const {
+    email, setEmail,
+    category, setCategory,
+    subject, setSubject,
+    details, setDetails,
+    submitted, setSubmitted,
+    isSubmitting, setIsSubmitting,
+    canSubmit,
+    reset,
+    toPayload,
+    categories,
+  } = useReportForm();
 
   const onSubmit = async () => {
     if (!canSubmit) return;
     setIsSubmitting(true);
     try {
-      await submitReport({
-        type: categoryMap[category],
-        title: subject.trim(),
-        description: details.trim(),
-        email: email.trim() || undefined,
-      });
+      await submitReport(toPayload());
       setSubmitted(true);
-      setSubject("");
-      setDetails("");
-      setEmail("");
+      reset();
       toast.success("Report submitted successfully");
       setTimeout(() => setSubmitted(false), 3000);
     } catch {

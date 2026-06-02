@@ -9,14 +9,15 @@ import { useSearch } from "@/hooks"
 import type { SearchResultType } from "@/api"
 import Link from "next/link"
 import { FileText, Target, Repeat, MessageSquare, Search as SearchIcon } from "lucide-react"
+import { useSearchParamState } from "@/lib/url-state"
 
-function useDebounceValue<T>(value: T, delay: number): [T] {
+function useDebounceValue<T>(value: T, delay: number): T {
   const [debouncedValue, setDebouncedValue] = React.useState(value)
   React.useEffect(() => {
     const handler = setTimeout(() => setDebouncedValue(value), delay)
     return () => clearTimeout(handler)
   }, [value, delay])
-  return [debouncedValue]
+  return debouncedValue
 }
 
 const typeIcons: Record<SearchResultType, typeof FileText> = {
@@ -34,19 +35,39 @@ const typeRoutes: Record<SearchResultType, string> = {
 }
 
 export function SearchClient() {
-  const [query, setQuery] = React.useState("")
-  const [debouncedQuery] = useDebounceValue(query, 300)
-  const [filterType, setFilterType] = React.useState<SearchResultType | undefined>(undefined)
+  const [urlQuery, setUrlQuery] = useSearchParamState("q")
+  const [urlType, setUrlType] = useSearchParamState("type")
+
+  // Local input state for responsiveness; sync to URL after debounce
+  const [inputValue, setInputValue] = React.useState(urlQuery)
+  const debouncedInput = useDebounceValue(inputValue, 300)
+
+  // Push debounced input to URL
+  React.useEffect(() => {
+    if (debouncedInput !== urlQuery) {
+      setUrlQuery(debouncedInput)
+    }
+  }, [debouncedInput, urlQuery, setUrlQuery])
+
+  // Sync input from URL on external changes (back/forward, bookmark)
+  React.useEffect(() => {
+    setInputValue((prev) => {
+      if (urlQuery !== prev) return urlQuery
+      return prev
+    })
+  }, [urlQuery])
+
+  const filterType = (urlType as SearchResultType) || undefined
 
   const { data: results = [], isLoading } = useSearch({
-    q: debouncedQuery,
+    q: urlQuery,
     type: filterType,
     page: 1,
     limit: 20,
   })
 
   const handleFilterChange = (type?: SearchResultType) => {
-    setFilterType(type)
+    setUrlType(type ?? "")
   }
 
   return (
@@ -57,8 +78,8 @@ export function SearchClient() {
         <div className="mb-4">
           <Input
             placeholder="Search articles, goals, habits, conversations..."
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
           />
         </div>
 
@@ -101,14 +122,14 @@ export function SearchClient() {
               </div>
             ))}
           </div>
-        ) : debouncedQuery.length === 0 ? (
+        ) : urlQuery.length === 0 ? (
           <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
             <SearchIcon className="h-12 w-12 mb-4 opacity-50" />
             <p className="text-sm">Start typing to search...</p>
           </div>
         ) : results.length === 0 ? (
           <div className="text-sm text-muted-foreground py-8 text-center">
-            No results found for "{debouncedQuery}".
+            No results found for &quot;{urlQuery}&quot;.
           </div>
         ) : (
           <div className="space-y-2">
