@@ -1,19 +1,19 @@
 "use client";
 
-import { useState, useCallback } from "react";
+import { use, useState, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { useQuery } from "@tanstack/react-query";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { GoalCard } from "@/components/goals/goal-card";
 import { listArticles } from "@/api";
 import { useBillingUIStore } from "@/store/billing-ui";
+import { useShallow } from "zustand/react/shallow";
 
 const GoalFormDialog = dynamic(() => import("@/components/goals/goal-form-dialog").then((mod) => mod.GoalFormDialog));
-import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useConfirmDelete, useBillingOverview } from "@/hooks";
+import { useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useConfirmDelete, useBillingOverview } from "@/hooks";
 import type { Goal, GoalsResponse } from "@/api";
 import Link from "next/link";
 import { Plus, Target, Trophy, Sparkles } from "lucide-react";
@@ -22,12 +22,13 @@ import { useEntitlements, useTrackUpgradeEvent } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 
 interface GoalsClientProps {
-  initialGoals?: GoalsResponse;
+  goalsPromise: Promise<GoalsResponse>;
 }
 
-export function GoalsClient({ initialGoals }: GoalsClientProps) {
-  // Data fetching
-  const { data: goals = [], isLoading } = useGoals(initialGoals);
+export function GoalsClient({ goalsPromise }: GoalsClientProps) {
+  const goalsData = use(goalsPromise);
+  const goals = goalsData.data ?? [];
+
   const { data: entitlements } = useEntitlements();
   const { data: billing } = useBillingOverview();
   const isPro = billing?.subscription?.planCode === "pro";
@@ -50,13 +51,15 @@ export function GoalsClient({ initialGoals }: GoalsClientProps) {
 
   // Billing / upgrade UI from store
   const { upgradePromptOpen, upgradeSurface, upgradeTrigger, showUpgradePrompt, dismissUpgradePrompt } =
-    useBillingUIStore((s) => ({
-      upgradePromptOpen: s.upgradePromptOpen,
-      upgradeSurface: s.upgradeSurface,
-      upgradeTrigger: s.upgradeTrigger,
-      showUpgradePrompt: s.showUpgradePrompt,
-      dismissUpgradePrompt: s.dismissUpgradePrompt,
-    }));
+    useBillingUIStore(
+      useShallow((s) => ({
+        upgradePromptOpen: s.upgradePromptOpen,
+        upgradeSurface: s.upgradeSurface,
+        upgradeTrigger: s.upgradeTrigger,
+        showUpgradePrompt: s.showUpgradePrompt,
+        dismissUpgradePrompt: s.dismissUpgradePrompt,
+      }))
+    );
 
   const [createOpen, setCreateOpen] = useState(false);
 
@@ -135,15 +138,6 @@ export function GoalsClient({ initialGoals }: GoalsClientProps) {
       });
     }
   };
-
-  // Loading state
-  if (isLoading) {
-    return (
-      <div className="h-full flex items-center justify-center text-sm text-muted-foreground">
-        Loading goals...
-      </div>
-    );
-  }
 
   const completion = goals.length
     ? Math.round((goals.filter((g) => g.completed).length / goals.length) * 100)

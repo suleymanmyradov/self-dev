@@ -1,8 +1,8 @@
 "use client";
 
+import { use, useState, useTransition } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { LoadingState } from "@/components/ui/loading-state";
 import { WeeklyReviewEmptyState } from "@/components/weekly-review/weekly-review-empty-state";
 import { WeeklyReviewSummaryCard } from "@/components/weekly-review/weekly-review-summary-card";
 import { WeeklyReviewCoachCard } from "@/components/weekly-review/weekly-review-coach-card";
@@ -12,17 +12,29 @@ import { WeeklyReviewAdjustmentsCard } from "@/components/weekly-review/weekly-r
 import { WeeklyReviewNextPlanCard } from "@/components/weekly-review/weekly-review-next-plan-card";
 import { WeeklyReviewHistory } from "@/components/weekly-review/weekly-review-history";
 import { Sparkles, RotateCcw, Calendar } from "lucide-react";
-import { useCurrentWeeklyReview, useGenerateWeeklyReview, useWeeklyReviews, useBillingOverview } from "@/hooks";
+import { useGenerateWeeklyReview, useBillingOverview } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { FeatureLock } from "@/components/billing/feature-lock";
 import { useSearchParamState } from "@/lib/url-state";
+import type { WeeklyReview, ApiResponse } from "@/api";
+import { getCurrentWeeklyReview, listWeeklyReviews } from "@/api/weekly-reviews";
 
-export function WeeklyReviewClient() {
+interface WeeklyReviewClientProps {
+  currentReviewPromise: Promise<ApiResponse<WeeklyReview | null>>;
+  reviewsPromise: Promise<ApiResponse<WeeklyReview[]>>;
+}
+
+export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: WeeklyReviewClientProps) {
   const [activeTab, setActiveTab] = useSearchParamState("tab", "overview");
 
-  const { data: currentReview, isLoading, error, refetch } = useCurrentWeeklyReview();
+  const initialCurrent = use(currentReviewPromise);
+  const initialReviews = use(reviewsPromise);
+
+  const [currentReview, setCurrentReview] = useState(initialCurrent.data);
+  const [reviews, setReviews] = useState(initialReviews.data ?? []);
+  const [isPending, startTransition] = useTransition();
+
   const generateMutation = useGenerateWeeklyReview();
-  const { data: reviews, isLoading: historyLoading } = useWeeklyReviews({ page: 1, limit: 10 });
   const { data: billing } = useBillingOverview();
   const isPro = billing?.subscription?.planCode === "pro";
 
@@ -30,24 +42,16 @@ export function WeeklyReviewClient() {
     generateMutation.mutate({ forceRegenerate: true });
   };
 
-  if (isLoading) {
-    return (
-      <div className="container max-w-5xl py-8">
-        <LoadingState variant="detail" />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container max-w-5xl py-8">
-        <div className="flex flex-col items-center justify-center py-12 text-center">
-          <p className="text-muted-foreground mb-4">Failed to load weekly review. Please try again.</p>
-          <Button onClick={() => refetch()} variant="outline">Retry</Button>
-        </div>
-      </div>
-    );
-  }
+  const handleRefetch = () => {
+    startTransition(async () => {
+      const [freshCurrent, freshReviews] = await Promise.all([
+        getCurrentWeeklyReview().catch(() => ({ data: null })),
+        listWeeklyReviews({ page: 1, limit: 10 }).catch(() => ({ data: [], page: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
+      ]);
+      setCurrentReview(freshCurrent.data);
+      setReviews(freshReviews.data ?? []);
+    });
+  };
 
   if (!currentReview) {
     return (
@@ -125,10 +129,10 @@ export function WeeklyReviewClient() {
 
         <TabsContent value="history" className="space-y-4">
           {isPro ? (
-            <WeeklyReviewHistory reviews={reviews ?? []} isLoading={historyLoading} />
+            <WeeklyReviewHistory reviews={reviews ?? []} isLoading={isPending} />
           ) : (
             <FeatureLock feature="weekly_review_history">
-              <WeeklyReviewHistory reviews={reviews ?? []} isLoading={historyLoading} />
+              <WeeklyReviewHistory reviews={reviews ?? []} isLoading={isPending} />
             </FeatureLock>
           )}
         </TabsContent>

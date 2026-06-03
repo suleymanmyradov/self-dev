@@ -1,20 +1,24 @@
 "use client";
 
-import { useCallback } from "react";
+import { use, useCallback } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "@/components/ui/sonner";
 import Link from "next/link";
 import { FileText, Target, Repeat, Trash2 } from "lucide-react";
-import { useSavedItemsDetailed, useRemoveSavedItem } from "@/hooks";
-import type { SavedItemDetailed, Article, Habit, Goal } from "@/api";
+import { useRemoveSavedItem } from "@/hooks";
+import type { SavedItemDetailed, Article, Habit, Goal, SavedItemsDetailedResponse } from "@/api";
 import { useSearchParamState } from "@/lib/url-state";
 
-export function SavedClient() {
+interface SavedClientProps {
+  savedPromise: Promise<SavedItemsDetailedResponse>;
+}
+
+export function SavedClient({ savedPromise }: SavedClientProps) {
   const [tab, setTab] = useSearchParamState("tab", "articles");
-  const { data: savedItems, isLoading } = useSavedItemsDetailed({ page: 1, limit: 100 });
+  const savedData = use(savedPromise);
+  const savedItems = savedData.data ?? [];
   const removeSaved = useRemoveSavedItem();
 
   const items = savedItems ?? [];
@@ -41,24 +45,6 @@ export function SavedClient() {
   }, [removeSaved]);
 
   const renderArticles = () => {
-    if (isLoading) {
-      return (
-        <div className="grid gap-4 md:grid-cols-2">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-5 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      );
-    }
-
     if (articles.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -105,24 +91,6 @@ export function SavedClient() {
   };
 
   const renderHabits = () => {
-    if (isLoading) {
-      return (
-        <div className="grid gap-4 md:grid-cols-2">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-5 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      );
-    }
-
     if (habits.length === 0) {
       return (
         <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
@@ -166,23 +134,6 @@ export function SavedClient() {
   };
 
   const renderGoals = () => {
-    if (isLoading) {
-      return (
-        <div className="grid gap-4 md:grid-cols-2">
-          {[1, 2, 3].map((i) => (
-            <Card key={i}>
-              <CardHeader>
-                <Skeleton className="h-5 w-3/4" />
-              </CardHeader>
-              <CardContent>
-                <Skeleton className="h-4 w-full mb-2" />
-                <Skeleton className="h-4 w-1/2" />
-              </CardContent>
-            </Card>
-          ))}
-        </div>
-      );
-    }
 
     if (goals.length === 0) {
       return (

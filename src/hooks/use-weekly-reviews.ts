@@ -26,7 +26,9 @@ export function useWeeklyReview(weekStart: string) {
   });
 }
 
-export function useWeeklyReviews(params = { page: 1, limit: 10 }) {
+const DEFAULT_WEEKLY_REVIEWS_PARAMS = { page: 1, limit: 10 };
+
+export function useWeeklyReviews(params = DEFAULT_WEEKLY_REVIEWS_PARAMS) {
   return useQuery({
     queryKey: ['weeklyReviews', params],
     queryFn: () => listWeeklyReviews(params),

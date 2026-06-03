@@ -1,15 +1,9 @@
 "use client";
 
-import { useMemo, useState, useEffect, useCallback } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { use, useState, useMemo, useCallback, useEffect } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
-import { Skeleton } from "@/components/ui/skeleton";
 import { Search } from "lucide-react";
-import { useCreateHabit, useCreateGoal } from "@/hooks";
-import { listArticles } from "@/api";
-import { HABIT_TEMPLATES, GOAL_TEMPLATES } from "@/data/templates";
-import type { ArticlesResponse } from "@/api";
 import {
   ArticleCard,
   FeaturedCard,
@@ -17,65 +11,55 @@ import {
   GoalTemplateCard,
   CommunityCard,
 } from "@/components/explore";
+import { HABIT_TEMPLATES, GOAL_TEMPLATES } from "@/data/templates";
 import { useSearchParamState } from "@/lib/url-state";
+import { useCreateHabit, useCreateGoal } from "@/hooks";
+import type { ArticlesResponse } from "@/api";
 
 interface ExploreClientProps {
-  initialArticles?: ArticlesResponse;
+  articlesPromise: Promise<ArticlesResponse>;
 }
 
 function useDebounceValue<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = useState(value);
+  const [debounced, setDebounced] = useState(value);
+
   useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay);
-    return () => clearTimeout(handler);
+    const timer = setTimeout(() => setDebounced(value), delay);
+    return () => clearTimeout(timer);
   }, [value, delay]);
-  return debouncedValue;
+
+  return debounced;
 }
 
-export function ExploreClient({ initialArticles }: ExploreClientProps) {
-  const createHabitMutation = useCreateHabit();
-  const createGoalMutation = useCreateGoal();
+export function ExploreClient({ articlesPromise }: ExploreClientProps) {
+  const articlesData = use(articlesPromise);
+  const allArticles = articlesData.data ?? [];
+
+  const createHabit = useCreateHabit().mutate;
+  const createGoal = useCreateGoal().mutate;
 
   const [tab, setTab] = useSearchParamState("tab", "articles");
-  const [urlQuery, setUrlQuery] = useSearchParamState("q");
+  const [query, setQuery] = useSearchParamState("q");
 
-  // Local input state for responsiveness; sync to URL after debounce
-  const [inputValue, setInputValue] = useState(urlQuery);
+  const [inputValue, setInputValue] = useState(query);
   const debouncedInput = useDebounceValue(inputValue, 300);
 
   // Push debounced input to URL
   useEffect(() => {
-    if (debouncedInput !== urlQuery) {
-      setUrlQuery(debouncedInput);
+    if (debouncedInput !== query) {
+      setQuery(debouncedInput);
     }
-  }, [debouncedInput, urlQuery, setUrlQuery]);
+  }, [debouncedInput, query, setQuery]);
 
-  // Sync input from URL on external changes (back/forward, bookmark)
-  useEffect(() => {
-    setInputValue((prev) => {
-      if (urlQuery !== prev) return urlQuery;
-      return prev;
-    });
-  }, [urlQuery]);
-
-  const query = urlQuery;
-
-  // Fetch real articles from API
-  const { data: articlesData, isLoading: articlesLoading } = useQuery({
-    queryKey: ['articles', 'explore'],
-    queryFn: () => listArticles({ limit: 20 }),
-    initialData: initialArticles,
-  });
-
-  const articles = articlesData?.data ?? [];
-
-  const filteredArticles = useMemo(() => {
+  const articles = useMemo(() => {
     const q = query.trim().toLowerCase();
-    if (!q) return articles;
-    return articles.filter((a) =>
-      [a.title, a.excerpt, a.category?.name].some((f) => f?.toLowerCase().includes(q)),
+    if (!q) return allArticles;
+    return allArticles.filter((a) =>
+      [a.title, a.excerpt, a.category?.name].some((f) =>
+        f?.toLowerCase().includes(q),
+      ),
     );
-  }, [query, articles]);
+  }, [query, allArticles]);
 
   return (
     <div className="h-full flex flex-col relative">
@@ -108,7 +92,7 @@ export function ExploreClient({ initialArticles }: ExploreClientProps) {
 
           <Tabs value={tab} onValueChange={setTab} className="w-full">
             <TabsList className="mb-6 flex-wrap h-auto">
-              {(['articles', 'habits', 'goals', 'community'] as const).map((tabValue) => (
+              {(["articles", "habits", "goals", "community"] as const).map((tabValue) => (
                 <TabsTrigger key={tabValue} value={tabValue}>
                   {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}
                 </TabsTrigger>
@@ -118,26 +102,16 @@ export function ExploreClient({ initialArticles }: ExploreClientProps) {
             {/* Articles */}
             <TabsContent value="articles" className="space-y-6">
               <FeaturedCard />
-              {articlesLoading ? (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {[1, 2, 3, 4].map((i) => (
-                    <div key={i} className="space-y-3">
-                      <Skeleton className="h-5 w-3/4" />
-                      <Skeleton className="h-4 w-full" />
-                      <Skeleton className="h-4 w-2/3" />
-                    </div>
-                  ))}
-                </div>
-              ) : filteredArticles.length === 0 ? (
+              {articles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Search className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
                   <p className="text-sm text-muted-foreground">
-                    {query.trim() ? `No results for "${query.trim()}"` : 'No articles available.'}
+                    {query.trim() ? `No results for "${query.trim()}"` : "No articles available."}
                   </p>
                 </div>
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
-                  {filteredArticles.map((article) => (
+                  {articles.map((article) => (
                     <ArticleCard key={article.id} article={article} />
                   ))}
                 </div>
@@ -151,7 +125,7 @@ export function ExploreClient({ initialArticles }: ExploreClientProps) {
                   <HabitTemplateCard
                     key={habit.name}
                     template={habit}
-                    onAdd={(data) => createHabitMutation.mutate(data)}
+                    onAdd={(data) => createHabit(data)}
                   />
                 ))}
               </div>
@@ -164,7 +138,7 @@ export function ExploreClient({ initialArticles }: ExploreClientProps) {
                   <GoalTemplateCard
                     key={goal.title}
                     template={goal}
-                    onAdd={(data) => createGoalMutation.mutate(data)}
+                    onAdd={(data) => createGoal(data)}
                   />
                 ))}
               </div>

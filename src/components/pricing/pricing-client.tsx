@@ -11,6 +11,7 @@ import { PlanBadge } from "@/components/billing/plan-badge";
 import { FakeDoorFeedbackDialog } from "@/components/billing/fake-door-feedback-dialog";
 import type { Plan } from "@/api";
 import { useSearchParamEnum } from "@/lib/url-state";
+import { useShallow } from "zustand/react/shallow";
 
 const FREE_FEATURES = [
   "1 active goal",
@@ -41,12 +42,14 @@ export function PricingClient() {
     ["monthly", "annual"] as const,
     "annual"
   );
-  const { fakeDoorOpen, openFakeDoor, closeFakeDoor, fakeDoorBillingInterval } = useBillingUIStore((s) => ({
-    fakeDoorOpen: s.fakeDoorOpen,
-    openFakeDoor: s.openFakeDoor,
-    closeFakeDoor: s.closeFakeDoor,
-    fakeDoorBillingInterval: s.fakeDoorBillingInterval,
-  }));
+  const { fakeDoorOpen, openFakeDoor, closeFakeDoor, fakeDoorBillingInterval } = useBillingUIStore(
+    useShallow((s) => ({
+      fakeDoorOpen: s.fakeDoorOpen,
+      openFakeDoor: s.openFakeDoor,
+      closeFakeDoor: s.closeFakeDoor,
+      fakeDoorBillingInterval: s.fakeDoorBillingInterval,
+    }))
+  );
 
   const { data: billing, isLoading } = useBillingOverview();
   const trackEvent = useTrackUpgradeEvent();

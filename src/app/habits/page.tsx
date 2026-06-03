@@ -1,26 +1,18 @@
+import { Suspense } from 'react';
 import { HabitsClient } from '@/components/habits/habits-client';
 import { listHabits, getTodayCheckIns } from '@/api';
+import { HabitsSkeleton } from '@/components/habits/habits-skeleton';
 
 export default async function HabitsPage() {
-  try {
-    const [habitsData, checkInsData] = await Promise.all([
-      listHabits({ page: 1, limit: 100 }),
-      getTodayCheckIns(),
-    ]);
+  const habitsPromise = listHabits({ page: 1, limit: 100 }).catch(() => ({ data: [], page: { total: 0, page: 1, limit: 100, totalPages: 0 } }));
+  const checkInsPromise = getTodayCheckIns().catch(() => ({ data: [], page: { total: 0, page: 1, limit: 20, totalPages: 0 } }));
 
-    return (
+  return (
+    <Suspense fallback={<HabitsSkeleton />}>
       <HabitsClient
-        initialHabits={habitsData ?? undefined}
-        initialCheckIns={checkInsData ?? undefined}
+        habitsPromise={habitsPromise}
+        checkInsPromise={checkInsPromise}
       />
-    );
-  } catch (error) {
-    console.error('[HabitsPage] Failed to fetch habits or check-ins:', error);
-    return (
-      <HabitsClient
-        initialHabits={undefined}
-        initialCheckIns={undefined}
-      />
-    );
-  }
+    </Suspense>
+  );
 }

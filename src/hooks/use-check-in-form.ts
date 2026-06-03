@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { CheckInStatus, CheckInMood, CheckInEnergy, CheckInBlocker } from '@/api';
 
 export type CheckInFormState = {
@@ -30,21 +30,25 @@ export function useCheckInForm() {
     setForm(initialState);
   }, []);
 
-  const canSubmit = form.status && (
-    form.status === 'completed'
-      ? form.mood && form.energy
-      : form.blocker && (form.blocker !== 'other' || form.otherBlocker.trim())
-  );
+  const canSubmit = useMemo(() =>
+    form.status && (
+      form.status === 'completed'
+        ? form.mood && form.energy
+        : form.blocker && (form.blocker !== 'other' || form.otherBlocker.trim())
+    ),
+  [form.status, form.mood, form.energy, form.blocker, form.otherBlocker]);
 
-  const finalNote = form.blocker === 'other' && form.otherBlocker.trim()
-    ? `Blocker: ${form.otherBlocker.trim()}${form.note.trim() ? `\n\n${form.note.trim()}` : ''}`
-    : form.note.trim();
+  const finalNote = useMemo(() =>
+    form.blocker === 'other' && form.otherBlocker.trim()
+      ? `Blocker: ${form.otherBlocker.trim()}${form.note.trim() ? `\n\n${form.note.trim()}` : ''}`
+      : form.note.trim(),
+  [form.blocker, form.otherBlocker, form.note]);
 
-  return {
+  return useMemo(() => ({
     form,
     updateField,
     reset,
     canSubmit,
     finalNote,
-  };
+  }), [form, updateField, reset, canSubmit, finalNote]);
 }

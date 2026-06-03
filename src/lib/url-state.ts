@@ -50,9 +50,7 @@ export function useSearchParamEnum<T extends string>(
 ): [T, (value: T) => void] {
   const [raw, setRaw] = useSearchParamState(key, defaultValue);
 
-  const value = useMemo<T>(() => {
-    return allowedValues.includes(raw as T) ? (raw as T) : defaultValue;
-  }, [raw, allowedValues, defaultValue]);
+  const value: T = allowedValues.includes(raw as T) ? (raw as T) : defaultValue;
 
   const setValue = useCallback(
     (newValue: T) => setRaw(newValue),

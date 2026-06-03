@@ -12,7 +12,9 @@ function handleMutationError(error: unknown) {
 /**
  * Hook to fetch conversations
  */
-export function useConversations(params: ListConversationsParams = { page: 1, limit: 20 }) {
+const DEFAULT_CONVERSATIONS_PARAMS: ListConversationsParams = { page: 1, limit: 20 };
+
+export function useConversations(params: ListConversationsParams = DEFAULT_CONVERSATIONS_PARAMS) {
   return useQuery({
     queryKey: ['conversations', params],
     queryFn: () => listConversations(params),
@@ -35,7 +37,9 @@ export function useConversation(id: string) {
 /**
  * Hook to fetch conversation messages
  */
-export function useMessages(conversationId: string, params: PageParams = { page: 1, limit: 50 }) {
+const DEFAULT_MESSAGES_PARAMS: PageParams = { page: 1, limit: 50 };
+
+export function useMessages(conversationId: string, params: PageParams = DEFAULT_MESSAGES_PARAMS) {
   return useQuery({
     queryKey: ['conversations', conversationId, 'messages', params],
     queryFn: () => getMessages(conversationId, params),

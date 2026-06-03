@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { getCoachingProfile, updateCoachingProfilePreferences } from '../api';
 import type {
   CoachingProfile,
@@ -13,7 +13,7 @@ export function useCoachingProfile() {
   const [error, setError] = useState<string | null>(null);
   const isMounted = useRef(true);
 
-  const loadProfile = async () => {
+  const loadProfile = useCallback(async () => {
     try {
       if (!isMounted.current) return;
       setLoading(true);
@@ -33,17 +33,15 @@ export function useCoachingProfile() {
         setLoading(false);
       }
     }
-  };
+  }, []);
 
   useEffect(() => {
     isMounted.current = true;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadProfile();
     return () => {
       isMounted.current = false;
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [loadProfile]);
 
   const updatePreferences = async (data: UpdateCoachingProfilePreferencesRequest) => {
     try {

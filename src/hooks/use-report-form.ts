@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { ReportType } from '@/api';
 
 const categoryMap: Record<string, ReportType> = {
@@ -20,7 +20,7 @@ export function useReportForm() {
   const [submitted, setSubmitted] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  const canSubmit = subject.trim().length > 2 && details.trim().length > 10;
+  const canSubmit = useMemo(() => subject.trim().length > 2 && details.trim().length > 10, [subject, details]);
 
   const reset = useCallback(() => {
     setEmail('');

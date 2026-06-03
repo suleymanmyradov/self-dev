@@ -1,7 +1,6 @@
 'use client';
 
-import { useMemo } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { use, useMemo, useState, useTransition } from 'react';
 import Link from 'next/link';
 import { ArticleCardGrid } from '@/components/home/article-card-grid';
 import { PlanAdjustmentCard } from '@/components/plan-adjustment-card';
@@ -10,9 +9,9 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, CircleDashed, ArrowRight, Lightbulb } from 'lucide-react';
 import { listCategories, listArticles } from '@/api';
-import { useHabits, useTodayCheckIns, usePlanAdjustments, useBillingOverview } from '@/hooks';
+import { usePlanAdjustments, useBillingOverview } from '@/hooks';
 import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
-import type { HabitsResponse, CheckInsResponse, BillingOverviewResponse } from '@/api';
+import type { HabitsResponse, CheckInsResponse, CategoriesResponse, ArticlesResponse } from '@/api';
 import { useSearchParamState } from '@/lib/url-state';
 
 const TAB_TRIGGER_CLASS =
@@ -27,18 +26,25 @@ const DEFAULT_CATEGORIES: { value: string; label: string }[] = [
 ];
 
 interface HomeClientProps {
-  initialCategories?: Array<{ slug: string; name: string }> | null;
-  initialArticles?: Array<{ id: string; title: string; excerpt?: string; imageUrl?: string; category?: { name: string }; publishedAt: string }> | null;
-  initialHabits?: HabitsResponse;
-  initialCheckIns?: CheckInsResponse;
+  categoriesPromise: Promise<CategoriesResponse>;
+  articlesPromise: Promise<ArticlesResponse>;
+  habitsPromise: Promise<HabitsResponse>;
+  checkInsPromise: Promise<CheckInsResponse>;
 }
 
-export function HomeClient({ initialCategories, initialArticles, initialHabits, initialCheckIns }: HomeClientProps) {
+export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, checkInsPromise }: HomeClientProps) {
   const [filter, setFilter] = useSearchParamState('category', 'all');
 
-  // Fetch habits and check-ins for today's widget
-  const { data: habits = [] } = useHabits({ page: 1, limit: 100 }, initialHabits);
-  const { data: todayCheckIns = [] } = useTodayCheckIns(initialCheckIns);
+  const categoriesData = use(categoriesPromise);
+  const initialArticlesData = use(articlesPromise);
+  const habitsData = use(habitsPromise);
+  const checkInsData = use(checkInsPromise);
+
+  const habits = habitsData.data ?? [];
+  const todayCheckIns = checkInsData.data ?? [];
+
+  const [articles, setArticles] = useState(initialArticlesData.data ?? []);
+  const [isArticlesPending, startArticlesTransition] = useTransition();
 
   // Fetch plan adjustment suggestions
   const { suggestions = [], loading: suggestionsLoading, applySuggestion, dismissSuggestion } = usePlanAdjustments();
@@ -55,16 +61,8 @@ export function HomeClient({ initialCategories, initialArticles, initialHabits, 
     return { checkedCount, remainingCount, total: habits.length, allChecked: remainingCount === 0 };
   }, [habits, todayCheckIns]);
 
-  // Fetch categories with TanStack Query (hydrated from SSR initial data)
-  const { data: categoriesData } = useQuery({
-    queryKey: ['categories', 'article'],
-    queryFn: () => listCategories('article'),
-    initialData: initialCategories ? { data: initialCategories } as { data: typeof initialCategories } : undefined,
-    staleTime: 1000 * 60 * 60, // 1 hour — categories rarely change
-  });
-
   const categories = useMemo(() => {
-    const cats = categoriesData?.data;
+    const cats = categoriesData.data;
     if (cats && cats.length > 0) {
       const mapped = [
         { value: 'all', label: 'All' },
@@ -75,18 +73,16 @@ export function HomeClient({ initialCategories, initialArticles, initialHabits, 
     return DEFAULT_CATEGORIES;
   }, [categoriesData]);
 
-  // Fetch articles with TanStack Query (hydrated from SSR initial data)
-  const { data: articlesData, isLoading } = useQuery({
-    queryKey: ['articles', filter],
-    queryFn: () => {
-      const params = filter !== 'all' ? { category: filter } : undefined;
-      return listArticles(params);
-    },
-    initialData: initialArticles ? { data: initialArticles } as { data: typeof initialArticles } : undefined,
-    staleTime: 1000 * 60 * 5, // 5 minutes
-  });
+  const handleFilterChange = (value: string) => {
+    setFilter(value);
+    startArticlesTransition(async () => {
+      const params = value !== 'all' ? { category: value } : undefined;
+      const fresh = await listArticles(params);
+      setArticles(fresh.data ?? []);
+    });
+  };
 
-  const articles = articlesData?.data ?? [];
+  const isLoading = isArticlesPending;
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
@@ -173,7 +169,7 @@ export function HomeClient({ initialCategories, initialArticles, initialHabits, 
 
           <Tabs
             value={filter}
-            onValueChange={(v) => setFilter(v)}
+            onValueChange={(v) => handleFilterChange(v)}
             className="mt-2 mb-6 w-full"
           >
             <TabsList className="h-auto w-fit bg-secondary/50 p-1 rounded-lg">

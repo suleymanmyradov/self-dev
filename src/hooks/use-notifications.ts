@@ -9,7 +9,9 @@ function handleMutationError(error: unknown) {
   toast.error(message);
 }
 
-export function useNotifications(params: PageParams = { page: 1, limit: 20 }) {
+const DEFAULT_NOTIFICATIONS_PARAMS: PageParams = { page: 1, limit: 20 };
+
+export function useNotifications(params: PageParams = DEFAULT_NOTIFICATIONS_PARAMS) {
   return useQuery({
     queryKey: ['notifications', params],
     queryFn: () => listNotifications(params),

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback } from "react";
+import { use, useCallback } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -16,12 +16,11 @@ import type { Habit, HabitsResponse, CheckInsResponse } from "@/api";
 import type { CheckInSubmitData } from "@/components/check-in/check-in-modal";
 import { useUIStore } from "@/store/uiStore";
 import { useBillingUIStore } from "@/store/billing-ui";
+import { useShallow } from "zustand/react/shallow";
 
 const HabitFormDialog = dynamic(() => import("@/components/habits/habit-form-dialog").then((mod) => mod.HabitFormDialog));
 const CheckInModal = dynamic(() => import("@/components/check-in/check-in-modal").then((mod) => mod.CheckInModal));
 import {
-  useHabits,
-  useTodayCheckIns,
   useCreateHabit,
   useUpdateHabit,
   useDeleteHabit,
@@ -38,14 +37,15 @@ import {
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 
 interface HabitsClientProps {
-  initialHabits?: HabitsResponse;
-  initialCheckIns?: CheckInsResponse;
+  habitsPromise: Promise<HabitsResponse>;
+  checkInsPromise: Promise<CheckInsResponse>;
 }
 
-export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientProps) {
-  // Fetch habits
-  const { data: habits = [], isLoading } = useHabits({ page: 1, limit: 100 }, initialHabits);
-  const { data: todayCheckIns = [] } = useTodayCheckIns(initialCheckIns);
+export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientProps) {
+  const habitsData = use(habitsPromise);
+  const habits = habitsData.data ?? [];
+  const checkInsData = use(checkInsPromise);
+  const todayCheckIns = checkInsData.data ?? [];
   const { data: entitlements } = useEntitlements();
   const { data: billing } = useBillingOverview();
   const isPro = billing?.subscription?.planCode === "pro";
@@ -60,19 +60,25 @@ export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientPro
 
   // Billing / upgrade UI from store
   const { upgradePromptOpen, upgradeSurface, upgradeTrigger, showUpgradePrompt, dismissUpgradePrompt } =
-    useBillingUIStore((s) => ({
-      upgradePromptOpen: s.upgradePromptOpen,
-      upgradeSurface: s.upgradeSurface,
-      upgradeTrigger: s.upgradeTrigger,
-      showUpgradePrompt: s.showUpgradePrompt,
-      dismissUpgradePrompt: s.dismissUpgradePrompt,
-    }));
+    useBillingUIStore(
+      useShallow((s) => ({
+        upgradePromptOpen: s.upgradePromptOpen,
+        upgradeSurface: s.upgradeSurface,
+        upgradeTrigger: s.upgradeTrigger,
+        showUpgradePrompt: s.showUpgradePrompt,
+        dismissUpgradePrompt: s.dismissUpgradePrompt,
+      }))
+    );
 
   // Check-in modal state from UI store
-  const checkInModalOpen = useUIStore((s) => s.checkInModalOpen);
-  const checkInHabitId = useUIStore((s) => s.checkInHabitId);
-  const openCheckInModal = useUIStore((s) => s.openCheckInModal);
-  const closeCheckInModal = useUIStore((s) => s.closeCheckInModal);
+  const { checkInModalOpen, checkInHabitId, openCheckInModal, closeCheckInModal } = useUIStore(
+    useShallow((s) => ({
+      checkInModalOpen: s.checkInModalOpen,
+      checkInHabitId: s.checkInHabitId,
+      openCheckInModal: s.openCheckInModal,
+      closeCheckInModal: s.closeCheckInModal,
+    }))
+  );
   const checkInHabit = habits.find((h) => h.id === checkInHabitId);
 
   // Filters
@@ -160,11 +166,6 @@ export function HabitsClient({ initialHabits, initialCheckIns }: HabitsClientPro
       },
     });
   };
-
-  // Loading state
-  if (isLoading) {
-    return <div className="h-full flex items-center justify-center text-sm text-muted-foreground">Loading habits...</div>;
-  }
 
   return (
     <div className="h-full flex flex-col relative">

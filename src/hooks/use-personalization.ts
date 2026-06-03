@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getPersonalizationContext, generatePersonalizedCoaching } from '../api';
 import type { GeneratePersonalizedCoachingRequest } from '../api';
@@ -27,19 +28,19 @@ export function usePersonalization(autoLoad = true) {
     onError: handleMutationError,
   });
 
-  const generateCoaching = async (request: GeneratePersonalizedCoachingRequest) => {
+  const generateCoaching = useCallback(async (request: GeneratePersonalizedCoachingRequest) => {
     return generateCoachingMutation.mutateAsync(request);
-  };
+  }, [generateCoachingMutation]);
 
-  const refresh = () => {
+  const refresh = useCallback(() => {
     queryClient.invalidateQueries({ queryKey: ['personalization', 'context'] });
-  };
+  }, [queryClient]);
 
-  return {
+  return useMemo(() => ({
     context,
     loading,
     error: error instanceof ApiError ? error.message : null,
     generateCoaching,
     refresh,
-  };
+  }), [context, loading, error, generateCoaching, refresh]);
 }

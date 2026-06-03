@@ -36,10 +36,10 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
     setForm((f) => ({ ...f, progress }));
   }, []);
 
-  const reset = useCallback((initial?: Partial<GoalFormValues>) => {
-    setForm({ ...DEFAULT_FORM, ...initial });
+  const reset = useCallback((override?: Partial<GoalFormValues>) => {
+    setForm({ ...DEFAULT_FORM, ...(override ?? initial) });
     setError(null);
-  }, []);
+  }, [initial]);
 
   const loadGoal = useCallback((goal: Goal) => {
     setForm({

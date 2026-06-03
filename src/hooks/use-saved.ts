@@ -9,7 +9,9 @@ function handleMutationError(error: unknown) {
   toast.error(message);
 }
 
-export function useSavedItems(params: PageParams = { page: 1, limit: 20 }) {
+const DEFAULT_SAVED_PARAMS: PageParams = { page: 1, limit: 20 };
+
+export function useSavedItems(params: PageParams = DEFAULT_SAVED_PARAMS) {
   return useQuery({
     queryKey: ['saved', params],
     queryFn: () => listSavedItems(params),
@@ -17,7 +19,9 @@ export function useSavedItems(params: PageParams = { page: 1, limit: 20 }) {
   });
 }
 
-export function useSavedItemsDetailed(params: PageParams = { page: 1, limit: 20 }) {
+const DEFAULT_SAVED_DETAILED_PARAMS: PageParams = { page: 1, limit: 20 };
+
+export function useSavedItemsDetailed(params: PageParams = DEFAULT_SAVED_DETAILED_PARAMS) {
   return useQuery({
     queryKey: ['saved', 'detailed', params],
     queryFn: () => listSavedDetailed(params),

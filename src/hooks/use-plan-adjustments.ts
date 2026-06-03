@@ -1,3 +1,4 @@
+import { useCallback, useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getPendingPlanAdjustmentSuggestions,
@@ -55,30 +56,34 @@ export function usePlanAdjustments(autoLoad = true) {
     onError: handleMutationError,
   });
 
-  const createSuggestion = async (data: CreatePlanAdjustmentSuggestionRequest) => {
+  const createSuggestion = useCallback(async (data: CreatePlanAdjustmentSuggestionRequest) => {
     return createSuggestionMutation.mutateAsync(data);
-  };
+  }, [createSuggestionMutation]);
 
-  const updateStatus = async (
+  const updateStatus = useCallback(async (
     suggestionId: string,
     data: UpdatePlanAdjustmentSuggestionStatusRequest
   ) => {
     return updateStatusMutation.mutateAsync({ suggestionId, data });
-  };
+  }, [updateStatusMutation]);
 
-  const acceptSuggestion = async (suggestionId: string) => {
+  const acceptSuggestion = useCallback(async (suggestionId: string) => {
     return updateStatus(suggestionId, { status: 'accepted' });
-  };
+  }, [updateStatus]);
 
-  const dismissSuggestion = async (suggestionId: string) => {
+  const dismissSuggestion = useCallback(async (suggestionId: string) => {
     return updateStatus(suggestionId, { status: 'dismissed' });
-  };
+  }, [updateStatus]);
 
-  const applySuggestion = async (suggestionId: string) => {
+  const applySuggestion = useCallback(async (suggestionId: string) => {
     return applySuggestionMutation.mutateAsync(suggestionId);
-  };
+  }, [applySuggestionMutation]);
 
-  return {
+  const refresh = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ['plan-adjustments'] });
+  }, [queryClient]);
+
+  return useMemo(() => ({
     suggestions,
     loading,
     error: error instanceof ApiError ? error.message : null,
@@ -88,6 +93,6 @@ export function usePlanAdjustments(autoLoad = true) {
     acceptSuggestion,
     dismissSuggestion,
     applySuggestion,
-    refresh: () => queryClient.invalidateQueries({ queryKey: ['plan-adjustments'] }),
-  };
+    refresh,
+  }), [suggestions, loading, error, createSuggestion, updateStatus, acceptSuggestion, dismissSuggestion, applySuggestion, refresh]);
 }

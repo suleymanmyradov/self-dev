@@ -1,116 +1,92 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/sonner";
-import { FormField } from "@/components/form-field";
-import { useSettings, useUpdateSettings, useCoachingProfile, useBillingOverview, useCreateCustomerPortalSession, useProfile } from "@/hooks";
-import type { AccountabilityStyle, PreferredTone, DifficultyPreference, Profile, SettingsResponse } from "@/api";
-import { updateProfile } from "@/api";
-import { useQueryClient } from "@tanstack/react-query";
+import { useBillingOverview, useCreateCustomerPortalSession } from "@/hooks";
+import type { AccountabilityStyle, PreferredTone, DifficultyPreference, Profile, Settings } from "@/api";
+import {
+  updateProfileAction,
+  updateSettingsAction,
+  updateCoachingPreferencesAction,
+} from "@/app/actions/settings";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { Crown, Sparkles } from "lucide-react";
 import Link from "next/link";
 
 interface SettingsClientProps {
-  initialSettings?: SettingsResponse;
-  initialProfile?: Profile;
+  settings: Settings | null;
+  profile: Profile | null;
+  coachingProfile: {
+    accountabilityStyle: AccountabilityStyle;
+    preferredTone: PreferredTone;
+    difficultyPreference: DifficultyPreference;
+  } | null;
 }
 
-export function SettingsClient({ initialSettings, initialProfile }: SettingsClientProps) {
-  const queryClient = useQueryClient();
-  const { data: settings, isLoading: settingsLoading } = useSettings(initialSettings);
-  const updateSettings = useUpdateSettings();
-  const { profile: coachingProfile, updatePreferences, loading: coachingLoading } = useCoachingProfile();
-  const { data: profile, isLoading: profileLoading, error: profileError } = useProfile(initialProfile);
+export function SettingsClient({ settings, profile, coachingProfile }: SettingsClientProps) {
+  const [profileState, profileAction, profilePending] = useActionState(updateProfileAction, {
+    success: false,
+  });
 
-  const usernameRef = useRef<HTMLInputElement>(null);
-  const emailRef = useRef<HTMLInputElement>(null);
-  const [errors, setErrors] = useState<Partial<Record<"username" | "email", string>>>({});
-  const [saving, setSaving] = useState(false);
+  const [settingsState, settingsAction, settingsPending] = useActionState(updateSettingsAction, {
+    success: false,
+  });
 
-  // Sync refs when profile loads
-  useEffect(() => {
-    if (profile) {
-      if (usernameRef.current) usernameRef.current.value = profile.username ?? "";
-      if (emailRef.current) emailRef.current.value = profile.email ?? "";
-    }
-  }, [profile?.id]);
+  const [coachingState, coachingAction, coachingPending] = useActionState(updateCoachingPreferencesAction, {
+    success: false,
+  });
 
   useEffect(() => {
-    if (profileError) {
-      toast.error("Failed to load profile");
-    }
-  }, [profileError]);
+    if (profileState.success) toast.success("Profile updated");
+    else if (profileState.error) toast.error(profileState.error);
+  }, [profileState]);
 
-  const handleSave = useCallback(
-    async (e: React.FormEvent) => {
-      e.preventDefault();
-      setErrors({});
+  useEffect(() => {
+    if (settingsState.success) toast.success("Settings updated");
+    else if (settingsState.error) toast.error(settingsState.error);
+  }, [settingsState]);
 
-      const username = usernameRef.current?.value.trim() ?? "";
-      const email = emailRef.current?.value.trim() ?? "";
+  useEffect(() => {
+    if (coachingState.success) toast.success("Coaching preferences updated");
+    else if (coachingState.error) toast.error(coachingState.error);
+  }, [coachingState]);
 
-      const fieldErrors: Partial<Record<"username" | "email", string>> = {};
-      if (username.length < 2) {
-        fieldErrors.username = "Username must be at least 2 characters";
-      }
-      if (!email.includes("@")) {
-        fieldErrors.email = "Invalid email address";
-      }
-
-      if (Object.keys(fieldErrors).length > 0) {
-        setErrors(fieldErrors);
-        return;
-      }
-
-      setSaving(true);
-      try {
-        await updateProfile({ fullName: username });
-        queryClient.invalidateQueries({ queryKey: ["profile"] });
-        toast.success("Settings saved successfully");
-      } catch {
-        toast.error("Failed to save settings");
-      } finally {
-        setSaving(false);
-      }
+  const handleToggle = useCallback(
+    (key: "emailNotifications" | "pushNotifications" | "habitReminders" | "goalReminders", value: boolean) => {
+      const formData = new FormData();
+      formData.set(key, String(value));
+      settingsAction(formData);
     },
-    [queryClient]
+    [settingsAction]
   );
 
-  const handleSettingToggle = async (
-    key: "emailNotifications" | "pushNotifications" | "habitReminders" | "goalReminders",
-    value: boolean
-  ) => {
-    if (!settings) return;
-    try {
-      await updateSettings.mutateAsync({ [key]: value });
-      toast.success(`${key.replace(/([A-Z])/g, " $1").trim()} updated`);
-    } catch {
-      toast.error("Failed to update setting");
-    }
-  };
+  const handleCoachingChange = useCallback(
+    (field: "accountabilityStyle" | "preferredTone" | "difficultyPreference", value: string) => {
+      const current = coachingProfile ?? {
+        accountabilityStyle: "balanced" as AccountabilityStyle,
+        preferredTone: "supportive" as PreferredTone,
+        difficultyPreference: "adaptive" as DifficultyPreference,
+      };
+      const formData = new FormData();
+      formData.set("accountabilityStyle", field === "accountabilityStyle" ? value : current.accountabilityStyle);
+      formData.set("preferredTone", field === "preferredTone" ? value : current.preferredTone);
+      formData.set("difficultyPreference", field === "difficultyPreference" ? value : current.difficultyPreference);
+      coachingAction(formData);
+    },
+    [coachingAction, coachingProfile]
+  );
 
-  const handleCoachingPreferenceChange = async (
-    field: "accountabilityStyle" | "preferredTone" | "difficultyPreference",
-    value: AccountabilityStyle | PreferredTone | DifficultyPreference
-  ) => {
-    try {
-      await updatePreferences({
-        accountabilityStyle: field === "accountabilityStyle" ? (value as AccountabilityStyle) : coachingProfile?.accountabilityStyle || "balanced",
-        preferredTone: field === "preferredTone" ? (value as PreferredTone) : coachingProfile?.preferredTone || "supportive",
-        difficultyPreference: field === "difficultyPreference" ? (value as DifficultyPreference) : coachingProfile?.difficultyPreference || "adaptive",
-      });
-      toast.success("Coaching preferences updated");
-    } catch {
-      toast.error("Failed to update coaching preferences");
-    }
-  };
-
-  const isLoading = settingsLoading || profileLoading;
+  if (!profile || !settings) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <p className="text-sm text-muted-foreground">Failed to load settings.</p>
+      </div>
+    );
+  }
 
   return (
     <div className="h-full flex flex-col">
@@ -121,35 +97,45 @@ export function SettingsClient({ initialSettings, initialProfile }: SettingsClie
             <p className="text-sm text-muted-foreground">Manage your account and preferences.</p>
           </header>
 
-          <form onSubmit={handleSave}>
+          {/* Account */}
+          <form action={profileAction}>
             <Card className="mb-4">
               <CardHeader>
                 <CardTitle>Account</CardTitle>
               </CardHeader>
               <CardContent className="grid gap-4">
-                <FormField
-                  id="username"
-                  label="Username"
-                  ref={usernameRef}
-                  defaultValue={profile?.username ?? ""}
-                  placeholder="yourname"
-                  error={errors.username}
-                  disabled={isLoading}
-                />
-                <FormField
-                  id="email"
-                  label="Email"
-                  ref={emailRef}
-                  type="email"
-                  defaultValue={profile?.email ?? ""}
-                  placeholder="you@example.com"
-                  error={errors.email}
-                  disabled={isLoading}
-                />
+                <div className="grid gap-1">
+                  <label htmlFor="username" className="text-sm font-medium">Username</label>
+                  <input type="hidden" name="username" value={profile.username} />
+                  <input
+                    id="username"
+                    defaultValue={profile.username ?? ""}
+                    readOnly
+                    className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background text-muted-foreground"
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <label htmlFor="email" className="text-sm font-medium">Email</label>
+                  <input
+                    id="email"
+                    defaultValue={profile.email ?? ""}
+                    readOnly
+                    className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background text-muted-foreground"
+                  />
+                </div>
+                <div className="grid gap-1">
+                  <label htmlFor="fullName" className="text-sm font-medium">Full Name</label>
+                  <input
+                    id="fullName"
+                    name="fullName"
+                    defaultValue={profile.fullName ?? ""}
+                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  />
+                </div>
               </CardContent>
               <CardFooter className="justify-end">
-                <Button type="submit" disabled={isLoading || saving}>
-                  {saving ? "Saving..." : "Save changes"}
+                <Button type="submit" disabled={profilePending}>
+                  {profilePending ? "Saving..." : "Save changes"}
                 </Button>
               </CardFooter>
             </Card>
@@ -168,140 +154,133 @@ export function SettingsClient({ initialSettings, initialProfile }: SettingsClie
             </CardContent>
           </Card>
 
-          <Card>
+          {/* Preferences */}
+          <Card className="mb-4">
             <CardHeader>
               <CardTitle>Preferences</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-6">
-              {isLoading ? (
-                <p className="text-sm text-muted-foreground">Loading preferences...</p>
-              ) : (
-                <>
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium">Email Notifications</span>
-                      <p className="text-xs text-muted-foreground">Receive email updates about your activity</p>
-                    </div>
-                    <Switch
-                      checked={settings?.emailNotifications ?? false}
-                      onCheckedChange={(v: boolean) => handleSettingToggle("emailNotifications", v)}
-                      disabled={updateSettings.isPending}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium">Push Notifications</span>
-                      <p className="text-xs text-muted-foreground">Receive push notifications in your browser</p>
-                    </div>
-                    <Switch
-                      checked={settings?.pushNotifications ?? false}
-                      onCheckedChange={(v: boolean) => handleSettingToggle("pushNotifications", v)}
-                      disabled={updateSettings.isPending}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium">Habit Reminders</span>
-                      <p className="text-xs text-muted-foreground">Get reminded to complete your daily habits</p>
-                    </div>
-                    <Switch
-                      checked={settings?.habitReminders ?? false}
-                      onCheckedChange={(v: boolean) => handleSettingToggle("habitReminders", v)}
-                      disabled={updateSettings.isPending}
-                    />
-                  </div>
-                  <Separator />
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <span className="text-sm font-medium">Goal Reminders</span>
-                      <p className="text-xs text-muted-foreground">Get reminded about your goal deadlines</p>
-                    </div>
-                    <Switch
-                      checked={settings?.goalReminders ?? false}
-                      onCheckedChange={(v: boolean) => handleSettingToggle("goalReminders", v)}
-                      disabled={updateSettings.isPending}
-                    />
-                  </div>
-                </>
-              )}
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium">Email Notifications</span>
+                  <p className="text-xs text-muted-foreground">Receive email updates about your activity</p>
+                </div>
+                <Switch
+                  checked={settings.emailNotifications ?? false}
+                  onCheckedChange={(v) => handleToggle("emailNotifications", v)}
+                  disabled={settingsPending}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium">Push Notifications</span>
+                  <p className="text-xs text-muted-foreground">Receive push notifications in your browser</p>
+                </div>
+                <Switch
+                  checked={settings.pushNotifications ?? false}
+                  onCheckedChange={(v) => handleToggle("pushNotifications", v)}
+                  disabled={settingsPending}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium">Habit Reminders</span>
+                  <p className="text-xs text-muted-foreground">Get reminded to complete your daily habits</p>
+                </div>
+                <Switch
+                  checked={settings.habitReminders ?? false}
+                  onCheckedChange={(v) => handleToggle("habitReminders", v)}
+                  disabled={settingsPending}
+                />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium">Goal Reminders</span>
+                  <p className="text-xs text-muted-foreground">Get reminded about your goal deadlines</p>
+                </div>
+                <Switch
+                  checked={settings.goalReminders ?? false}
+                  onCheckedChange={(v) => handleToggle("goalReminders", v)}
+                  disabled={settingsPending}
+                />
+              </div>
             </CardContent>
           </Card>
 
+          {/* AI Coaching Preferences */}
           <Card>
             <CardHeader>
               <CardTitle>AI Coaching Preferences</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-6">
-              {coachingLoading ? (
-                <p className="text-sm text-muted-foreground">Loading coaching preferences...</p>
-              ) : (
-                <>
-                  <div>
-                    <span className="text-sm font-medium">Accountability Style</span>
-                    <p className="text-xs text-muted-foreground mb-3">How strict should your AI coach be?</p>
-                    <div className="flex gap-2">
-                      {(["gentle", "balanced", "strict"] as const).map((style) => (
-                        <button
-                          key={style}
-                          type="button"
-                          onClick={() => handleCoachingPreferenceChange("accountabilityStyle", style as AccountabilityStyle)}
-                          className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-colors ${
-                            coachingProfile?.accountabilityStyle === style
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "border-border hover:bg-accent"
-                          }`}
-                        >
-                          {style}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              <div>
+                <span className="text-sm font-medium">Accountability Style</span>
+                <p className="text-xs text-muted-foreground mb-3">How strict should your AI coach be?</p>
+                <div className="flex gap-2">
+                  {(["gentle", "balanced", "strict"] as const).map((style) => (
+                    <button
+                      key={style}
+                      type="button"
+                      onClick={() => handleCoachingChange("accountabilityStyle", style)}
+                      disabled={coachingPending}
+                      className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-colors disabled:opacity-50 ${
+                        coachingProfile?.accountabilityStyle === style
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:bg-accent"
+                      }`}
+                    >
+                      {style}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                  <div>
-                    <span className="text-sm font-medium">Preferred Tone</span>
-                    <p className="text-xs text-muted-foreground mb-3">What tone do you want your coach to use?</p>
-                    <div className="flex gap-2">
-                      {(["supportive", "direct", "motivational"] as const).map((tone) => (
-                        <button
-                          key={tone}
-                          type="button"
-                          onClick={() => handleCoachingPreferenceChange("preferredTone", tone as PreferredTone)}
-                          className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-colors ${
-                            coachingProfile?.preferredTone === tone
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "border-border hover:bg-accent"
-                          }`}
-                        >
-                          {tone}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
+              <div>
+                <span className="text-sm font-medium">Preferred Tone</span>
+                <p className="text-xs text-muted-foreground mb-3">What tone do you want your coach to use?</p>
+                <div className="flex gap-2">
+                  {(["supportive", "direct", "warm", "practical", "challenging"] as const).map((tone) => (
+                    <button
+                      key={tone}
+                      type="button"
+                      onClick={() => handleCoachingChange("preferredTone", tone)}
+                      disabled={coachingPending}
+                      className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-colors disabled:opacity-50 ${
+                        coachingProfile?.preferredTone === tone
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:bg-accent"
+                      }`}
+                    >
+                      {tone}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-                  <div>
-                    <span className="text-sm font-medium">Difficulty Preference</span>
-                    <p className="text-xs text-muted-foreground mb-3">How challenging should your plans be?</p>
-                    <div className="flex gap-2">
-                      {(["easy", "adaptive", "challenging"] as const).map((diff) => (
-                        <button
-                          key={diff}
-                          type="button"
-                          onClick={() => handleCoachingPreferenceChange("difficultyPreference", diff as DifficultyPreference)}
-                          className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-colors ${
-                            coachingProfile?.difficultyPreference === diff
-                              ? "bg-primary text-primary-foreground border-primary"
-                              : "border-border hover:bg-accent"
-                          }`}
-                        >
-                          {diff}
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                </>
-              )}
+              <div>
+                <span className="text-sm font-medium">Difficulty Preference</span>
+                <p className="text-xs text-muted-foreground mb-3">How challenging should your plans be?</p>
+                <div className="flex gap-2">
+                  {(["easy", "adaptive", "ambitious"] as const).map((diff) => (
+                    <button
+                      key={diff}
+                      type="button"
+                      onClick={() => handleCoachingChange("difficultyPreference", diff)}
+                      disabled={coachingPending}
+                      className={`px-3 py-1.5 rounded-lg border text-sm capitalize transition-colors disabled:opacity-50 ${
+                        coachingProfile?.difficultyPreference === diff
+                          ? "bg-primary text-primary-foreground border-primary"
+                          : "border-border hover:bg-accent"
+                      }`}
+                    >
+                      {diff}
+                    </button>
+                  ))}
+                </div>
+              </div>
             </CardContent>
           </Card>
         </div>
@@ -312,7 +291,6 @@ export function SettingsClient({ initialSettings, initialProfile }: SettingsClie
 
 function BillingSection() {
   const { data: billing } = useBillingOverview();
-  const { data: profile } = useProfile();
   const portalMutation = useCreateCustomerPortalSession();
 
   const subscription = billing?.subscription;
@@ -378,15 +356,6 @@ function BillingSection() {
               Manage
             </Button>
           </div>
-        </>
-      )}
-
-      {(profile as unknown as { subscriptionStatus?: string } | undefined)?.subscriptionStatus === "canceling" && (
-        <>
-          <Separator />
-          <p className="text-xs text-muted-foreground">
-            Your subscription will cancel at the end of the current period.
-          </p>
         </>
       )}
     </>

@@ -1,5 +1,7 @@
+import { Suspense } from 'react';
 import { HomeClient } from '@/components/home/home-client';
 import { listCategories, listArticles, listHabits, getTodayCheckIns } from '@/api';
+import { HomeSkeleton } from '@/components/home/home-skeleton';
 
 export default async function HomePage({
   searchParams,
@@ -8,32 +10,19 @@ export default async function HomePage({
 }) {
   const category = typeof searchParams?.category === 'string' ? searchParams.category : undefined;
 
-  let initialCategories: Array<{ slug: string; name: string }> | null = null;
-  let initialArticles: Array<{ id: string; title: string; excerpt?: string; imageUrl?: string; category?: { name: string }; publishedAt: string }> | null = null;
-  let initialHabits = undefined;
-  let initialCheckIns = undefined;
-
-  try {
-    const [categoriesData, articlesData, habitsData, checkInsData] = await Promise.all([
-      listCategories('article'),
-      category ? listArticles({ category }) : listArticles(),
-      listHabits({ page: 1, limit: 100 }),
-      getTodayCheckIns(),
-    ]);
-    initialCategories = categoriesData.data ?? null;
-    initialArticles = articlesData.data ?? null;
-    initialHabits = habitsData ?? undefined;
-    initialCheckIns = checkInsData ?? undefined;
-  } catch (error) {
-    console.error('[HomePage] Failed to fetch initial data:', error);
-  }
+  const categoriesPromise = listCategories('article').catch(() => ({ data: [] }));
+  const articlesPromise = (category ? listArticles({ category }) : listArticles()).catch(() => ({ data: [], page: { total: 0, page: 1, limit: 20, totalPages: 0 } }));
+  const habitsPromise = listHabits({ page: 1, limit: 100 }).catch(() => ({ data: [], page: { total: 0, page: 1, limit: 100, totalPages: 0 } }));
+  const checkInsPromise = getTodayCheckIns().catch(() => ({ data: [], page: { total: 0, page: 1, limit: 20, totalPages: 0 } }));
 
   return (
-    <HomeClient
-      initialCategories={initialCategories}
-      initialArticles={initialArticles}
-      initialHabits={initialHabits}
-      initialCheckIns={initialCheckIns}
-    />
+    <Suspense fallback={<HomeSkeleton />}>
+      <HomeClient
+        categoriesPromise={categoriesPromise}
+        articlesPromise={articlesPromise}
+        habitsPromise={habitsPromise}
+        checkInsPromise={checkInsPromise}
+      />
+    </Suspense>
   );
 }
