@@ -15,9 +15,10 @@ function handleMutationError(error: unknown) {
 const DEFAULT_CONVERSATIONS_PARAMS: ListConversationsParams = { page: 1, limit: 20 };
 
 export function useConversations(params: ListConversationsParams = DEFAULT_CONVERSATIONS_PARAMS) {
+  const { page, limit, type } = params;
   return useQuery({
-    queryKey: ['conversations', params],
-    queryFn: () => listConversations(params),
+    queryKey: ['conversations', page ?? 1, limit ?? 20, type],
+    queryFn: () => listConversations({ page, limit, type }),
     select: (data) => data.data,
   });
 }
@@ -40,9 +41,10 @@ export function useConversation(id: string) {
 const DEFAULT_MESSAGES_PARAMS: PageParams = { page: 1, limit: 50 };
 
 export function useMessages(conversationId: string, params: PageParams = DEFAULT_MESSAGES_PARAMS) {
+  const { page, limit } = params;
   return useQuery({
-    queryKey: ['conversations', conversationId, 'messages', params],
-    queryFn: () => getMessages(conversationId, params),
+    queryKey: ['conversations', conversationId, 'messages', page ?? 1, limit ?? 50],
+    queryFn: () => getMessages(conversationId, { page, limit }),
     select: (data) => data.data,
     enabled: !!conversationId,
   });

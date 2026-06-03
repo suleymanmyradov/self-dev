@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { z } from 'zod';
 import { useQueryClient } from '@tanstack/react-query';
 import { updateProfile } from '@/api';
@@ -25,23 +25,25 @@ export function useSettingsForm(initialProfile?: Profile) {
   const [errors, setErrors] = useState<Partial<Record<keyof AccountFormData, string>>>({});
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Reset form when the underlying profile identity changes
+  const prevIdRef = useRef(initialProfile?.id);
+  if (initialProfile?.id !== prevIdRef.current) {
+    prevIdRef.current = initialProfile?.id;
     if (initialProfile) {
       setFormData({
         username: initialProfile.username,
         email: initialProfile.email,
       });
+      setErrors({});
     }
-  }, [initialProfile?.id]);
+  }
 
   const updateField = useCallback(
     (field: keyof AccountFormData) => (e: React.ChangeEvent<HTMLInputElement>) => {
       setFormData((prev) => ({ ...prev, [field]: e.target.value }));
-      if (errors[field]) {
-        setErrors((prev) => ({ ...prev, [field]: undefined }));
-      }
+      setErrors((prev) => (prev[field] ? { ...prev, [field]: undefined } : prev));
     },
-    [errors]
+    []
   );
 
   const handleSave = useCallback(async (e: React.FormEvent) => {

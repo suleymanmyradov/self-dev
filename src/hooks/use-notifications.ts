@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listNotifications, markNotificationRead, markAllNotificationsRead } from '@/api/notifications';
-import type { NotificationsResponse, PageParams } from '@/api';
+import type { PageParams } from '@/api';
 import { toast } from 'sonner';
 import { ApiError } from '@/api/axios-client';
 
@@ -12,15 +12,18 @@ function handleMutationError(error: unknown) {
 const DEFAULT_NOTIFICATIONS_PARAMS: PageParams = { page: 1, limit: 20 };
 
 export function useNotifications(params: PageParams = DEFAULT_NOTIFICATIONS_PARAMS) {
+  const { page, limit } = params;
   return useQuery({
-    queryKey: ['notifications', params],
-    queryFn: () => listNotifications(params),
+    queryKey: ['notifications', page ?? 1, limit ?? 20],
+    queryFn: () => listNotifications({ page, limit }),
     select: (data) => data.data,
   });
 }
 
+const UNREAD_COUNT_PARAMS: PageParams = { page: 1, limit: 100 };
+
 export function useUnreadCount() {
-  const { data: notifications } = useNotifications({ page: 1, limit: 100 });
+  const { data: notifications } = useNotifications(UNREAD_COUNT_PARAMS);
   return notifications?.filter((n) => !n.read).length ?? 0;
 }
 

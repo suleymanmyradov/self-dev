@@ -33,3 +33,6 @@ export { useLoginForm } from './use-login-form';
 export { useReportForm } from './use-report-form';
 export { useDebounceValue } from './use-debounce';
 export { useExplore } from './use-explore';
+export { useWindowSize } from './use-window-size';
+export { useMediaQuery } from './use-media-query';
+export { useLocalStorage } from './use-local-storage';

@@ -27,7 +27,7 @@ export function useCheckInForm() {
   }, []);
 
   const reset = useCallback(() => {
-    setForm(initialState);
+    setForm({ ...initialState });
   }, []);
 
   const canSubmit = useMemo(() =>
@@ -44,11 +44,11 @@ export function useCheckInForm() {
       : form.note.trim(),
   [form.blocker, form.otherBlocker, form.note]);
 
-  return useMemo(() => ({
+  return {
     form,
     updateField,
     reset,
     canSubmit,
     finalNote,
-  }), [form, updateField, reset, canSubmit, finalNote]);
+  };
 }

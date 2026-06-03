@@ -1,4 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useSyncExternalStore } from 'react';
+
+function getServerSnapshot() {
+  return false;
+}
+
+function getSnapshot() {
+  return true;
+}
+
+function subscribe() {
+  return () => {};
+}
 
 /**
  * Returns true after the component has mounted on the client.
@@ -6,11 +18,5 @@ import { useEffect, useState } from 'react';
  * to prevent hydration mismatches in Next.js App Router.
  */
 export function useHydrated(): boolean {
-  const [hydrated, setHydrated] = useState(false);
-
-  useEffect(() => {
-    setHydrated(true);
-  }, []);
-
-  return hydrated;
+  return useSyncExternalStore(subscribe, getSnapshot, getServerSnapshot);
 }

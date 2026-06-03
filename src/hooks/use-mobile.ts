@@ -1,9 +1,10 @@
 import * as React from 'react';
 
 const MOBILE_BREAKPOINT = 768;
+const QUERY = `(max-width: ${MOBILE_BREAKPOINT - 1}px)`;
 
 function getSnapshot() {
-  return window.innerWidth < MOBILE_BREAKPOINT;
+  return window.matchMedia(QUERY).matches;
 }
 
 function getServerSnapshot() {
@@ -12,7 +13,7 @@ function getServerSnapshot() {
 }
 
 function subscribe(callback: () => void) {
-  const mql = window.matchMedia(`(max-width: ${MOBILE_BREAKPOINT - 1}px)`);
+  const mql = window.matchMedia(QUERY);
   mql.addEventListener('change', callback);
   return () => mql.removeEventListener('change', callback);
 }

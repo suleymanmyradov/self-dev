@@ -1,4 +1,4 @@
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { z } from 'zod';
 import type { Profile, UpdateProfileRequest } from '@/api';
 import { updateProfile } from '@/api';
@@ -58,16 +58,20 @@ export function useProfileForm(initialProfile?: Profile) {
   const [error, setError] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
 
-  useEffect(() => {
+  // Reset form when the underlying profile identity changes
+  const prevIdRef = useRef(initialProfile?.id);
+  if (initialProfile?.id !== prevIdRef.current) {
+    prevIdRef.current = initialProfile?.id;
     setForm(toFormState(initialProfile));
-  }, [initialProfile?.id]);
+    setError(null);
+  }
 
   const handleChange = useCallback(
     (field: keyof ProfileFormState) => (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       setForm((prev) => ({ ...prev, [field]: e.target.value }));
-      if (error) setError(null);
+      setError((prev) => (prev ? null : prev));
     },
-    [error]
+    []
   );
 
   const handleSubmit = useCallback(async () => {

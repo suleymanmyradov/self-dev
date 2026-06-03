@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef, useLayoutEffect } from 'react';
 import { CreateGoalSchema, type GoalFormValues } from '@/lib/validators/goal';
 import type { Goal } from '@/api';
 
@@ -10,6 +10,11 @@ const DEFAULT_FORM: GoalFormValues = {
 };
 
 export function useGoalForm(initial?: Partial<GoalFormValues>) {
+  const initialRef = useRef(initial);
+  useLayoutEffect(() => {
+    initialRef.current = initial;
+  });
+
   const [form, setForm] = useState<GoalFormValues>({
     ...DEFAULT_FORM,
     ...initial,
@@ -37,9 +42,9 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
   }, []);
 
   const reset = useCallback((override?: Partial<GoalFormValues>) => {
-    setForm({ ...DEFAULT_FORM, ...(override ?? initial) });
+    setForm({ ...DEFAULT_FORM, ...(override ?? initialRef.current) });
     setError(null);
-  }, [initial]);
+  }, []);
 
   const loadGoal = useCallback((goal: Goal) => {
     setForm({

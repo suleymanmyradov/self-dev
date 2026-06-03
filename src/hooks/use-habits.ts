@@ -13,9 +13,11 @@ function handleMutationError(error: unknown) {
  * Hook to fetch all habits
  */
 export function useHabits(params?: { page?: number; limit?: number }, initialData?: HabitsResponse) {
+  const page = params?.page;
+  const limit = params?.limit;
   return useQuery({
-    queryKey: ['habits', params],
-    queryFn: () => listHabits(params),
+    queryKey: ['habits', page ?? 1, limit ?? 20],
+    queryFn: () => listHabits({ page, limit }),
     select: (data) => data.data,
     initialData,
     staleTime: 5 * 60 * 1000, // 5 minutes — mutations invalidate cache

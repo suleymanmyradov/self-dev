@@ -1,6 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listSavedItems, listSavedDetailed, saveItem, removeSavedItem } from '@/api/saved';
-import type { SaveItemRequest, SavedItemsResponse, SavedItemsDetailedResponse, PageParams } from '@/api';
+import type { SaveItemRequest, PageParams } from '@/api';
 import { toast } from 'sonner';
 import { ApiError } from '@/api/axios-client';
 
@@ -12,9 +12,10 @@ function handleMutationError(error: unknown) {
 const DEFAULT_SAVED_PARAMS: PageParams = { page: 1, limit: 20 };
 
 export function useSavedItems(params: PageParams = DEFAULT_SAVED_PARAMS) {
+  const { page, limit } = params;
   return useQuery({
-    queryKey: ['saved', params],
-    queryFn: () => listSavedItems(params),
+    queryKey: ['saved', page ?? 1, limit ?? 20],
+    queryFn: () => listSavedItems({ page, limit }),
     select: (data) => data.data,
   });
 }
@@ -22,9 +23,10 @@ export function useSavedItems(params: PageParams = DEFAULT_SAVED_PARAMS) {
 const DEFAULT_SAVED_DETAILED_PARAMS: PageParams = { page: 1, limit: 20 };
 
 export function useSavedItemsDetailed(params: PageParams = DEFAULT_SAVED_DETAILED_PARAMS) {
+  const { page, limit } = params;
   return useQuery({
-    queryKey: ['saved', 'detailed', params],
-    queryFn: () => listSavedDetailed(params),
+    queryKey: ['saved', 'detailed', page ?? 1, limit ?? 20],
+    queryFn: () => listSavedDetailed({ page, limit }),
     select: (data) => data.data,
   });
 }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useMemo, useCallback } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { useSearchParamState } from "@/lib/url-state";
 import { useCreateHabit } from "@/hooks/use-habits";
@@ -40,9 +40,6 @@ export function useExplore(initialArticles?: ArticlesResponse): UseExploreReturn
   }, [debouncedInput, query, setQuery]);
 
   // Sync input from URL on external changes (back/forward, bookmark).
-  // This effect intentionally mirrors external URL state into local form
-  // state; it is not a cascading render because it only fires when the
-  // URL query actually changes.
   useEffect(() => {
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setInputValue((prev) => {
@@ -69,7 +66,7 @@ export function useExplore(initialArticles?: ArticlesResponse): UseExploreReturn
     );
   }, [query, articlesData]);
 
-  return useMemo(() => ({
+  return {
     tab,
     setTab,
     query,
@@ -79,5 +76,5 @@ export function useExplore(initialArticles?: ArticlesResponse): UseExploreReturn
     isLoading,
     createHabit: createHabitMutation.mutate,
     createGoal: createGoalMutation.mutate,
-  }), [tab, setTab, query, inputValue, setInputValue, filteredArticles, isLoading, createHabitMutation.mutate, createGoalMutation.mutate]);
+  };
 }

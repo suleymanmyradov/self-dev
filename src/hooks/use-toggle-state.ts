@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useRef, useLayoutEffect } from "react";
 
 /**
  * Reusable toggle state hook for like/save interactions
@@ -7,22 +7,27 @@ import { useState, useCallback } from "react";
 export function useToggleState(initialValue: number, onToggle?: (id: string) => void) {
   const [value, setValue] = useState(initialValue);
   const [isActive, setIsActive] = useState(false);
+  const onToggleRef = useRef(onToggle);
+  useLayoutEffect(() => {
+    onToggleRef.current = onToggle;
+  });
 
   const toggle = useCallback(
     (e: React.MouseEvent, id?: string) => {
       e.preventDefault();
       e.stopPropagation();
-      
-      if (isActive) {
-        setValue((v) => Math.max(0, v - 1));
-        setIsActive(false);
-      } else {
-        setValue((v) => v + 1);
-        setIsActive(true);
-        if (id) onToggle?.(id);
-      }
+
+      setIsActive((prevActive) => {
+        if (prevActive) {
+          setValue((v) => Math.max(0, v - 1));
+        } else {
+          setValue((v) => v + 1);
+          if (id) onToggleRef.current?.(id);
+        }
+        return !prevActive;
+      });
     },
-    [isActive, onToggle]
+    []
   );
 
   return { value, isActive, toggle };

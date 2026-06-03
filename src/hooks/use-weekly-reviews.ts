@@ -29,9 +29,10 @@ export function useWeeklyReview(weekStart: string) {
 const DEFAULT_WEEKLY_REVIEWS_PARAMS = { page: 1, limit: 10 };
 
 export function useWeeklyReviews(params = DEFAULT_WEEKLY_REVIEWS_PARAMS) {
+  const { page, limit } = params;
   return useQuery({
-    queryKey: ['weeklyReviews', params],
-    queryFn: () => listWeeklyReviews(params),
+    queryKey: ['weeklyReviews', page ?? 1, limit ?? 10],
+    queryFn: () => listWeeklyReviews({ page, limit }),
     select: (data) => data.data,
   });
 }

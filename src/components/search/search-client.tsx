@@ -1,6 +1,6 @@
 "use client"
 
-import * as React from "react"
+import { useMemo, useState, useEffect } from "react"
 import DOMPurify from "isomorphic-dompurify"
 import { Input } from "@/components/ui/input"
 import { Skeleton } from "@/components/ui/skeleton"
@@ -10,15 +10,7 @@ import type { SearchResultType } from "@/api"
 import Link from "next/link"
 import { FileText, Target, Repeat, MessageSquare, Search as SearchIcon } from "lucide-react"
 import { useSearchParamState } from "@/lib/url-state"
-
-function useDebounceValue<T>(value: T, delay: number): T {
-  const [debouncedValue, setDebouncedValue] = React.useState(value)
-  React.useEffect(() => {
-    const handler = setTimeout(() => setDebouncedValue(value), delay)
-    return () => clearTimeout(handler)
-  }, [value, delay])
-  return debouncedValue
-}
+import { useDebounceValue } from "@/hooks/use-debounce"
 
 const typeIcons: Record<SearchResultType, typeof FileText> = {
   article: FileText,
@@ -39,18 +31,19 @@ export function SearchClient() {
   const [urlType, setUrlType] = useSearchParamState("type")
 
   // Local input state for responsiveness; sync to URL after debounce
-  const [inputValue, setInputValue] = React.useState(urlQuery)
+  const [inputValue, setInputValue] = useState(urlQuery)
   const debouncedInput = useDebounceValue(inputValue, 300)
 
   // Push debounced input to URL
-  React.useEffect(() => {
+  useEffect(() => {
     if (debouncedInput !== urlQuery) {
       setUrlQuery(debouncedInput)
     }
   }, [debouncedInput, urlQuery, setUrlQuery])
 
   // Sync input from URL on external changes (back/forward, bookmark)
-  React.useEffect(() => {
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setInputValue((prev) => {
       if (urlQuery !== prev) return urlQuery
       return prev
@@ -59,12 +52,14 @@ export function SearchClient() {
 
   const filterType = (urlType as SearchResultType) || undefined
 
-  const { data: results = [], isLoading } = useSearch({
+  const searchParams = useMemo(() => ({
     q: urlQuery,
     type: filterType,
     page: 1,
     limit: 20,
-  })
+  }), [urlQuery, filterType])
+
+  const { data: results = [], isLoading } = useSearch(searchParams)
 
   const handleFilterChange = (type?: SearchResultType) => {
     setUrlType(type ?? "")

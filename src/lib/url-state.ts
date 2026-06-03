@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo } from "react";
+import { useCallback, useRef, useEffect } from "react";
 import { useSearchParams, usePathname, useRouter } from "next/navigation";
 
 /**
@@ -16,13 +16,18 @@ export function useSearchParamState(
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
-  const value = useMemo(() => {
-    return searchParams.get(key) ?? defaultValue;
-  }, [searchParams, key, defaultValue]);
+  // searchParams reference changes every render in Next.js; derive a cheap primitive
+  const value = searchParams.get(key) ?? defaultValue;
+
+  // Keep a ref to the latest searchParams so the setter stays stable
+  const searchParamsRef = useRef(searchParams);
+  useEffect(() => {
+    searchParamsRef.current = searchParams;
+  }, [searchParams]);
 
   const setValue = useCallback(
     (newValue: string) => {
-      const params = new URLSearchParams(searchParams.toString());
+      const params = new URLSearchParams(searchParamsRef.current.toString());
       if (!newValue || newValue === defaultValue) {
         params.delete(key);
       } else {
@@ -33,7 +38,7 @@ export function useSearchParamState(
         scroll: false,
       });
     },
-    [router, pathname, searchParams, key, defaultValue]
+    [router, pathname, key, defaultValue]
   );
 
   return [value, setValue];
