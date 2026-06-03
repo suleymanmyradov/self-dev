@@ -1,4 +1,4 @@
-import { useCallback, useMemo } from 'react';
+import { useCallback } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getPendingPlanAdjustmentSuggestions,
@@ -83,7 +83,7 @@ export function usePlanAdjustments(autoLoad = true) {
     queryClient.invalidateQueries({ queryKey: ['plan-adjustments'] });
   }, [queryClient]);
 
-  return useMemo(() => ({
+  return {
     suggestions,
     loading,
     error: error instanceof ApiError ? error.message : null,
@@ -94,5 +94,5 @@ export function usePlanAdjustments(autoLoad = true) {
     dismissSuggestion,
     applySuggestion,
     refresh,
-  }), [suggestions, loading, error, createSuggestion, updateStatus, acceptSuggestion, dismissSuggestion, applySuggestion, refresh]);
+  };
 }

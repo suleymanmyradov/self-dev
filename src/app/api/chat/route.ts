@@ -1,15 +1,14 @@
 import { openai } from "@ai-sdk/openai";
 import { frontendTools } from "@assistant-ui/react-ai-sdk";
-import { convertToModelMessages, streamText, UIMessage } from "ai";
+import { convertToModelMessages, streamText } from "ai";
 import { z } from "zod";
-import { getAccessToken } from "@/lib/auth-tokens";
 
 export const maxDuration = 30;
 
 const ChatRequestSchema = z.object({
-  messages: z.array(z.any()).min(1).max(50),
+  messages: z.array(z.unknown()).min(1).max(50),
   system: z.string().max(5000).optional(),
-  tools: z.record(z.any()).optional(),
+  tools: z.record(z.unknown()).optional(),
 });
 
 /**
@@ -113,10 +112,10 @@ export async function POST(req: Request) {
   try {
     const result = streamText({
       model: openai("gpt-4o"),
-      messages: convertToModelMessages(body.messages),
+      messages: convertToModelMessages(body.messages as Parameters<typeof convertToModelMessages>[0]),
       system: body.system,
       tools: {
-        ...(body.tools ? frontendTools(body.tools) : {}),
+        ...(body.tools ? frontendTools(body.tools as Parameters<typeof frontendTools>[0]) : {}),
       },
     });
     return result.toUIMessageStreamResponse();

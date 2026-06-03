@@ -1,3 +1,4 @@
+import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listNotifications, markNotificationRead, markAllNotificationsRead } from '@/api/notifications';
 import type { PageParams } from '@/api';
@@ -24,7 +25,7 @@ const UNREAD_COUNT_PARAMS: PageParams = { page: 1, limit: 100 };
 
 export function useUnreadCount() {
   const { data: notifications } = useNotifications(UNREAD_COUNT_PARAMS);
-  return notifications?.filter((n) => !n.read).length ?? 0;
+  return useMemo(() => notifications?.filter((n) => !n.read).length ?? 0, [notifications]);
 }
 
 export function useMarkNotificationRead() {

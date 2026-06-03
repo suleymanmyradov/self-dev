@@ -1,28 +1,24 @@
 "use client";
 
 import { useEffect } from "react";
-import { useRouter } from "next/navigation";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { logoutAction } from "@/app/actions/auth";
 import { useAuthStore } from "@/store/auth";
-import { logout as apiLogout } from "@/api";
 
 export default function LogoutPage() {
-  const router = useRouter();
   const logout = useAuthStore(s => s.logout);
 
   useEffect(() => {
     const performLogout = async () => {
-      try {
-        await apiLogout();
-      } catch {
-        // API call may fail if token is already expired — that's fine
-      }
       logout();
-      // Small delay to show feedback then redirect home
-      setTimeout(() => router.replace("/"), 300);
+      try {
+        await logoutAction();
+      } catch {
+        // Server redirect may throw during navigation — that's fine
+      }
     };
     performLogout();
-  }, [router, logout]);
+  }, [logout]);
 
   return (
     <div className="h-full flex flex-col">

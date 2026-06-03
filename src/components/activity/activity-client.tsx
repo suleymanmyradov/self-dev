@@ -55,6 +55,7 @@ export function ActivityClient({ activitiesPromise }: ActivityClientProps) {
             <Button
               variant="ghost"
               size="icon"
+              aria-label="Refresh activity"
               onClick={handleRefetch}
               disabled={isPending}
               className="shrink-0"

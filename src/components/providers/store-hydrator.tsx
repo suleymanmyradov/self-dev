@@ -2,6 +2,8 @@
 
 import { useEffect } from 'react';
 import { useAuthStore } from '@/store/auth';
+import { useUIStore } from '@/store/uiStore';
+import { useOnboardingStore } from '@/store/onboarding';
 
 /**
  * Triggers Zustand persist rehydration once after React hydration completes.
@@ -11,6 +13,12 @@ export function StoreHydrator() {
   useEffect(() => {
     if (!useAuthStore.persist.hasHydrated()) {
       useAuthStore.persist.rehydrate();
+    }
+    if (!useUIStore.persist.hasHydrated()) {
+      useUIStore.persist.rehydrate();
+    }
+    if (!useOnboardingStore.persist.hasHydrated()) {
+      useOnboardingStore.persist.rehydrate();
     }
   }, []);
 

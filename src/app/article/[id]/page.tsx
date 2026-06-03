@@ -4,7 +4,8 @@ import { notFound } from "next/navigation";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Calendar } from "lucide-react";
-import { getArticle, listArticles } from "@/api";
+import { getArticleServer } from "@/api/server";
+import { listArticles } from "@/api";
 import { formatRelativeTime } from "@/lib/time-format";
 import ArticleSaveButton from "./article-save-button";
 
@@ -14,7 +15,7 @@ import ArticleSaveButton from "./article-save-button";
 
 const fetchArticle = cache(async (id: string) => {
   try {
-    return await getArticle(id);
+    return await getArticleServer(id);
   } catch (error) {
     console.error(`[ArticlePage] Failed to fetch article ${id}:`, error);
     return null;

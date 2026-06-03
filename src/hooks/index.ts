@@ -35,4 +35,5 @@ export { useDebounceValue } from './use-debounce';
 export { useExplore } from './use-explore';
 export { useWindowSize } from './use-window-size';
 export { useMediaQuery } from './use-media-query';
+export { useIsMobile } from './use-mobile';
 export { useLocalStorage } from './use-local-storage';

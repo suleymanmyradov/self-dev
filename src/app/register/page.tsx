@@ -1,11 +1,11 @@
 'use client';
 
+import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { register } from '@/api';
+import { registerAction } from '@/app/actions/auth';
 import { useAuthStore } from '@/store/auth';
 import { useRegisterForm } from '@/hooks';
 import Link from 'next/link';
@@ -26,20 +26,26 @@ export default function RegisterPage() {
     validate,
   } = useRegisterForm();
 
-  const registerMutation = useMutation({
-    mutationFn: register,
-    onSuccess: (data) => {
-      setAuthUser(data.user, data.accessToken, data.refreshToken);
+  const [state, dispatch, isPending] = useActionState(registerAction, {
+    success: false,
+    error: undefined,
+    fieldErrors: undefined,
+  });
+
+  useEffect(() => {
+    if (state.success && state.user && state.accessToken && state.refreshToken) {
+      setAuthUser(state.user, state.accessToken, state.refreshToken);
       toast.success('Account created successfully');
       reset();
       router.push('/onboarding');
-    },
-    onError: (err: Error) => {
-      setError(err.message || 'Registration failed. Please try again.');
-    },
-  });
+    } else if (state.error) {
+      setError(state.error);
+    } else if (state.fieldErrors) {
+      setFieldErrors(state.fieldErrors);
+    }
+  }, [state, setAuthUser, reset, setError, setFieldErrors, router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setFieldErrors({});
@@ -47,7 +53,8 @@ export default function RegisterPage() {
     const validated = validate();
     if (!validated) return;
 
-    registerMutation.mutate(validated);
+    const formData = new FormData(e.currentTarget);
+    dispatch(formData);
   };
 
   return (
@@ -69,11 +76,12 @@ export default function RegisterPage() {
               </label>
               <Input
                 id="fullName"
+                name="fullName"
                 type="text"
                 placeholder="John Doe"
                 value={fullName}
                 onChange={(e) => setFullName(e.target.value)}
-                disabled={registerMutation.isPending}
+                disabled={isPending}
                 aria-invalid={!!fieldErrors.fullName}
                 aria-describedby={fieldErrors.fullName ? 'fullName-error' : undefined}
               />
@@ -89,11 +97,12 @@ export default function RegisterPage() {
               </label>
               <Input
                 id="username"
+                name="username"
                 type="text"
                 placeholder="johndoe"
                 value={username}
                 onChange={(e) => setUsername(e.target.value)}
-                disabled={registerMutation.isPending}
+                disabled={isPending}
                 aria-invalid={!!fieldErrors.username}
                 aria-describedby={fieldErrors.username ? 'username-error' : undefined}
               />
@@ -109,11 +118,12 @@ export default function RegisterPage() {
               </label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={registerMutation.isPending}
+                disabled={isPending}
                 aria-invalid={!!fieldErrors.email}
                 aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               />
@@ -129,11 +139,12 @@ export default function RegisterPage() {
               </label>
               <Input
                 id="password"
+                name="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={registerMutation.isPending}
+                disabled={isPending}
                 aria-invalid={!!fieldErrors.password}
                 aria-describedby={fieldErrors.password ? 'password-error' : undefined}
               />
@@ -149,17 +160,18 @@ export default function RegisterPage() {
               </label>
               <Input
                 id="confirmPassword"
+                name="confirmPassword"
                 type="password"
                 placeholder="••••••••"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={registerMutation.isPending}
+                disabled={isPending}
               />
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={registerMutation.isPending}>
-              {registerMutation.isPending ? 'Creating Account...' : 'Create Account'}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? 'Creating Account...' : 'Create Account'}
             </Button>
             <p className="text-sm text-muted-foreground text-center">
               Already have an account?{' '}

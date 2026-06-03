@@ -1,11 +1,11 @@
 import { Suspense } from 'react';
 import { HabitsClient } from '@/components/habits/habits-client';
-import { listHabits, getTodayCheckIns } from '@/api';
+import { listHabitsServer, getTodayCheckInsServer } from '@/api/server';
 import { HabitsSkeleton } from '@/components/habits/habits-skeleton';
 
 export default async function HabitsPage() {
-  const habitsPromise = listHabits({ page: 1, limit: 100 }).catch(() => ({ data: [], page: { total: 0, page: 1, limit: 100, totalPages: 0 } }));
-  const checkInsPromise = getTodayCheckIns().catch(() => ({ data: [], page: { total: 0, page: 1, limit: 20, totalPages: 0 } }));
+  const habitsPromise = listHabitsServer({ page: 1, limit: 100 }).catch(() => ({ data: [], page: { total: 0, page: 1, limit: 100, totalPages: 0 } }));
+  const checkInsPromise = getTodayCheckInsServer().catch(() => ({ data: [], page: { total: 0, page: 1, limit: 20, totalPages: 0 } }));
 
   return (
     <Suspense fallback={<HabitsSkeleton />}>

@@ -41,6 +41,10 @@ const PUBLIC_API_ROUTES = ['/api/chat'];
  */
 async function verifyToken(token: string): Promise<boolean> {
   if (!JWT_SECRET) {
+    if (process.env.NODE_ENV === 'production') {
+      // In production JWT_SECRET is mandatory
+      return false;
+    }
     // Development fallback — require a non-trivial token string
     return token.length >= 10;
   }

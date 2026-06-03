@@ -1,12 +1,11 @@
 import { SettingsClient } from '@/components/settings/settings-client';
-import { getSettings, getCurrentUser } from '@/api';
-import { getCoachingProfile } from '@/api/personalization';
+import { getSettingsServer, getCurrentUserServer, getCoachingProfileServer } from '@/api/server';
 
 export default async function SettingsPage() {
   const [settingsData, profileData, coachingProfile] = await Promise.all([
-    getSettings().catch(() => null),
-    getCurrentUser().catch(() => null),
-    getCoachingProfile().catch(() => null),
+    getSettingsServer().catch(() => null),
+    getCurrentUserServer().catch(() => null),
+    getCoachingProfileServer().catch(() => null),
   ]);
 
   return (

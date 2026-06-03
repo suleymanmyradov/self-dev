@@ -5,7 +5,6 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { X, Sparkles } from "lucide-react";
 import { useTrackUpgradeEvent } from "@/hooks";
-import { useBillingUIStore } from "@/store/billing-ui";
 import { cn } from "@/lib/utils";
 import type { UpgradeTrigger, UpgradeSurface } from "@/api";
 

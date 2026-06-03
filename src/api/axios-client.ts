@@ -4,6 +4,7 @@ import axios, {
   AxiosRequestConfig,
   InternalAxiosRequestConfig,
 } from 'axios';
+import type { ZodSchema } from 'zod';
 import { config, isDev } from '@/lib/config';
 import {
   getAccessToken,
@@ -18,17 +19,6 @@ const DEBUG = isDev;
 // Track if we're currently refreshing the token
 let isRefreshing = false;
 let refreshPromise: Promise<boolean> | null = null;
-let refreshSubscribers: Array<(token: string) => void> = [];
-
-function onTokenRefreshed(token: string) {
-  refreshSubscribers.forEach((cb) => cb(token));
-  refreshSubscribers = [];
-}
-
-function addRefreshSubscriber(cb: (token: string) => void) {
-  refreshSubscribers.push(cb);
-}
-
 // Attempt to refresh the access token
 async function refreshAccessToken(): Promise<boolean> {
   const refreshToken = getRefreshToken();
@@ -120,7 +110,6 @@ axiosInstance.interceptors.request.use(
     }
 
     if (DEBUG) {
-      // eslint-disable-next-line no-console
       console.log(`[API] ${configObj.method?.toUpperCase()} ${configObj.url}`, {
         params: configObj.params,
         data: configObj.data,
@@ -136,7 +125,6 @@ axiosInstance.interceptors.request.use(
 axiosInstance.interceptors.response.use(
   (response) => {
     if (DEBUG) {
-      // eslint-disable-next-line no-console
       console.log(`[API] Response ${response.status} ${response.statusText}`, {
         url: response.config.url,
       });
@@ -177,10 +165,11 @@ axiosInstance.interceptors.response.use(
   }
 );
 
-// Base request function with Zod validation support
+// Base request function with optional Zod validation
 export async function request<T>(
   endpoint: string,
-  options: RequestOptions = {}
+  options: RequestOptions = {},
+  schema?: ZodSchema<T>
 ): Promise<T> {
   const { method = 'GET', headers = {}, body, params, timeout = 15000 } = options;
 
@@ -195,7 +184,11 @@ export async function request<T>(
 
   try {
     const response = await axiosInstance(axiosConfig);
-    return response.data as T;
+    const data = response.data;
+    if (schema) {
+      return schema.parse(data);
+    }
+    return data as T;
   } catch (error) {
     if (error instanceof AxiosError) {
       const status = error.response?.status ?? 0;
@@ -210,7 +203,6 @@ export async function request<T>(
       }
 
       if (isDev) {
-        // eslint-disable-next-line no-console
         console.error(`[API] Error ${status}:`, message, errorData);
       }
 

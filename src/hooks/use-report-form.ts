@@ -12,13 +12,17 @@ const categoryMap: Record<string, ReportType> = {
 const categories = ['Bug', 'Abuse / Spam', 'Content issue', 'Feedback', 'Other'] as const;
 export type ReportCategory = typeof categories[number];
 
+type ReportStatus = 'idle' | 'submitting' | 'submitted';
+
 export function useReportForm() {
   const [email, setEmail] = useState('');
   const [category, setCategory] = useState<ReportCategory>('Bug');
   const [subject, setSubject] = useState('');
   const [details, setDetails] = useState('');
-  const [submitted, setSubmitted] = useState(false);
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [status, setStatus] = useState<ReportStatus>('idle');
+
+  const isSubmitting = status === 'submitting';
+  const submitted = status === 'submitted';
 
   const canSubmit = useMemo(() => subject.trim().length > 2 && details.trim().length > 10, [subject, details]);
 
@@ -27,8 +31,7 @@ export function useReportForm() {
     setCategory('Bug');
     setSubject('');
     setDetails('');
-    setSubmitted(false);
-    setIsSubmitting(false);
+    setStatus('idle');
   }, []);
 
   const toPayload = useCallback(() => ({
@@ -47,10 +50,10 @@ export function useReportForm() {
     setSubject,
     details,
     setDetails,
+    status,
+    setStatus,
     submitted,
-    setSubmitted,
     isSubmitting,
-    setIsSubmitting,
     canSubmit,
     reset,
     toPayload,

@@ -169,13 +169,15 @@ Rules:
       });
 
       const selectedHabits = state.habitSuggestions.filter((h) => h.selected);
-      for (const habit of selectedHabits) {
-        await doCreateHabit({
-          name: habit.name,
-          description: habit.description,
-          category: state.goalCategory,
-        });
-      }
+      await Promise.all(
+        selectedHabits.map((habit) =>
+          doCreateHabit({
+            name: habit.name,
+            description: habit.description,
+            category: state.goalCategory,
+          })
+        )
+      );
 
       await doUpdateSettings({
         accountabilityStyle: state.accountabilityStyle,

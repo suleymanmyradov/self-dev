@@ -1,6 +1,5 @@
 import api from './axios-client';
 import {
-  HabitSchema,
   HabitsResponseSchema,
   HabitResponseSchema,
   CreateHabitRequestSchema,

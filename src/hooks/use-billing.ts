@@ -1,4 +1,3 @@
-import { useMemo } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import {
   getBillingOverview,
@@ -27,7 +26,7 @@ export function useBillingOverview(initialData?: BillingOverviewResponse) {
 
 export function useEntitlements() {
   const { data, isLoading, isError, error, isPending, isFetching, status, fetchStatus } = useBillingOverview();
-  return useMemo(() => ({
+  return {
     data: data?.entitlements,
     isLoading,
     isError,
@@ -36,7 +35,7 @@ export function useEntitlements() {
     isFetching,
     status,
     fetchStatus,
-  }), [data?.entitlements, isLoading, isError, error, isPending, isFetching, status, fetchStatus]);
+  };
 }
 
 export function useTrackUpgradeEvent() {

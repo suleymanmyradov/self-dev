@@ -15,7 +15,6 @@ export default function GoalsError({
 }) {
   useEffect(() => {
     if (!isProd) {
-      // eslint-disable-next-line no-console
       console.error('Goals error:', error);
     }
   }, [error]);

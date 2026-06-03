@@ -1,9 +1,7 @@
 import api from './axios-client';
 import {
-  CoachingProfileSchema,
   CoachingProfileResponseSchema,
   PersonalizationContextResponseSchema,
-  PlanAdjustmentSuggestionSchema,
   PlanAdjustmentSuggestionsResponseSchema,
   PlanAdjustmentSuggestionResponseSchema,
   UpdateCoachingProfilePreferencesRequestSchema,

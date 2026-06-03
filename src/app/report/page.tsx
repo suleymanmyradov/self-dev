@@ -15,8 +15,9 @@ export default function ReportPage() {
     category, setCategory,
     subject, setSubject,
     details, setDetails,
-    submitted, setSubmitted,
-    isSubmitting, setIsSubmitting,
+    setStatus,
+    submitted,
+    isSubmitting,
     canSubmit,
     reset,
     toPayload,
@@ -25,17 +26,16 @@ export default function ReportPage() {
 
   const onSubmit = async () => {
     if (!canSubmit) return;
-    setIsSubmitting(true);
+    setStatus('submitting');
     try {
       await submitReport(toPayload());
-      setSubmitted(true);
+      setStatus('submitted');
       reset();
       toast.success("Report submitted successfully");
-      setTimeout(() => setSubmitted(false), 3000);
+      setTimeout(() => setStatus('idle'), 3000);
     } catch {
       toast.error("Failed to submit report");
-    } finally {
-      setIsSubmitting(false);
+      setStatus('idle');
     }
   };
 

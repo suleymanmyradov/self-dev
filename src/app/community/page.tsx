@@ -1,7 +1,13 @@
+import type { Metadata } from 'next';
 import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Twitter, MessageSquare, Send } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: 'Community | Growth',
+  description: 'Join our community and connect with others on their growth journey.',
+};
 
 export default function CommunityPage() {
   return (

@@ -8,7 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, CircleDashed, ArrowRight, Lightbulb } from 'lucide-react';
-import { listCategories, listArticles } from '@/api';
+import { listArticles } from '@/api';
 import { usePlanAdjustments, useBillingOverview } from '@/hooks';
 import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
 import type { HabitsResponse, CheckInsResponse, CategoriesResponse, ArticlesResponse } from '@/api';

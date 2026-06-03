@@ -1,26 +1,30 @@
-import { useCallback, useSyncExternalStore } from 'react'
+import { useCallback, useSyncExternalStore, useRef } from 'react'
 
 const LOCAL_STORAGE_EVENT = 'local-storage'
 
-function subscribe(key: string, callback: () => void) {
-  const onStorage = (e: StorageEvent) => {
-    if (e.key === key) callback()
-  }
-  const onCustom = () => callback()
+function createSubscribe(key: string) {
+  return function subscribe(callback: () => void) {
+    const onStorage = (e: StorageEvent) => {
+      if (e.key === key) callback()
+    }
+    const onCustom = () => callback()
 
-  window.addEventListener('storage', onStorage)
-  window.addEventListener(LOCAL_STORAGE_EVENT, onCustom)
-  return () => {
-    window.removeEventListener('storage', onStorage)
-    window.removeEventListener(LOCAL_STORAGE_EVENT, onCustom)
+    window.addEventListener('storage', onStorage)
+    window.addEventListener(LOCAL_STORAGE_EVENT, onCustom)
+    return () => {
+      window.removeEventListener('storage', onStorage)
+      window.removeEventListener(LOCAL_STORAGE_EVENT, onCustom)
+    }
   }
 }
 
-function getSnapshot(key: string): string | null {
-  try {
-    return window.localStorage.getItem(key)
-  } catch {
-    return null
+function createGetSnapshot(key: string) {
+  return function getSnapshot(): string | null {
+    try {
+      return window.localStorage.getItem(key)
+    } catch {
+      return null
+    }
   }
 }
 
@@ -47,9 +51,12 @@ export function useLocalStorage<T>(
   key: string,
   initialValue: T
 ): [T, (value: T | ((prev: T) => T)) => void] {
+  const subscribeRef = useRef(createSubscribe(key))
+  const getSnapshotRef = useRef(createGetSnapshot(key))
+
   const storedValue = useSyncExternalStore(
-    (callback) => subscribe(key, callback),
-    () => getSnapshot(key),
+    subscribeRef.current,
+    getSnapshotRef.current,
     getServerSnapshot
   )
 

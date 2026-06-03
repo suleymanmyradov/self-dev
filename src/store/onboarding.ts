@@ -41,6 +41,7 @@ interface OnboardingStore {
   data: OnboardingData;
   loadingHabits: boolean;
   error: string | null;
+  hasHydrated: boolean;
   updateField: <K extends keyof OnboardingData>(key: K, value: OnboardingData[K]) => void;
   nextStep: () => void;
   prevStep: () => void;
@@ -50,6 +51,7 @@ interface OnboardingStore {
   setHabitSuggestions: (suggestions: HabitSuggestion[]) => void;
   toggleHabitSelection: (index: number) => void;
   reset: () => void;
+  setHydrated: (state: boolean) => void;
 }
 
 export const useOnboardingStore = create<OnboardingStore>()(
@@ -59,6 +61,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
       data: initialData,
       loadingHabits: false,
       error: null,
+      hasHydrated: false,
       updateField: (key, value) =>
         set((state) => ({
           data: { ...state.data, [key]: value },
@@ -96,6 +99,7 @@ export const useOnboardingStore = create<OnboardingStore>()(
           loadingHabits: false,
           error: null,
         })),
+      setHydrated: (state) => set({ hasHydrated: state }),
     }),
     {
       name: 'onboarding',
@@ -104,6 +108,12 @@ export const useOnboardingStore = create<OnboardingStore>()(
         step: state.step,
         data: state.data,
       }),
+      skipHydration: true,
+      onRehydrateStorage: () => (state, error) => {
+        if (!error && state) {
+          state.setHydrated(true);
+        }
+      },
     }
   )
 );

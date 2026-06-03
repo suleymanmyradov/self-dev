@@ -3,7 +3,7 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { getSafeStorage } from '@/lib/safe-storage';
-import { getAccessToken, getRefreshToken, setAuthTokens, clearTokens } from '@/lib/auth-tokens';
+import { setAuthTokens, clearTokens } from '@/lib/auth-tokens';
 import type { Profile } from '@/api';
 
 export type AuthState = {
@@ -76,20 +76,14 @@ const useAuthStore = create<AuthState>()(
     {
       name: 'auth',
       storage: createJSONStorage(getSafeStorage),
+      // Only persist non-sensitive user state; tokens stay in memory and httpOnly cookies.
       partialize: (state) => ({
         user: state.user,
-        accessToken: state.accessToken,
-        refreshToken: state.refreshToken,
         isAuthenticated: state.isAuthenticated,
       }),
       skipHydration: true,
       onRehydrateStorage: () => (state, error) => {
-        if (!error && state?.accessToken && state?.refreshToken) {
-          // Sync rehydrated tokens to the standalone module so the API client
-          // can read them without depending on the Zustand store.
-          setAuthTokens(state.accessToken, state.refreshToken);
-        }
-        if (state) {
+        if (!error && state) {
           state.setHydrated(true);
         }
       },
@@ -102,16 +96,6 @@ export { useAuthStore };
 // Hook to get access token for API client
 export function useAccessToken() {
   return useAuthStore(s => s.accessToken);
-}
-
-// Get access token outside of React components — delegates to the standalone module
-export function getAccessTokenFromStore(): string | null {
-  return getAccessToken();
-}
-
-// Get refresh token outside of React components — delegates to the standalone module
-export function getRefreshTokenFromStore(): string | null {
-  return getRefreshToken();
 }
 
 // Set tokens outside of React components (for API client) — delegates to the standalone module

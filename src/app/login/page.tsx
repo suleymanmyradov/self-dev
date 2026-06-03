@@ -1,11 +1,11 @@
 'use client';
 
+import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
-import { login } from '@/api';
+import { loginAction } from '@/app/actions/auth';
 import { useAuthStore } from '@/store/auth';
 import { useLoginForm } from '@/hooks';
 import Link from 'next/link';
@@ -23,20 +23,26 @@ export default function LoginPage() {
     validate,
   } = useLoginForm();
 
-  const loginMutation = useMutation({
-    mutationFn: login,
-    onSuccess: (data) => {
-      setAuth(data.user, data.accessToken, data.refreshToken);
+  const [state, dispatch, isPending] = useActionState(loginAction, {
+    success: false,
+    error: undefined,
+    fieldErrors: undefined,
+  });
+
+  useEffect(() => {
+    if (state.success && state.user && state.accessToken && state.refreshToken) {
+      setAuth(state.user, state.accessToken, state.refreshToken);
       toast.success('Logged in successfully');
       reset();
       router.push('/habits');
-    },
-    onError: (err: Error) => {
-      setError(err.message || 'Login failed. Please try again.');
-    },
-  });
+    } else if (state.error) {
+      setError(state.error);
+    } else if (state.fieldErrors) {
+      setFieldErrors(state.fieldErrors);
+    }
+  }, [state, setAuth, reset, setError, setFieldErrors, router]);
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setError(null);
     setFieldErrors({});
@@ -44,7 +50,8 @@ export default function LoginPage() {
     const validated = validate();
     if (!validated) return;
 
-    loginMutation.mutate(validated);
+    const formData = new FormData(e.currentTarget);
+    dispatch(formData);
   };
 
   return (
@@ -66,11 +73,12 @@ export default function LoginPage() {
               </label>
               <Input
                 id="email"
+                name="email"
                 type="email"
                 placeholder="you@example.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                disabled={loginMutation.isPending}
+                disabled={isPending}
                 aria-invalid={!!fieldErrors.email}
                 aria-describedby={fieldErrors.email ? 'email-error' : undefined}
               />
@@ -86,11 +94,12 @@ export default function LoginPage() {
               </label>
               <Input
                 id="password"
+                name="password"
                 type="password"
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                disabled={loginMutation.isPending}
+                disabled={isPending}
                 aria-invalid={!!fieldErrors.password}
                 aria-describedby={fieldErrors.password ? 'password-error' : undefined}
               />
@@ -102,8 +111,8 @@ export default function LoginPage() {
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={loginMutation.isPending}>
-              {loginMutation.isPending ? 'Signing in...' : 'Sign In'}
+            <Button type="submit" className="w-full" disabled={isPending}>
+              {isPending ? 'Signing in...' : 'Sign In'}
             </Button>
             <p className="text-sm text-muted-foreground text-center">
               Don&apos;t have an account?{' '}

@@ -74,6 +74,7 @@ export function SavedClient({ savedPromise }: SavedClientProps) {
                   <Button
                     variant="ghost"
                     size="icon"
+                    aria-label="Remove saved article"
                     onClick={() => {
                       const savedItem = savedItems?.find((s) => s.itemId === article!.id);
                       if (savedItem) handleRemove(savedItem.id, "Article");
@@ -118,6 +119,7 @@ export function SavedClient({ savedPromise }: SavedClientProps) {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Remove saved habit"
                   onClick={() => {
                     const savedItem = savedItems?.find((s) => s.itemId === habit!.id);
                     if (savedItem) handleRemove(savedItem.id, "Habit");
@@ -162,6 +164,7 @@ export function SavedClient({ savedPromise }: SavedClientProps) {
                 <Button
                   variant="ghost"
                   size="icon"
+                  aria-label="Remove saved goal"
                   onClick={() => {
                     const savedItem = savedItems?.find((s) => s.itemId === goal!.id);
                     if (savedItem) handleRemove(savedItem.id, "Goal");

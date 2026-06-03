@@ -1,19 +1,23 @@
 import { useState, useCallback } from 'react';
 
 export function useConfirmDelete<T = string>() {
-  const [open, setOpen] = useState(false);
   const [targetId, setTargetId] = useState<T | null>(null);
   const [deletingIds, setDeletingIds] = useState<Set<T>>(new Set());
 
+  const open = targetId !== null;
+
+  const setOpen = useCallback((value: boolean) => {
+    if (!value) setTargetId(null);
+  }, []);
+
   const confirmDelete = useCallback((id: T) => {
     setTargetId(id);
-    setOpen(true);
   }, []);
 
   const startDeleting = useCallback(() => {
     if (targetId) {
       setDeletingIds(prev => new Set(prev).add(targetId));
-      setOpen(false);
+      setTargetId(null);
     }
     return targetId;
   }, [targetId]);

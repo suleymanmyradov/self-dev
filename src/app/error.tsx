@@ -16,10 +16,8 @@ export default function Error({
     if (isProd) {
       // In production, send to error tracking service (e.g., Sentry)
       // console.error is suppressed in production to avoid leaking internals
-      // eslint-disable-next-line no-console
       console.error('Error digest:', error.digest);
     } else {
-      // eslint-disable-next-line no-console
       console.error('Error:', error);
     }
   }, [error]);

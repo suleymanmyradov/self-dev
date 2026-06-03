@@ -1,6 +1,5 @@
 import api from './axios-client';
 import {
-  CheckInSchema,
   CreateCheckInRequestSchema,
   CreateCheckInResponseDataSchema,
   CheckInsResponseSchema,

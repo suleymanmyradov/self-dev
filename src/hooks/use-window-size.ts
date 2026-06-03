@@ -5,11 +5,15 @@ export interface WindowSize {
   height: number
 }
 
+let cachedSize: WindowSize = { width: 0, height: 0 }
+
 function getSnapshot(): WindowSize {
-  return {
-    width: window.innerWidth,
-    height: window.innerHeight,
+  const nextWidth = window.innerWidth
+  const nextHeight = window.innerHeight
+  if (nextWidth !== cachedSize.width || nextHeight !== cachedSize.height) {
+    cachedSize = { width: nextWidth, height: nextHeight }
   }
+  return cachedSize
 }
 
 function getServerSnapshot(): WindowSize {

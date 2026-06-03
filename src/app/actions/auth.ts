@@ -7,7 +7,7 @@ import {
   RegisterRequestSchema,
 } from '@/lib/validation';
 import { login, register, logout } from '@/api/auth';
-import type { LoginRequest, RegisterRequest } from '@/api/types';
+import type { LoginRequest, RegisterRequest, Profile } from '@/api/types';
 
 const AUTH_COOKIE_NAME = 'auth-token';
 const REFRESH_COOKIE_NAME = 'refresh-token';
@@ -43,6 +43,9 @@ export interface AuthActionState {
   success: boolean;
   error?: string;
   fieldErrors?: Record<string, string[]>;
+  user?: Profile;
+  accessToken?: string;
+  refreshToken?: string;
 }
 
 export async function loginAction(
@@ -71,7 +74,12 @@ export async function loginAction(
     // Set HttpOnly cookies
     await setAuthCookies(response.accessToken, response.refreshToken);
 
-    return { success: true };
+    return {
+      success: true,
+      user: response.user,
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+    };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Login failed. Please try again.';
@@ -107,7 +115,12 @@ export async function registerAction(
     // Set HttpOnly cookies
     await setAuthCookies(response.accessToken, response.refreshToken);
 
-    return { success: true };
+    return {
+      success: true,
+      user: response.user,
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+    };
   } catch (error) {
     const message =
       error instanceof Error ? error.message : 'Registration failed. Please try again.';
@@ -117,7 +130,13 @@ export async function registerAction(
 
 export async function logoutAction(): Promise<void> {
   try {
-    await logout();
+    const cookieStore = await cookies();
+    const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+    if (token) {
+      await logout();
+    }
+  } catch {
+    // API call may fail if token is already expired — that's fine
   } finally {
     await clearAuthCookies();
     redirect('/login');

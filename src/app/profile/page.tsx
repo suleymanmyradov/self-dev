@@ -1,9 +1,9 @@
 import { ProfileClient } from '@/components/profile/profile-client';
-import { getCurrentUser } from '@/api';
+import { getCurrentUserServer } from '@/api/server';
 import { notFound } from 'next/navigation';
 
 export default async function ProfilePage() {
-  const profileData = await getCurrentUser().catch(() => null);
+  const profileData = await getCurrentUserServer().catch(() => null);
   const profile = profileData?.data;
 
   if (!profile) {

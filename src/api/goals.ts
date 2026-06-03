@@ -1,6 +1,5 @@
 import api from './axios-client';
 import {
-  GoalSchema,
   GoalsResponseSchema,
   GoalResponseSchema,
   CreateGoalRequestSchema,
@@ -12,7 +11,6 @@ import type {
   GoalResponse,
   CreateGoalRequest,
   UpdateGoalRequest,
-  UpdateGoalProgressRequest,
   PageParams,
 } from './types';
 
