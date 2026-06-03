@@ -14,13 +14,13 @@ export const ThreadWelcome: FC = () => {
               {...fadeInUp}
               className="aui-thread-welcome-message-motion-1 text-2xl font-semibold text-calm"
             >
-              Hey, I'm your accountability coach.
+              Hey, I&apos;m your accountability coach.
             </m.div>
             <m.div
               {...withDelay(fadeInUp, 0.1)}
               className="aui-thread-welcome-message-motion-2 text-lg text-muted-foreground/80 mt-1"
             >
-              Tell me your goal and let's build a plan you'll actually stick to.
+              Tell me your goal and let&apos;s build a plan you&apos;ll actually stick to.
             </m.div>
           </div>
         </div>

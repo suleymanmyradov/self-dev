@@ -31,14 +31,15 @@ const useFileSrc = (file: File | undefined) => {
 
   useEffect(() => {
     if (!file) {
-      setSrc(undefined);
-      return;
+      const t = setTimeout(() => setSrc(undefined), 0);
+      return () => clearTimeout(t);
     }
 
     const objectUrl = URL.createObjectURL(file);
-    setSrc(objectUrl);
+    const t = setTimeout(() => setSrc(objectUrl), 0);
 
     return () => {
+      clearTimeout(t);
       URL.revokeObjectURL(objectUrl);
     };
   }, [file]);

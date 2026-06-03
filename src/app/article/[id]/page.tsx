@@ -7,7 +7,7 @@ import { Calendar } from "lucide-react";
 import { getArticleServer } from "@/api/server";
 import { listArticles } from "@/api";
 import { formatRelativeTime } from "@/lib/time-format";
-import ArticleSaveButton from "./article-save-button";
+import ArticleSaveWrapper from "./article-save-wrapper";
 
 // =============================================================================
 // Shared server fetch with React cache — dedupes across generateMetadata + page
@@ -101,7 +101,7 @@ export default async function ArticlePage({
         <h1 className="text-3xl font-bold leading-tight tracking-tight">
           {article.title}
         </h1>
-        <ArticleSaveButton articleId={article.id} />
+        <ArticleSaveWrapper articleId={article.id} isSaved={article.isSaved ?? false} />
       </div>
 
       {/* Meta */}

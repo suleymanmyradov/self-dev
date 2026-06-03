@@ -586,8 +586,11 @@ function SidebarMenuSkeleton({
     // and compute a random width after mount on the client.
     const [width, setWidth] = React.useState<string>('70%');
     React.useEffect(() => {
-        const randomWidth = `${Math.floor(Math.random() * 40) + 50}%`;
-        setWidth(randomWidth);
+        const id = requestAnimationFrame(() => {
+            const randomWidth = `${Math.floor(Math.random() * 40) + 50}%`;
+            setWidth(randomWidth);
+        });
+        return () => cancelAnimationFrame(id);
     }, []);
 
     return (

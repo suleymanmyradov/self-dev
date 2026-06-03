@@ -1,11 +1,11 @@
 "use client";
 
-import { use, useMemo, useState, useTransition } from "react";
+import { use, useMemo } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
 import { RefreshCw, Activity as ActivityIcon } from "lucide-react";
-import { listActivities } from "@/api";
+import { useActivities } from "@/hooks";
 import { ActivityItem, ActivityEmptyState, ActivityFilterBar } from "@/components/activity";
 import type { ActivityType, ActivityResponse } from "@/api";
 import { useSearchParamState } from "@/lib/url-state";
@@ -18,23 +18,11 @@ interface ActivityClientProps {
 
 export function ActivityClient({ activitiesPromise }: ActivityClientProps) {
   const initialData = use(activitiesPromise);
-  const [activities, setActivities] = useState(initialData.data ?? []);
-  const [isPending, startTransition] = useTransition();
-  const [error, setError] = useState<string | null>(null);
+  const { data: activities = [], isFetching, error: queryError, refetch } = useActivities({ page: 1, limit: 50 }, initialData);
 
   const [filter, setFilter] = useSearchParamState("filter", "all") as [FilterValue, (v: string) => void];
 
-  const handleRefetch = () => {
-    startTransition(async () => {
-      try {
-        const fresh = await listActivities({ page: 1, limit: 50 });
-        setActivities(fresh.data ?? []);
-        setError(null);
-      } catch (e) {
-        setError(e instanceof Error ? e.message : "Failed to refresh");
-      }
-    });
-  };
+  const handleRefetch = () => refetch();
 
   const filteredActivities = useMemo(() => {
     if (filter === "all") return activities;
@@ -57,10 +45,10 @@ export function ActivityClient({ activitiesPromise }: ActivityClientProps) {
               size="icon"
               aria-label="Refresh activity"
               onClick={handleRefetch}
-              disabled={isPending}
+              disabled={isFetching}
               className="shrink-0"
             >
-              <RefreshCw className={`h-4 w-4 ${isPending ? "animate-spin" : ""}`} />
+              <RefreshCw className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
             </Button>
           </header>
 
@@ -72,10 +60,10 @@ export function ActivityClient({ activitiesPromise }: ActivityClientProps) {
               </div>
             </CardHeader>
             <CardContent>
-              {error ? (
+              {queryError ? (
                 <div className="flex flex-col items-center justify-center py-12 text-center">
                   <ActivityIcon className="h-12 w-12 text-muted-foreground mb-4" />
-                  <p className="text-sm text-muted-foreground mb-4">{error}</p>
+                  <p className="text-sm text-muted-foreground mb-4">{queryError instanceof Error ? queryError.message : "Failed to refresh"}</p>
                   <Button variant="outline" size="sm" onClick={handleRefetch}>
                     Try again
                   </Button>

@@ -43,7 +43,10 @@ export default function AppearancePage() {
   const setSecondaryColor = useUIStore((s) => s.setSecondaryColor);
 
   // Mount effect
-  useEffect(() => setMounted(true), []);
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
 
   // Apply secondary color when theme or color changes
   useEffect(() => {

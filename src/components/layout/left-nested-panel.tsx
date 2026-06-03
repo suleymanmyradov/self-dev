@@ -50,7 +50,7 @@ export function LeftNestedPanel() {
     } else {
       setShow(false)
       timeoutId.current = setTimeout(() => {
-        // eslint-disable-next-line react-hooks/set-state-in-effect
+         
         setShouldRender(false)
       }, 200)
       return () => {
@@ -59,7 +59,7 @@ export function LeftNestedPanel() {
         }
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [isLeftPanelOpen])
 
   if (!shouldRender) return null

@@ -214,6 +214,7 @@ export const ArticleSchema = z.object({
   publishedAt: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
+  isSaved: z.boolean().optional(),
 });
 
 export const ArticlesResponseSchema = ApiResponseSchema(z.array(ArticleSchema)).extend({

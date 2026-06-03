@@ -56,7 +56,7 @@ interface OnboardingStore {
 
 export const useOnboardingStore = create<OnboardingStore>()(
   persist(
-    (set, get) => ({
+    (set) => ({
       step: 1,
       data: initialData,
       loadingHabits: false,

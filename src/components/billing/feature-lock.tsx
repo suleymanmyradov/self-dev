@@ -1,6 +1,7 @@
 "use client";
 
 import { Lock } from "lucide-react";
+import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { useBillingOverview } from "@/hooks";
 
@@ -25,25 +26,20 @@ export function FeatureLock({ feature, children, className }: FeatureLockProps) 
     return children ? <>{children}</> : null;
   }
 
+  // Non-Pro: do NOT render gated children — visual blur is not access control
   return (
-    <div className={cn("relative", className)}>
-      {/* Blurred/locked content behind overlay */}
-      {children && (
-        <div className="blur-sm opacity-50 pointer-events-none select-none">
-          {children}
-        </div>
-      )}
+    <div className={cn("relative min-h-[160px]", className)}>
       <div className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded-lg bg-background/60 backdrop-blur-sm">
         <div className="rounded-full bg-energy/15 p-2">
           <Lock className="h-4 w-4 text-energy" />
         </div>
         <p className="text-sm font-medium">{FEATURE_LABELS[feature] ?? "This feature"}</p>
-        <a
+        <Link
           href="/pricing"
           className="text-xs text-energy hover:underline"
         >
           Unlock with Pro
-        </a>
+        </Link>
       </div>
     </div>
   );

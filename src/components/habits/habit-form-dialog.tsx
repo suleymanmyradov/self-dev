@@ -31,8 +31,13 @@ export function HabitFormDialog({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    setForm(initialValues);
-    setError(null);
+    const nextForm = initialValues;
+    const nextError = null;
+    const t = setTimeout(() => {
+      setForm(nextForm);
+      setError(nextError);
+    }, 0);
+    return () => clearTimeout(t);
   }, [initialValues, open]);
 
   const handleSubmit = () => {

@@ -225,6 +225,7 @@ export interface Article {
   publishedAt: string;
   createdAt: string;
   updatedAt: string;
+  isSaved?: boolean;
 }
 
 export interface ArticlesResponse extends ApiResponse<Article[]> {

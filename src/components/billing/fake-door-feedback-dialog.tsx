@@ -12,7 +12,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Sparkles, Mail } from "lucide-react";
 import { useTrackUpgradeEvent } from "@/hooks";
-import { useBillingUIStore } from "@/store/billing-ui";
 
 const FEEDBACK_REASONS = [
   "Too expensive",
@@ -44,7 +43,6 @@ export function FakeDoorFeedbackDialog({
   const [feedbackNote, setFeedbackNote] = useState("");
   const [submitted, setSubmitted] = useState(false);
   const trackEvent = useTrackUpgradeEvent();
-  const closeFakeDoor = useBillingUIStore((s) => s.closeFakeDoor);
 
   const isStripeMode = billingMode === 'stripe_test' || billingMode === 'stripe_live';
 

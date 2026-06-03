@@ -8,43 +8,14 @@ import { Clock, Calendar, Bookmark, BookmarkCheck } from 'lucide-react';
 import { getCategoryBadgeClass } from '@/lib/category-styles';
 import { formatRelativeTime } from '@/lib/time-format';
 import type { Article } from '@/api';
-import { useSavedItems, useSaveItem, useRemoveSavedItem } from '@/hooks';
-import { toast } from '@/components/ui/sonner';
 
 interface ArticleCardProps {
   article: Article;
+  isSaved: boolean;
+  onToggleSave: () => void;
 }
 
-export function ArticleCard({ article }: ArticleCardProps) {
-  const { data: savedItems } = useSavedItems({ page: 1, limit: 100 });
-  const saveItem = useSaveItem();
-  const removeSavedItem = useRemoveSavedItem();
-
-  const isSaved = savedItems?.some(
-    (item) => item.itemType === 'article' && item.itemId === article.id
-  );
-
-  const handleToggleSave = async () => {
-    const savedItem = savedItems?.find(
-      (item) => item.itemType === 'article' && item.itemId === article.id
-    );
-
-    if (savedItem) {
-      try {
-        await removeSavedItem.mutateAsync(savedItem.id);
-        toast.success('Article removed from saved');
-      } catch {
-        toast.error('Failed to remove article');
-      }
-    } else {
-      try {
-        await saveItem.mutateAsync({ itemType: 'article', itemId: article.id });
-        toast.success('Article saved');
-      } catch {
-        toast.error('Failed to save article');
-      }
-    }
-  };
+export function ArticleCard({ article, isSaved, onToggleSave }: ArticleCardProps) {
 
   return (
     <Card className="hover-lift transition-all duration-200">
@@ -72,8 +43,7 @@ export function ArticleCard({ article }: ArticleCardProps) {
           <Button
             size="icon"
             variant="ghost"
-            onClick={handleToggleSave}
-            disabled={saveItem.isPending || removeSavedItem.isPending}
+            onClick={onToggleSave}
             aria-label={isSaved ? "Unsave article" : "Save article"}
           >
             {isSaved ? (

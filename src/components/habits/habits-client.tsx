@@ -21,6 +21,7 @@ import { useShallow } from "zustand/react/shallow";
 const HabitFormDialog = dynamic(() => import("@/components/habits/habit-form-dialog").then((mod) => mod.HabitFormDialog));
 const CheckInModal = dynamic(() => import("@/components/check-in/check-in-modal").then((mod) => mod.CheckInModal));
 import {
+  useHabits,
   useCreateHabit,
   useUpdateHabit,
   useDeleteHabit,
@@ -29,6 +30,7 @@ import {
   useHabitForm,
   useHabitEditForm,
   useConfirmDelete,
+  useTodayCheckIns,
   useCreateCheckIn,
   useEntitlements,
   useTrackUpgradeEvent,
@@ -43,9 +45,9 @@ interface HabitsClientProps {
 
 export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientProps) {
   const habitsData = use(habitsPromise);
-  const habits = habitsData.data ?? [];
+  const { data: habits = [] } = useHabits({ page: 1, limit: 100 }, habitsData);
   const checkInsData = use(checkInsPromise);
-  const todayCheckIns = checkInsData.data ?? [];
+  const { data: todayCheckIns = [] } = useTodayCheckIns(checkInsData);
   const { data: entitlements } = useEntitlements();
   const { data: billing } = useBillingOverview();
   const isPro = billing?.subscription?.planCode === "pro";

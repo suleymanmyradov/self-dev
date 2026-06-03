@@ -1,4 +1,4 @@
-import { useCallback, useSyncExternalStore, useRef } from 'react'
+import { useCallback, useSyncExternalStore } from 'react'
 
 const LOCAL_STORAGE_EVENT = 'local-storage'
 
@@ -51,12 +51,18 @@ export function useLocalStorage<T>(
   key: string,
   initialValue: T
 ): [T, (value: T | ((prev: T) => T)) => void] {
-  const subscribeRef = useRef(createSubscribe(key))
-  const getSnapshotRef = useRef(createGetSnapshot(key))
+  const subscribe = useCallback(
+    (callback: () => void) => createSubscribe(key)(callback),
+    [key]
+  )
+  const getSnapshot = useCallback(
+    () => createGetSnapshot(key)(),
+    [key]
+  )
 
   const storedValue = useSyncExternalStore(
-    subscribeRef.current,
-    getSnapshotRef.current,
+    subscribe,
+    getSnapshot,
     getServerSnapshot
   )
 

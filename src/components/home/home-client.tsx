@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useMemo, useState, useTransition } from 'react';
+import { use, useMemo } from 'react';
 import Link from 'next/link';
 import { ArticleCardGrid } from '@/components/home/article-card-grid';
 import { PlanAdjustmentCard } from '@/components/plan-adjustment-card';
@@ -8,8 +8,7 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, CircleDashed, ArrowRight, Lightbulb } from 'lucide-react';
-import { listArticles } from '@/api';
-import { usePlanAdjustments, useBillingOverview } from '@/hooks';
+import { useArticles, usePlanAdjustments, useBillingOverview } from '@/hooks';
 import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
 import type { HabitsResponse, CheckInsResponse, CategoriesResponse, ArticlesResponse } from '@/api';
 import { useSearchParamState } from '@/lib/url-state';
@@ -40,11 +39,10 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
   const habitsData = use(habitsPromise);
   const checkInsData = use(checkInsPromise);
 
-  const habits = habitsData.data ?? [];
-  const todayCheckIns = checkInsData.data ?? [];
-
-  const [articles, setArticles] = useState(initialArticlesData.data ?? []);
-  const [isArticlesPending, startArticlesTransition] = useTransition();
+  const { data: articles = [], isFetching: isArticlesFetching } = useArticles(
+    filter !== 'all' ? { category: filter } : undefined,
+    initialArticlesData
+  );
 
   // Fetch plan adjustment suggestions
   const { suggestions = [], loading: suggestionsLoading, applySuggestion, dismissSuggestion } = usePlanAdjustments();
@@ -54,12 +52,14 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
   const canCreatePlanAdjustment = billing?.entitlements?.canCreatePlanAdjustment ?? true;
 
   const checkInStats = useMemo(() => {
+    const habits = habitsData.data ?? [];
+    const todayCheckIns = checkInsData.data ?? [];
     if (habits.length === 0) return null;
     const checkedHabitIds = new Set(todayCheckIns.map((ci) => ci.habitId));
     const checkedCount = habits.filter((h) => checkedHabitIds.has(h.id)).length;
     const remainingCount = habits.length - checkedCount;
     return { checkedCount, remainingCount, total: habits.length, allChecked: remainingCount === 0 };
-  }, [habits, todayCheckIns]);
+  }, [habitsData, checkInsData]);
 
   const categories = useMemo(() => {
     const cats = categoriesData.data;
@@ -75,14 +75,9 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
 
   const handleFilterChange = (value: string) => {
     setFilter(value);
-    startArticlesTransition(async () => {
-      const params = value !== 'all' ? { category: value } : undefined;
-      const fresh = await listArticles(params);
-      setArticles(fresh.data ?? []);
-    });
   };
 
-  const isLoading = isArticlesPending;
+  const isLoading = isArticlesFetching;
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">

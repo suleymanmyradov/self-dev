@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useTransition } from "react";
+import { use } from "react";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklyReviewEmptyState } from "@/components/weekly-review/weekly-review-empty-state";
@@ -12,12 +12,11 @@ import { WeeklyReviewAdjustmentsCard } from "@/components/weekly-review/weekly-r
 import { WeeklyReviewNextPlanCard } from "@/components/weekly-review/weekly-review-next-plan-card";
 import { WeeklyReviewHistory } from "@/components/weekly-review/weekly-review-history";
 import { Sparkles, RotateCcw, Calendar } from "lucide-react";
-import { useGenerateWeeklyReview, useBillingOverview } from "@/hooks";
+import { useCurrentWeeklyReview, useWeeklyReviews, useGenerateWeeklyReview, useBillingOverview } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { FeatureLock } from "@/components/billing/feature-lock";
 import { useSearchParamState } from "@/lib/url-state";
 import type { WeeklyReview, ApiResponse } from "@/api";
-import { getCurrentWeeklyReview, listWeeklyReviews } from "@/api/weekly-reviews";
 
 interface WeeklyReviewClientProps {
   currentReviewPromise: Promise<ApiResponse<WeeklyReview | null>>;
@@ -30,9 +29,8 @@ export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: Wee
   const initialCurrent = use(currentReviewPromise);
   const initialReviews = use(reviewsPromise);
 
-  const [currentReview, setCurrentReview] = useState(initialCurrent.data);
-  const [reviews, setReviews] = useState(initialReviews.data ?? []);
-  const [isPending, startTransition] = useTransition();
+  const { data: currentReview } = useCurrentWeeklyReview(initialCurrent);
+  const { data: reviews = [] } = useWeeklyReviews({ page: 1, limit: 10 }, initialReviews);
 
   const generateMutation = useGenerateWeeklyReview();
   const { data: billing } = useBillingOverview();
@@ -40,17 +38,6 @@ export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: Wee
 
   const handleGenerate = () => {
     generateMutation.mutate({ forceRegenerate: true });
-  };
-
-  const handleRefetch = () => {
-    startTransition(async () => {
-      const [freshCurrent, freshReviews] = await Promise.all([
-        getCurrentWeeklyReview().catch(() => ({ data: null })),
-        listWeeklyReviews({ page: 1, limit: 10 }).catch(() => ({ data: [], page: { total: 0, page: 1, limit: 10, totalPages: 0 } })),
-      ]);
-      setCurrentReview(freshCurrent.data);
-      setReviews(freshReviews.data ?? []);
-    });
   };
 
   if (!currentReview) {
@@ -129,11 +116,9 @@ export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: Wee
 
         <TabsContent value="history" className="space-y-4">
           {isPro ? (
-            <WeeklyReviewHistory reviews={reviews ?? []} isLoading={isPending} />
+            <WeeklyReviewHistory reviews={reviews} isLoading={false} />
           ) : (
-            <FeatureLock feature="weekly_review_history">
-              <WeeklyReviewHistory reviews={reviews ?? []} isLoading={isPending} />
-            </FeatureLock>
+            <FeatureLock feature="weekly_review_history" />
           )}
         </TabsContent>
       </Tabs>

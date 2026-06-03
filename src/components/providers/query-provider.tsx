@@ -51,7 +51,7 @@ export function QueryProvider({
             onError: (error) => {
               const message = getErrorMessage(error);
               if (isDev) {
-                // eslint-disable-next-line no-console
+                 
                 console.error("[Mutation Error]", error);
               }
               toast.error(message);

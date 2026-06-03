@@ -13,10 +13,10 @@ import { useBillingUIStore } from "@/store/billing-ui";
 import { useShallow } from "zustand/react/shallow";
 
 const GoalFormDialog = dynamic(() => import("@/components/goals/goal-form-dialog").then((mod) => mod.GoalFormDialog));
-import { useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useConfirmDelete, useBillingOverview } from "@/hooks";
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useConfirmDelete, useBillingOverview } from "@/hooks";
 import type { Goal, GoalsResponse } from "@/api";
 import Link from "next/link";
-import { Plus, Target, Trophy, Sparkles } from "lucide-react";
+import { Plus, Target, Trophy } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useEntitlements, useTrackUpgradeEvent } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
@@ -27,7 +27,7 @@ interface GoalsClientProps {
 
 export function GoalsClient({ goalsPromise }: GoalsClientProps) {
   const goalsData = use(goalsPromise);
-  const goals = goalsData.data ?? [];
+  const { data: goals = [] } = useGoals(goalsData);
 
   const { data: entitlements } = useEntitlements();
   const { data: billing } = useBillingOverview();

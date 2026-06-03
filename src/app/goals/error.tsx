@@ -14,7 +14,9 @@ export default function GoalsError({
   reset: () => void;
 }) {
   useEffect(() => {
-    if (!isProd) {
+    if (isProd) {
+      console.error('Error digest:', error.digest);
+    } else {
       console.error('Goals error:', error);
     }
   }, [error]);

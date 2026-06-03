@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import { isProd } from '@/lib/config';
 import { Button } from '@/components/ui/button';
 import { AlertCircle, RefreshCw, ArrowLeft } from 'lucide-react';
 import Link from 'next/link';
@@ -13,8 +14,16 @@ export default function HabitsError({
   reset: () => void;
 }) {
   useEffect(() => {
-    console.error('Habits error:', error);
+    if (isProd) {
+      console.error('Error digest:', error.digest);
+    } else {
+      console.error('Habits error:', error);
+    }
   }, [error]);
+
+  const displayMessage = isProd
+    ? 'Could not load your habits. Please try again.'
+    : (error.message || 'Could not load your habits. Please try again.');
 
   return (
     <div className="flex h-full flex-col items-center justify-center gap-4 p-8">
@@ -23,7 +32,7 @@ export default function HabitsError({
         <h2 className="text-xl font-semibold">Failed to load habits</h2>
       </div>
       <p className="text-muted-foreground text-center max-w-md">
-        {error.message || 'Could not load your habits. Please try again.'}
+        {displayMessage}
       </p>
       <div className="flex gap-2">
         <Button onClick={reset} variant="outline" className="gap-2">

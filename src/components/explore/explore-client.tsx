@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useState, useMemo, useCallback, useEffect } from "react";
+import { use, useState, useMemo, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
@@ -13,7 +13,8 @@ import {
 } from "@/components/explore";
 import { HABIT_TEMPLATES, GOAL_TEMPLATES } from "@/data/templates";
 import { useSearchParamState } from "@/lib/url-state";
-import { useCreateHabit, useCreateGoal } from "@/hooks";
+import { useCreateHabit, useCreateGoal, useSavedItems, useSaveItem, useRemoveSavedItem } from "@/hooks";
+import { toast } from "@/components/ui/sonner";
 import type { ArticlesResponse } from "@/api";
 
 interface ExploreClientProps {
@@ -33,7 +34,6 @@ function useDebounceValue<T>(value: T, delay: number): T {
 
 export function ExploreClient({ articlesPromise }: ExploreClientProps) {
   const articlesData = use(articlesPromise);
-  const allArticles = articlesData.data ?? [];
 
   const createHabit = useCreateHabit().mutate;
   const createGoal = useCreateGoal().mutate;
@@ -52,6 +52,7 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
   }, [debouncedInput, query, setQuery]);
 
   const articles = useMemo(() => {
+    const allArticles = articlesData.data ?? [];
     const q = query.trim().toLowerCase();
     if (!q) return allArticles;
     return allArticles.filter((a) =>
@@ -59,7 +60,53 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
         f?.toLowerCase().includes(q),
       ),
     );
-  }, [query, allArticles]);
+  }, [query, articlesData]);
+
+  // Saved items — fetched once at parent level, passed down to cards
+  const { data: savedItems } = useSavedItems({ page: 1, limit: 100 });
+  const saveItem = useSaveItem();
+  const removeSavedItem = useRemoveSavedItem();
+
+  const savedArticleMap = useMemo(() => {
+    const map = new Map<string, string>();
+    savedItems?.forEach((item) => {
+      if (item.itemType === 'article') {
+        map.set(item.itemId, item.id);
+      }
+    });
+    return map;
+  }, [savedItems]);
+
+  const getIsSaved = useCallback(
+    (article: typeof articles[number]) => {
+      if (article.isSaved !== undefined) return article.isSaved;
+      return savedArticleMap.has(article.id);
+    },
+    [savedArticleMap]
+  );
+
+  const handleToggleSave = useCallback(
+    async (articleId: string) => {
+      const savedItemId = savedArticleMap.get(articleId);
+
+      if (savedItemId) {
+        try {
+          await removeSavedItem.mutateAsync(savedItemId);
+          toast.success('Article removed from saved');
+        } catch {
+          toast.error('Failed to remove article');
+        }
+      } else {
+        try {
+          await saveItem.mutateAsync({ itemType: 'article', itemId: articleId });
+          toast.success('Article saved');
+        } catch {
+          toast.error('Failed to save article');
+        }
+      }
+    },
+    [savedArticleMap, saveItem, removeSavedItem]
+  );
 
   return (
     <div className="h-full flex flex-col relative">
@@ -112,7 +159,12 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
               ) : (
                 <div className="grid gap-4 md:grid-cols-2">
                   {articles.map((article) => (
-                    <ArticleCard key={article.id} article={article} />
+                    <ArticleCard
+                      key={article.id}
+                      article={article}
+                      isSaved={getIsSaved(article)}
+                      onToggleSave={() => handleToggleSave(article.id)}
+                    />
                   ))}
                 </div>
               )}
