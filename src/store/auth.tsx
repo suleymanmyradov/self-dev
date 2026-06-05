@@ -3,18 +3,19 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { getSafeStorage } from '@/lib/safe-storage';
-import { setAuthTokens, clearTokens } from '@/lib/auth-tokens';
 import type { Profile } from '@/api';
 
+/**
+ * Auth tokens live exclusively in httpOnly cookies managed by the server
+ * (middleware + BFF proxy). The client only tracks who is logged in — never the
+ * tokens themselves — which keeps them out of JS-accessible storage (XSS-safe).
+ */
 export type AuthState = {
   user: Profile | null;
-  accessToken: string | null;
-  refreshToken: string | null;
   isAuthenticated: boolean;
   hasHydrated: boolean;
   setUser: (user: Profile | null) => void;
-  setTokens: (accessToken: string, refreshToken: string) => void;
-  login: (user: Profile, accessToken: string, refreshToken: string) => void;
+  login: (user: Profile) => void;
   logout: () => void;
   setHydrated: (state: boolean) => void;
   // Profile methods (merged from profile store)
@@ -27,23 +28,11 @@ const useAuthStore = create<AuthState>()(
   persist(
     (set) => ({
       user: null,
-      accessToken: null,
-      refreshToken: null,
       isAuthenticated: false,
       hasHydrated: false,
       setUser: (user) => set({ user, isAuthenticated: !!user }),
-      setTokens: (accessToken, refreshToken) => {
-        setAuthTokens(accessToken, refreshToken);
-        set({ accessToken, refreshToken });
-      },
-      login: (user, accessToken, refreshToken) => {
-        setAuthTokens(accessToken, refreshToken);
-        set({ user, accessToken, refreshToken, isAuthenticated: true });
-      },
-      logout: () => {
-        clearTokens();
-        set({ user: null, accessToken: null, refreshToken: null, isAuthenticated: false });
-      },
+      login: (user) => set({ user, isAuthenticated: true }),
+      logout: () => set({ user: null, isAuthenticated: false }),
       setHydrated: (state) => set({ hasHydrated: state }),
       // Profile methods (merged from profile store)
       setProfile: (p) =>
@@ -93,19 +82,12 @@ const useAuthStore = create<AuthState>()(
 
 export { useAuthStore };
 
-// Hook to get access token for API client
-export function useAccessToken() {
-  return useAuthStore(s => s.accessToken);
+// Reactive selector for "is the user logged in" — used as a React Query `enabled` gate.
+export function useIsAuthenticated() {
+  return useAuthStore((s) => s.isAuthenticated);
 }
 
-// Set tokens outside of React components (for API client) — delegates to the standalone module
-export function setTokensInStore(accessToken: string, refreshToken: string): void {
-  setAuthTokens(accessToken, refreshToken);
-  useAuthStore.getState().setTokens(accessToken, refreshToken);
-}
-
-// Clear auth state outside of React components — delegates to the standalone module
+// Clear auth state outside of React components (e.g. from the axios 401 handler).
 export function clearAuthState(): void {
-  clearTokens();
   useAuthStore.getState().logout();
 }

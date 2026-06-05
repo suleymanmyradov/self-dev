@@ -6,61 +6,10 @@ import axios, {
 } from 'axios';
 import type { ZodSchema } from 'zod';
 import { config, isDev } from '@/lib/config';
-import {
-  getAccessToken,
-  getRefreshToken,
-  setAuthTokens,
-  clearTokens,
-} from '@/lib/auth-tokens';
+import { clearAuthState } from '@/store/auth';
 
 // Debug logging in development
 const DEBUG = isDev;
-
-// Track if we're currently refreshing the token
-let isRefreshing = false;
-let refreshPromise: Promise<boolean> | null = null;
-// Attempt to refresh the access token
-async function refreshAccessToken(): Promise<boolean> {
-  const refreshToken = getRefreshToken();
-  if (!refreshToken) {
-    return false;
-  }
-
-  try {
-    const response = await axios.post<{ accessToken: string; refreshToken: string }>(
-      `${config.apiUrl}/auth/refresh`,
-      { refreshToken }
-    );
-
-    const { accessToken, refreshToken: newRefreshToken } = response.data;
-    if (accessToken && newRefreshToken) {
-      setAuthTokens(accessToken, newRefreshToken);
-      return true;
-    }
-    return false;
-  } catch {
-    clearTokens();
-    return false;
-  }
-}
-
-// Ensure only one refresh request at a time
-async function ensureValidToken(): Promise<boolean> {
-  if (isRefreshing && refreshPromise) {
-    return refreshPromise;
-  }
-
-  isRefreshing = true;
-  refreshPromise = refreshAccessToken();
-
-  try {
-    const result = await refreshPromise;
-    return result;
-  } finally {
-    isRefreshing = false;
-    refreshPromise = null;
-  }
-}
 
 // API Error class
 export class ApiError extends Error {
@@ -86,8 +35,12 @@ export interface RequestOptions {
 
 function buildBaseUrl(): string {
   let baseUrl = config.apiUrl;
-  if (baseUrl.startsWith('/') && typeof window !== 'undefined') {
-    baseUrl = `${window.location.origin}${baseUrl}`;
+  if (baseUrl.startsWith('/')) {
+    if (typeof window !== 'undefined') {
+      baseUrl = `${window.location.origin}${baseUrl}`;
+    } else {
+      baseUrl = `${config.apiProxyUrl}${baseUrl}`;
+    }
   }
   return baseUrl;
 }
@@ -101,27 +54,23 @@ const axiosInstance: AxiosInstance = axios.create({
   },
 });
 
-// Request interceptor: attach auth token
+// Request interceptor: the access token lives in an httpOnly cookie attached by
+// the same-origin BFF proxy, so the browser never sends an Authorization header.
 axiosInstance.interceptors.request.use(
   (configObj: InternalAxiosRequestConfig) => {
-    const accessToken = getAccessToken();
-    if (accessToken && configObj.headers) {
-      configObj.headers.Authorization = `Bearer ${accessToken}`;
-    }
-
     if (DEBUG) {
       console.log(`[API] ${configObj.method?.toUpperCase()} ${configObj.url}`, {
         params: configObj.params,
         data: configObj.data,
       });
     }
-
     return configObj;
   },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor: handle 401 + token refresh
+// Response interceptor: the BFF already attempted a transparent refresh, so a 401
+// reaching the browser means the session is genuinely dead — clear local auth state.
 axiosInstance.interceptors.response.use(
   (response) => {
     if (DEBUG) {
@@ -131,36 +80,10 @@ axiosInstance.interceptors.response.use(
     }
     return response;
   },
-  async (error: AxiosError) => {
-    const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
-
-    if (!originalRequest) {
-      return Promise.reject(error);
+  (error: AxiosError) => {
+    if (error.response?.status === 401 && typeof window !== 'undefined') {
+      clearAuthState();
     }
-
-    // Handle 401 - try to refresh token and retry
-    if (error.response?.status === 401 && !originalRequest._retry) {
-      const endpoint = originalRequest.url || '';
-      if (endpoint.includes('/auth/refresh')) {
-        clearTokens();
-        return Promise.reject(error);
-      }
-
-      originalRequest._retry = true;
-
-      const refreshed = await ensureValidToken();
-      if (refreshed) {
-        const newToken = getAccessToken();
-        if (newToken && originalRequest.headers) {
-          originalRequest.headers.Authorization = `Bearer ${newToken}`;
-        }
-        return axiosInstance(originalRequest);
-      }
-
-      // If refresh failed, clear tokens
-      clearTokens();
-    }
-
     return Promise.reject(error);
   }
 );

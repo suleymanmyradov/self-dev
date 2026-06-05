@@ -2,9 +2,6 @@
 export { api, ApiError } from './axios-client';
 export type { RequestOptions } from './axios-client';
 
-// Auth Tokens (SSR-safe, no React dependency)
-export { getAccessToken, getRefreshToken, clearTokens, setAuthTokens } from '@/lib/auth-tokens';
-
 // Types
 export type {
   // Pagination
@@ -139,7 +136,6 @@ export {
   login,
   register,
   logout,
-  refreshToken,
   getCurrentUser,
   isAuthenticated,
 } from './auth';

@@ -1,7 +1,11 @@
 import { openai } from "@ai-sdk/openai";
 import { frontendTools } from "@assistant-ui/react-ai-sdk";
 import { convertToModelMessages, streamText } from "ai";
+import { jwtVerify } from "jose";
+import { cookies } from "next/headers";
 import { z } from "zod";
+
+const AUTH_COOKIE_NAME = "auth-token";
 
 export const maxDuration = 30;
 
@@ -11,30 +15,41 @@ const ChatRequestSchema = z.object({
   tools: z.record(z.unknown()).optional(),
 });
 
+// JWT config (server-side env vars — never exposed to the browser)
+const JWT_SECRET = process.env.JWT_SECRET;
+const JWT_ISSUER = process.env.JWT_ISSUER || "growth-auth";
+const JWT_AUDIENCE = process.env.JWT_AUDIENCE || "growth-api";
+
+/** Read the access token from the httpOnly session cookie. */
+async function getSessionToken(): Promise<string | null> {
+  const cookieStore = await cookies();
+  return cookieStore.get(AUTH_COOKIE_NAME)?.value ?? null;
+}
+
 /**
- * Validate auth token by calling the backend auth service.
- * Rejects any token that cannot be verified server-side.
+ * Validate the access token locally using the same JWT secret as the backend.
  */
-async function validateAuth(request: Request): Promise<boolean> {
-  const authHeader = request.headers.get("authorization");
-  if (!authHeader?.startsWith("Bearer ")) {
-    return false;
-  }
-  const token = authHeader.slice(7);
+async function validateToken(token: string | null): Promise<boolean> {
   if (!token || token.length < 10) {
     return false;
   }
 
+  if (!JWT_SECRET) {
+    // No secret configured — fail closed rather than trusting any string.
+    console.warn("[chat] JWT_SECRET is not set; rejecting request.");
+    return false;
+  }
+
   try {
-    const apiUrl = process.env.NEXT_PUBLIC_API_URL || "/api/v1";
-    const base = apiUrl.startsWith("/")
-      ? `${request.headers.get("x-forwarded-proto") || "http"}://${request.headers.get("host") || "localhost"}${apiUrl}`
-      : apiUrl;
-    const res = await fetch(`${base}/auth/verify`, {
-      method: "GET",
-      headers: { Authorization: `Bearer ${token}` },
+    const secret = new TextEncoder().encode(JWT_SECRET);
+    const { payload } = await jwtVerify(token, secret, {
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+      clockTolerance: 60,
     });
-    return res.ok;
+
+    // Ensure this is an access token, not a refresh token
+    return payload.typ === "access";
   } catch {
     return false;
   }
@@ -67,18 +82,18 @@ function checkRateLimit(clientId: string): { allowed: boolean; retryAfter?: numb
 }
 
 export async function POST(req: Request) {
-  // 1. Auth check
-  if (!(await validateAuth(req))) {
+  // 1. Auth check (token comes from the httpOnly session cookie)
+  const sessionToken = await getSessionToken();
+  if (!(await validateToken(sessionToken))) {
     return Response.json(
       { error: "Unauthorized" },
       { status: 401, headers: { "WWW-Authenticate": "Bearer" } }
     );
   }
 
-  // 2. Rate limiting (by IP + token hash as client ID)
+  // 2. Rate limiting (by IP + token fragment as client ID)
   const ip = req.headers.get("x-forwarded-for") || "unknown";
-  const authHeader = req.headers.get("authorization") || "";
-  const clientId = `${ip}-${authHeader.slice(7, 20)}`;
+  const clientId = `${ip}-${(sessionToken ?? "").slice(0, 13)}`;
   const rateLimit = checkRateLimit(clientId);
 
   if (!rateLimit.allowed) {

@@ -17,6 +17,7 @@ import {
   ConversationResponseSchema,
   ConversationsResponseSchema,
   MessagesResponseSchema,
+  CategoriesResponseSchema,
 } from '@/lib/validation';
 import type {
   PageParams,
@@ -35,6 +36,8 @@ import type {
   ConversationResponse,
   ConversationsResponse,
   MessagesResponse,
+  CategoriesResponse,
+  EntityType,
 } from './types';
 
 export async function listHabitsServer(params: PageParams = { page: 1, limit: 20 }): Promise<HabitsResponse> {
@@ -110,4 +113,9 @@ export async function getMessagesServer(conversationId: string, params: PagePara
 export async function listConversationsServer(params: PageParams = { page: 1, limit: 20 }): Promise<ConversationsResponse> {
   const data = await serverGet<unknown>('/conversations', params);
   return ConversationsResponseSchema.parse(data);
+}
+
+export async function listCategoriesServer(entityType: EntityType): Promise<CategoriesResponse> {
+  const data = await serverGet<unknown>('/categories', { entityType });
+  return CategoriesResponseSchema.parse(data);
 }

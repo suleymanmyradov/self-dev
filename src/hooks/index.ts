@@ -1,6 +1,6 @@
 export { useActivities } from './use-activities';
 export { useArticles } from './use-articles';
-export { useAccessToken } from './use-auth';
+export { useIsAuthenticated } from './use-auth';
 export { useProfile } from './use-profile';
 export { useHydrated } from './use-hydrated';
 export { useGoals, useGoal, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress } from './use-goals';

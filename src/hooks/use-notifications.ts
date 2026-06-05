@@ -4,6 +4,7 @@ import { listNotifications, markNotificationRead, markAllNotificationsRead } fro
 import type { PageParams } from '@/api';
 import { toast } from 'sonner';
 import { ApiError } from '@/api/axios-client';
+import { useAuthStore } from '@/store/auth';
 
 function handleMutationError(error: unknown) {
   const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
@@ -14,10 +15,12 @@ const DEFAULT_NOTIFICATIONS_PARAMS: PageParams = { page: 1, limit: 20 };
 
 export function useNotifications(params: PageParams = DEFAULT_NOTIFICATIONS_PARAMS) {
   const { page, limit } = params;
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['notifications', page ?? 1, limit ?? 20],
     queryFn: () => listNotifications({ page, limit }),
     select: (data) => data.data,
+    enabled: isAuthenticated,
   });
 }
 

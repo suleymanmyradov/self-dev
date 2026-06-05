@@ -3,6 +3,7 @@ import type { NextRequest } from 'next/server';
 import { jwtVerify } from 'jose';
 
 const AUTH_COOKIE_NAME = 'auth-token';
+const REFRESH_COOKIE_NAME = 'refresh-token';
 
 // JWT config (server-side env vars — never exposed to the browser)
 const JWT_SECRET = process.env.JWT_SECRET;
@@ -34,19 +35,21 @@ const AUTH_ROUTES = ['/login', '/register'];
 // API routes that should bypass auth check (handled by their own logic)
 const PUBLIC_API_ROUTES = ['/api/chat'];
 
+type TokenStatus = 'valid' | 'expired' | 'invalid';
+
 /**
- * Verify the access token locally.
- * In production JWT_SECRET must be set and match the backend signer.
- * Falls back to a basic presence check in development when the secret is absent.
+ * Check the access token locally.
+ * Returns 'valid', 'expired', or 'invalid' so callers can decide whether to
+ * attempt a silent refresh.
  */
-async function verifyToken(token: string): Promise<boolean> {
+async function checkToken(token: string): Promise<TokenStatus> {
   if (!JWT_SECRET) {
     if (process.env.NODE_ENV === 'production') {
-      // In production JWT_SECRET is mandatory
-      return false;
+      console.warn('[proxy] JWT_SECRET is not set; treating tokens as invalid.');
+      return 'invalid';
     }
     // Development fallback — require a non-trivial token string
-    return token.length >= 10;
+    return token.length >= 10 ? 'valid' : 'invalid';
   }
 
   try {
@@ -56,15 +59,44 @@ async function verifyToken(token: string): Promise<boolean> {
       audience: JWT_AUDIENCE,
       clockTolerance: 60,
     });
+    return payload.typ === 'access' ? 'valid' : 'invalid';
+  } catch (err: unknown) {
+    if ((err as { code?: string })?.code === 'ERR_JWT_EXPIRED') return 'expired';
+    return 'invalid';
+  }
+}
 
-    // Ensure this is an access token, not a refresh token
-    if (payload.typ !== 'access') {
-      return false;
-    }
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'lax' as const,
+  maxAge: 60 * 60 * 24 * 7,
+  path: '/',
+};
 
-    return true;
+/**
+ * Exchange a refresh token for a fresh token pair via the backend gateway.
+ */
+async function tryRefresh(
+  refreshToken: string,
+): Promise<{ accessToken: string; refreshToken: string } | null> {
+  // Normalize to a bare origin so a value with a trailing /api/v1 can't double the prefix.
+  const apiUrl = (process.env.NEXT_PUBLIC_API_PROXY_URL || 'http://localhost:8080')
+    .replace(/\/+$/, '')
+    .replace(/\/api\/v1$/, '');
+  try {
+    const res = await fetch(`${apiUrl}/api/v1/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+    const data = await res.json();
+    const { accessToken, refreshToken: newRefreshToken } = data;
+    if (!accessToken || !newRefreshToken) return null;
+    return { accessToken, refreshToken: newRefreshToken };
   } catch {
-    return false;
+    return null;
   }
 }
 
@@ -76,12 +108,44 @@ export async function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // Check for auth token in cookie and verify it
   const authToken = request.cookies.get(AUTH_COOKIE_NAME)?.value;
-  const isAuthenticated = authToken ? await verifyToken(authToken) : false;
+  let authenticated = false;
+
+  if (authToken) {
+    const status = await checkToken(authToken);
+
+    if (status === 'valid') {
+      authenticated = true;
+    } else if (status === 'expired') {
+      // Silently rotate the token so the user isn't interrupted every 15 min.
+      const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value;
+      if (refreshToken) {
+        const refreshed = await tryRefresh(refreshToken);
+        if (refreshed) {
+          authenticated = true;
+
+          // Redirect authenticated users away from auth pages
+          if (AUTH_ROUTES.some((r) => pathname === r)) {
+            return NextResponse.redirect(new URL('/habits', request.url));
+          }
+
+          // Mutate the request so server components receive the fresh token,
+          // and set Set-Cookie so the browser's cookie store is updated too.
+          request.cookies.set(AUTH_COOKIE_NAME, refreshed.accessToken);
+          request.cookies.set(REFRESH_COOKIE_NAME, refreshed.refreshToken);
+          const response = NextResponse.next({ request });
+          response.cookies.set(AUTH_COOKIE_NAME, refreshed.accessToken, COOKIE_OPTS);
+          response.cookies.set(REFRESH_COOKIE_NAME, refreshed.refreshToken, COOKIE_OPTS);
+          return response;
+        }
+      }
+      // Refresh failed — fall through to unauthenticated handling
+    }
+    // status === 'invalid' → authenticated stays false
+  }
 
   // Redirect authenticated users away from auth pages
-  if (isAuthenticated && AUTH_ROUTES.some((route) => pathname === route)) {
+  if (authenticated && AUTH_ROUTES.some((route) => pathname === route)) {
     return NextResponse.redirect(new URL('/habits', request.url));
   }
 
@@ -90,7 +154,7 @@ export async function proxy(request: NextRequest) {
     (route) => pathname === route || pathname.startsWith(`${route}/`),
   );
 
-  if (!isAuthenticated && isProtected) {
+  if (!authenticated && isProtected) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);
@@ -108,6 +172,6 @@ export const config = {
      * - _next/image (image optimization)
      * - favicon.ico, public assets
      */
-    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

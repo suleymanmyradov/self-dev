@@ -8,11 +8,10 @@ import { ApiError } from '@/api/axios-client';
 const AUTH_COOKIE_NAME = 'auth-token';
 
 function buildServerBaseUrl(): string {
-  const url = config.apiUrl;
-  if (url.startsWith('/')) {
-    return `${config.appUrl}${url}`;
-  }
-  return url.replace(/\/$/, '');
+  // Server components talk to the gateway directly (origin + /api/v1), attaching
+  // the access token from the httpOnly cookie. The middleware keeps that cookie
+  // fresh before the page renders.
+  return `${config.apiProxyUrl}${config.apiPrefix}`;
 }
 
 export async function getServerAccessToken(): Promise<string | null> {

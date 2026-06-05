@@ -1,187 +1,20 @@
-'use client';
-
-import { useActionState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { registerAction } from '@/app/actions/auth';
-import { useAuthStore } from '@/store/auth';
-import { useRegisterForm } from '@/hooks';
-import Link from 'next/link';
-import { toast } from 'sonner';
+import { GalleryVerticalEnd } from 'lucide-react';
+import { RegisterForm } from '@/components/register-form';
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const setAuthUser = useAuthStore(s => s.login);
-  const {
-    fullName, setFullName,
-    username, setUsername,
-    email, setEmail,
-    password, setPassword,
-    confirmPassword, setConfirmPassword,
-    error, setError,
-    fieldErrors, setFieldErrors,
-    reset,
-    validate,
-  } = useRegisterForm();
-
-  const [state, dispatch, isPending] = useActionState(registerAction, {
-    success: false,
-    error: undefined,
-    fieldErrors: undefined,
-  });
-
-  useEffect(() => {
-    if (state.success && state.user && state.accessToken && state.refreshToken) {
-      setAuthUser(state.user, state.accessToken, state.refreshToken);
-      toast.success('Account created successfully');
-      reset();
-      router.push('/onboarding');
-    } else if (state.error) {
-      setError(state.error);
-    } else if (state.fieldErrors) {
-      setFieldErrors(state.fieldErrors);
-    }
-  }, [state, setAuthUser, reset, setError, setFieldErrors, router]);
-
-  const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    setError(null);
-    setFieldErrors({});
-
-    const validated = validate();
-    if (!validated) return;
-
-    const formData = new FormData(e.currentTarget);
-    dispatch(formData);
-  };
-
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader>
-          <CardTitle className="text-2xl text-center">Create Account</CardTitle>
-        </CardHeader>
-        <form onSubmit={handleSubmit}>
-          <CardContent className="space-y-4">
-            {error && (
-              <div className="p-3 text-sm text-destructive bg-destructive/10 rounded-md">
-                {error}
-              </div>
-            )}
-            <div className="space-y-2">
-              <label htmlFor="fullName" className="text-sm font-medium">
-                Full Name
-              </label>
-              <Input
-                id="fullName"
-                name="fullName"
-                type="text"
-                placeholder="John Doe"
-                value={fullName}
-                onChange={(e) => setFullName(e.target.value)}
-                disabled={isPending}
-                aria-invalid={!!fieldErrors.fullName}
-                aria-describedby={fieldErrors.fullName ? 'fullName-error' : undefined}
-              />
-              {fieldErrors.fullName && (
-                <p id="fullName-error" className="text-xs text-destructive">
-                  {fieldErrors.fullName[0]}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="username" className="text-sm font-medium">
-                Username
-              </label>
-              <Input
-                id="username"
-                name="username"
-                type="text"
-                placeholder="johndoe"
-                value={username}
-                onChange={(e) => setUsername(e.target.value)}
-                disabled={isPending}
-                aria-invalid={!!fieldErrors.username}
-                aria-describedby={fieldErrors.username ? 'username-error' : undefined}
-              />
-              {fieldErrors.username && (
-                <p id="username-error" className="text-xs text-destructive">
-                  {fieldErrors.username[0]}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="email" className="text-sm font-medium">
-                Email
-              </label>
-              <Input
-                id="email"
-                name="email"
-                type="email"
-                placeholder="you@example.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                disabled={isPending}
-                aria-invalid={!!fieldErrors.email}
-                aria-describedby={fieldErrors.email ? 'email-error' : undefined}
-              />
-              {fieldErrors.email && (
-                <p id="email-error" className="text-xs text-destructive">
-                  {fieldErrors.email[0]}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="password" className="text-sm font-medium">
-                Password
-              </label>
-              <Input
-                id="password"
-                name="password"
-                type="password"
-                placeholder="••••••••"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                disabled={isPending}
-                aria-invalid={!!fieldErrors.password}
-                aria-describedby={fieldErrors.password ? 'password-error' : undefined}
-              />
-              {fieldErrors.password && (
-                <p id="password-error" className="text-xs text-destructive">
-                  {fieldErrors.password[0]}
-                </p>
-              )}
-            </div>
-            <div className="space-y-2">
-              <label htmlFor="confirmPassword" className="text-sm font-medium">
-                Confirm Password
-              </label>
-              <Input
-                id="confirmPassword"
-                name="confirmPassword"
-                type="password"
-                placeholder="••••••••"
-                value={confirmPassword}
-                onChange={(e) => setConfirmPassword(e.target.value)}
-                disabled={isPending}
-              />
-            </div>
-          </CardContent>
-          <CardFooter className="flex flex-col gap-4">
-            <Button type="submit" className="w-full" disabled={isPending}>
-              {isPending ? 'Creating Account...' : 'Create Account'}
-            </Button>
-            <p className="text-sm text-muted-foreground text-center">
-              Already have an account?{' '}
-              <Link href="/login" className="text-primary underline-offset-2 hover:underline">
-                Sign in
-              </Link>
-            </p>
-          </CardFooter>
-        </form>
-      </Card>
+    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-muted p-6 md:p-10">
+      <div className="flex w-full max-w-md flex-col gap-6">
+        <a href="/" className="flex items-center gap-2 self-center font-medium">
+          <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
+            <GalleryVerticalEnd className="size-4" />
+          </div>
+          Self Dev AI
+        </a>
+        <div className="rounded-xl border bg-card p-8 shadow-xl">
+          <RegisterForm />
+        </div>
+      </div>
     </div>
   );
 }

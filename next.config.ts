@@ -7,6 +7,11 @@ const nextConfig: NextConfig = {
                 protocol: 'https',
                 hostname: 'picsum.photos',
             },
+            {
+                protocol: 'https',
+                hostname: 'example.com',
+                pathname: '/images/**',
+            },
         ],
         formats: ['image/avif', 'image/webp'],
         minimumCacheTTL: 60 * 60 * 24 * 30, // 30 days
@@ -16,15 +21,9 @@ const nextConfig: NextConfig = {
     experimental: {
         optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
     },
-    async rewrites() {
-        const apiUrl = process.env.NEXT_PUBLIC_API_PROXY_URL || 'http://localhost:9999';
-        return [
-            {
-                source: '/api/:path*',
-                destination: `${apiUrl}/api/:path*`,
-            },
-        ];
-    },
+    // No /api rewrite: browser traffic goes through the same-origin BFF route
+    // (src/app/api/v1/[...path]) which attaches the token cookie; SSR calls the
+    // gateway directly. A transparent rewrite would bypass that token handling.
     async headers() {
         return [
             {
@@ -48,7 +47,9 @@ const nextConfig: NextConfig = {
                     },
                     {
                         key: 'Content-Security-Policy',
-                        value: "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https://api.openai.com; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
+                        value: process.env.NODE_ENV === 'development'
+                            ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https://api.openai.com; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+                            : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https://api.openai.com; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
                     },
                 ],
             },

@@ -12,6 +12,7 @@ import type {
 } from '../api';
 import { toast } from 'sonner';
 import { ApiError } from '@/api/axios-client';
+import { useAuthStore } from '@/store/auth';
 
 function handleMutationError(error: unknown) {
   const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
@@ -20,11 +21,12 @@ function handleMutationError(error: unknown) {
 
 export function usePlanAdjustments(autoLoad = true) {
   const queryClient = useQueryClient();
+  const hasToken = useAuthStore((s) => s.isAuthenticated);
 
   const { data: suggestions = [], isLoading: loading, error } = useQuery({
     queryKey: ['plan-adjustments'],
     queryFn: () => getPendingPlanAdjustmentSuggestions(),
-    enabled: autoLoad,
+    enabled: autoLoad && hasToken,
     staleTime: 2 * 60 * 1000, // 2 minutes
   });
 

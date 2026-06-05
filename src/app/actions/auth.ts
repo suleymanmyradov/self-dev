@@ -6,7 +6,8 @@ import {
   LoginRequestSchema,
   RegisterRequestSchema,
 } from '@/lib/validation';
-import { login, register, logout } from '@/api/auth';
+import { login, register } from '@/api/auth';
+import { serverPost } from '@/lib/server-api';
 import type { LoginRequest, RegisterRequest, Profile } from '@/api/types';
 
 const AUTH_COOKIE_NAME = 'auth-token';
@@ -133,7 +134,8 @@ export async function logoutAction(): Promise<void> {
     const cookieStore = await cookies();
     const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
     if (token) {
-      await logout();
+      // Revoke server-side; serverPost attaches the cookie token as a Bearer header.
+      await serverPost('/auth/logout');
     }
   } catch {
     // API call may fail if token is already expired — that's fine
