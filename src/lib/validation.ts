@@ -221,6 +221,8 @@ export const ArticleSchema = z.object({
   createdAt: z.string(),
   updatedAt: z.string(),
   isSaved: z.boolean().optional(),
+  likeCount: z.number().int().nonnegative().optional(),
+  isLiked: z.boolean().optional(),
 });
 
 export const ArticlesResponseSchema = ApiResponseSchema(z.array(ArticleSchema)).extend({
@@ -236,6 +238,7 @@ export const ListArticlesParamsSchema = PageParamsSchema.extend({
 export const LikeArticleResponseSchema = z.object({
   success: z.boolean(),
   newLikeCount: z.number().int(),
+  isLiked: z.boolean(),
 });
 
 export const ShareArticleResponseSchema = z.object({

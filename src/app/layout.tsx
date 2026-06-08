@@ -32,7 +32,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
     return (
-        <html lang="en" suppressHydrationWarning>
+        <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
             <body
                 className={`${jakarta.variable} ${fraunces.variable} ${jetbrains.variable} font-sans`}
                 suppressHydrationWarning

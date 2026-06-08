@@ -19,33 +19,38 @@ export type ArticleCardProps = {
   category?: string;
   postedAt: string;
   likes?: number;
+  isLiked?: boolean;
   shares?: number;
   saves?: number;
+  isSaved?: boolean;
   className?: string;
   onLike?: (id: string) => void;
   onShare?: (id: string) => void;
-  onSave?: (id: string) => void;
+  onToggleSave?: () => void;
+  isLikePending?: boolean;
 };
 
-export const ArticleCard = memo(function ArticleCard({ 
-  id, 
-  href, 
-  title, 
-  excerpt, 
-  image, 
-  category, 
-  postedAt, 
-  likes: initialLikes = 0, 
-  shares: initialShares = 0, 
-  saves: initialSaves = 0, 
+export const ArticleCard = memo(function ArticleCard({
+  id,
+  href,
+  title,
+  excerpt,
+  image,
+  category,
+  postedAt,
+  likes = 0,
+  isLiked = false,
+  shares: initialShares = 0,
+  saves: initialSaves = 0,
+  isSaved = false,
   className,
   onLike,
   onShare,
-  onSave,
+  onToggleSave,
+  isLikePending = false,
 }: ArticleCardProps) {
   const link = href ?? (id ? `/article/${id}` : "#");
-  const likeState = useToggleState(initialLikes, onLike);
-  const saveState = useToggleState(initialSaves, onSave);
+  const saveState = useToggleState(initialSaves, isSaved);
   const [shares, setShares] = useState(initialShares);
 
   const handleShare = async (e: React.MouseEvent) => {
@@ -118,18 +123,23 @@ export const ArticleCard = memo(function ArticleCard({
           {/* Actions */}
           <div className="mt-auto pt-3 flex items-center justify-between">
             <div className="flex items-center gap-1">
-              <button 
-                onClick={(e) => likeState.toggle(e, id)}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  if (!isLikePending && id) onLike?.(id);
+                }}
+                disabled={isLikePending}
                 className={cn(
-                  "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
-                  likeState.isActive 
-                    ? "text-red-500" 
+                  "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors disabled:opacity-50",
+                  isLiked
+                    ? "text-red-500"
                     : "text-muted-foreground hover:text-foreground"
-                )} 
-                aria-label="Like"
+                )}
+                aria-label={isLiked ? "Unlike" : "Like"}
               >
-                <Heart className={cn("h-3.5 w-3.5", likeState.isActive && "fill-current")} />
-                <span className="tabular-nums">{likeState.value}</span>
+                <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} />
+                <span className="tabular-nums">{likes}</span>
               </button>
               <button 
                 onClick={handleShare}
@@ -139,17 +149,22 @@ export const ArticleCard = memo(function ArticleCard({
                 <Share2 className="h-3.5 w-3.5" />
                 <span className="tabular-nums">{shares}</span>
               </button>
-              <button 
-                onClick={(e) => saveState.toggle(e, id)}
+              <button
+                onClick={(e) => {
+                  e.preventDefault();
+                  e.stopPropagation();
+                  onToggleSave?.();
+                  saveState.toggle(e, id);
+                }}
                 className={cn(
                   "inline-flex items-center gap-1 rounded-md px-2 py-1 text-xs transition-colors",
-                  saveState.isActive 
-                    ? "text-primary" 
+                  isSaved
+                    ? "text-primary"
                     : "text-muted-foreground hover:text-foreground"
-                )} 
-                aria-label="Save"
+                )}
+                aria-label={isSaved ? "Unsave" : "Save"}
               >
-                <Bookmark className={cn("h-3.5 w-3.5", saveState.isActive && "fill-current")} />
+                <Bookmark className={cn("h-3.5 w-3.5", isSaved && "fill-current")} />
                 {saveState.value > 0 && <span className="tabular-nums">{saveState.value}</span>}
               </button>
             </div>

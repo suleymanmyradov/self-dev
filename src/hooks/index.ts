@@ -10,6 +10,7 @@ export { useHabitFilters } from './use-habit-filters';
 export { useHabitForm, useHabitEditForm } from './use-habit-form';
 export { useConfirmDelete } from './use-confirm-delete';
 export { useToggleState } from './use-toggle-state';
+export { useLikeArticle } from './use-likes';
 export { useSavedItems, useSavedItemsDetailed, useSaveItem, useRemoveSavedItem } from './use-saved';
 export { useConversations, useConversation, useMessages, useStartConversation, useSendMessage } from './use-conversations';
 export { useSearch } from './use-search';

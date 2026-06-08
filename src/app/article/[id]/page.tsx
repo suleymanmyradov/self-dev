@@ -8,6 +8,7 @@ import { getArticleServer } from "@/api/server";
 import { listArticles } from "@/api";
 import { formatRelativeTime } from "@/lib/time-format";
 import ArticleSaveWrapper from "./article-save-wrapper";
+import ArticleLikeWrapper from "./article-like-wrapper";
 
 // =============================================================================
 // Shared server fetch with React cache — dedupes across generateMetadata + page
@@ -101,7 +102,14 @@ export default async function ArticlePage({
         <h1 className="text-3xl font-bold leading-tight tracking-tight">
           {article.title}
         </h1>
-        <ArticleSaveWrapper articleId={article.id} isSaved={article.isSaved ?? false} />
+        <div className="flex items-center gap-2 shrink-0">
+          <ArticleLikeWrapper
+            articleId={article.id}
+            likeCount={article.likeCount ?? 0}
+            isLiked={article.isLiked ?? false}
+          />
+          <ArticleSaveWrapper articleId={article.id} isSaved={article.isSaved ?? false} />
+        </div>
       </div>
 
       {/* Meta */}

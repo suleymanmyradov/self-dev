@@ -1,6 +1,6 @@
 'use client';
 
-import { use, useMemo } from 'react';
+import { use, useMemo, useCallback } from 'react';
 import Link from 'next/link';
 import { ArticleCardGrid } from '@/components/home/article-card-grid';
 import { PlanAdjustmentCard } from '@/components/plan-adjustment-card';
@@ -8,7 +8,15 @@ import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { CheckCircle2, CircleDashed, ArrowRight, Lightbulb } from 'lucide-react';
-import { useArticles, usePlanAdjustments, useBillingOverview } from '@/hooks';
+import {
+  useArticles,
+  usePlanAdjustments,
+  useBillingOverview,
+  useLikeArticle,
+  useSavedItems,
+  useSaveItem,
+  useRemoveSavedItem,
+} from '@/hooks';
 import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
 import type { HabitsResponse, CheckInsResponse, CategoriesResponse, ArticlesResponse } from '@/api';
 import { useSearchParamState } from '@/lib/url-state';
@@ -76,6 +84,59 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
   const handleFilterChange = (value: string) => {
     setFilter(value);
   };
+
+  const likeArticleMutation = useLikeArticle();
+  const handleLike = (id: string) => {
+    if (likeArticleMutation.isPending) return;
+    likeArticleMutation.mutate(id);
+  };
+  const isLikePendingFor = (id: string) =>
+    likeArticleMutation.isPending && likeArticleMutation.variables === id;
+
+  // Saved items — used to drive the save/unsave state on article cards
+  const { data: savedItems } = useSavedItems({ page: 1, limit: 100 });
+  const saveItem = useSaveItem();
+  const removeSavedItem = useRemoveSavedItem();
+
+  const savedArticleMap = useMemo(() => {
+    const map = new Map<string, string>();
+    savedItems?.forEach((item) => {
+      if (item.itemType === 'article') {
+        map.set(item.itemId, item.id);
+      }
+    });
+    return map;
+  }, [savedItems]);
+
+  const getIsSaved = useCallback(
+    (articleId: string) => {
+      return savedArticleMap.has(articleId);
+    },
+    [savedArticleMap]
+  );
+
+  const isSavePendingFor = useCallback(
+    (articleId: string) => {
+      return (
+        (saveItem.isPending && saveItem.variables?.itemId === articleId) ||
+        (removeSavedItem.isPending && savedArticleMap.get(articleId) === removeSavedItem.variables)
+      );
+    },
+    [saveItem, removeSavedItem, savedArticleMap]
+  );
+
+  const handleToggleSave = useCallback(
+    async (articleId: string) => {
+      if (isSavePendingFor(articleId)) return;
+      const savedItemId = savedArticleMap.get(articleId);
+      if (savedItemId) {
+        await removeSavedItem.mutateAsync(savedItemId);
+      } else {
+        await saveItem.mutateAsync({ itemType: 'article', itemId: articleId });
+      }
+    },
+    [savedArticleMap, saveItem, removeSavedItem, isSavePendingFor]
+  );
 
   const isLoading = isArticlesFetching;
 
@@ -198,8 +259,13 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
                     image={a.imageUrl ?? '/images/article-placeholder.svg'}
                     category={a.category?.name}
                     postedAt={a.publishedAt}
-                    likes={0}
+                    likes={a.likeCount ?? 0}
+                    isLiked={a.isLiked ?? false}
                     saves={0}
+                    isSaved={getIsSaved(a.id) || (a.isSaved ?? false)}
+                    onLike={handleLike}
+                    onToggleSave={() => handleToggleSave(a.id)}
+                    isLikePending={isLikePendingFor(a.id)}
                     index={i}
                   />
                 ))}

@@ -20,10 +20,13 @@ export type ArticleCardGridProps = {
   category?: string;
   postedAt: string;
   likes?: number;
+  isLiked?: boolean;
   saves?: number;
+  isSaved?: boolean;
   className?: string;
   onLike?: (id: string) => void;
-  onSave?: (id: string) => void;
+  onToggleSave?: () => void;
+  isLikePending?: boolean;
   index?: number;
 };
 
@@ -35,16 +38,18 @@ export const ArticleCardGrid = memo(function ArticleCardGrid({
   image,
   category,
   postedAt,
-  likes: initialLikes = 0,
+  likes = 0,
+  isLiked = false,
   saves: initialSaves = 0,
+  isSaved = false,
   className,
   onLike,
-  onSave,
+  onToggleSave,
+  isLikePending = false,
   index = 0,
 }: ArticleCardGridProps) {
   const link = href ?? (id ? `/article/${id}` : "#");
-  const likeState = useToggleState(initialLikes, onLike);
-  const saveState = useToggleState(initialSaves, onSave);
+  const saveState = useToggleState(initialSaves, isSaved);
 
   const categoryColor = category ? CATEGORY_COLORS[category] || "bg-secondary text-secondary-foreground" : "";
 
@@ -99,29 +104,40 @@ export const ArticleCardGrid = memo(function ArticleCardGrid({
           {/* Actions */}
           <div className="mt-auto pt-3 flex items-center justify-between border-t border-border/30">
             <button
-              onClick={(e) => likeState.toggle(e, id)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                if (!isLikePending && id) onLike?.(id);
+              }}
+              disabled={isLikePending}
               className={cn(
-                "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-secondary/50",
-                likeState.isActive
+                "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-secondary/50 disabled:opacity-50",
+                isLiked
                   ? "text-destructive"
                   : "text-muted-foreground hover:text-foreground"
               )}
-              aria-label="Like"
+              aria-label={isLiked ? "Unlike" : "Like"}
             >
-              <Heart className={cn("h-3.5 w-3.5", likeState.isActive && "fill-current")} />
-              <span className="tabular-nums font-medium">{likeState.value}</span>
+              <Heart className={cn("h-3.5 w-3.5", isLiked && "fill-current")} />
+              <span className="tabular-nums font-medium">{likes}</span>
             </button>
             <button
-              onClick={(e) => saveState.toggle(e, id)}
+              onClick={(e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                onToggleSave?.();
+                // Optimistic local toggle for immediate visual feedback
+                saveState.toggle(e, id);
+              }}
               className={cn(
                 "inline-flex items-center gap-1 rounded-lg px-2 py-1 text-xs transition-colors hover:bg-secondary/50",
-                saveState.isActive
+                isSaved
                   ? "text-primary"
                   : "text-muted-foreground hover:text-foreground"
               )}
-              aria-label="Save"
+              aria-label={isSaved ? "Unsave" : "Save"}
             >
-              <Bookmark className={cn("h-3.5 w-3.5", saveState.isActive && "fill-current")} />
+              <Bookmark className={cn("h-3.5 w-3.5", isSaved && "fill-current")} />
               {saveState.value > 0 && <span className="tabular-nums font-medium">{saveState.value}</span>}
             </button>
           </div>

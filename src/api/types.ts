@@ -226,6 +226,8 @@ export interface Article {
   createdAt: string;
   updatedAt: string;
   isSaved?: boolean;
+  likeCount?: number;
+  isLiked?: boolean;
 }
 
 export interface ArticlesResponse extends ApiResponse<Article[]> {
@@ -245,6 +247,7 @@ export interface LikeArticleRequest {
 export interface LikeArticleResponse {
   success: boolean;
   newLikeCount: number;
+  isLiked: boolean;
 }
 
 export interface ShareArticleRequest {

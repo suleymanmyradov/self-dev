@@ -9,7 +9,7 @@
    Based on Apple Human Interface Guidelines
    - System Blue: #007AFF / #0A84FF
    - System Green: #34C759 / #30D158
-   - System Orange: #FF9500 / #FF9F0A
+   - System Teal: #30B0C7 / #40C4D0
    - System Red: #FF3B30 / #FF453A
    - System Cyan: #5AC8FA / #64D2FF
    - Clean whites and pure blacks
@@ -89,7 +89,7 @@
     --popover-foreground: oklch(0 0 0);
 
     /* Primary - Apple System Blue */
-    --primary: oklch(0.58 0.20 255);
+    --primary: oklch(0.58 0.2 255);
     --primary-foreground: oklch(1 0 0);
 
     /* Secondary - System Gray 6 */
@@ -100,17 +100,17 @@
     --muted: oklch(0.96 0.005 250);
     --muted-foreground: oklch(0.62 0.02 250);
 
-    /* Accent - Apple System Orange */
-    --accent: oklch(0.72 0.18 65);
+    /* Accent - Apple System Teal */
+    --accent: oklch(0.72 0.18 190);
     --accent-foreground: oklch(1 0 0);
 
     /* Destructive - Apple System Red */
-    --destructive: oklch(0.60 0.22 25);
+    --destructive: oklch(0.6 0.22 25);
 
     /* Borders & Inputs - System Gray 5 */
     --border: oklch(0.92 0.01 250);
     --input: oklch(0.92 0.01 250);
-    --ring: oklch(0.58 0.20 255);
+    --ring: oklch(0.58 0.2 255);
 
     /* ============================================
        APPLE SEMANTIC COLORS
@@ -122,45 +122,45 @@
     --calm-soft: oklch(0.94 0.04 220);
 
     /* Growth - Apple System Green */
-    --growth: oklch(0.70 0.18 145);
+    --growth: oklch(0.7 0.18 145);
     --growth-foreground: oklch(0 0 0);
     --growth-soft: oklch(0.93 0.06 145);
 
-    /* Energy - Apple System Orange */
-    --energy: oklch(0.72 0.18 65);
-    --energy-foreground: oklch(0 0 0);
-    --energy-soft: oklch(0.95 0.06 65);
+    /* Energy - Apple System Teal */
+    --energy: oklch(0.72 0.18 190);
+    --energy-foreground: oklch(1 0 0);
+    --energy-soft: oklch(0.95 0.06 190);
 
     /* Success - Apple System Green */
-    --success: oklch(0.70 0.18 145);
+    --success: oklch(0.7 0.18 145);
     --success-foreground: oklch(0 0 0);
 
     /* Charts - Apple system palette */
-    --chart-1: oklch(0.58 0.20 255); /* Blue */
-    --chart-2: oklch(0.70 0.18 145); /* Green */
-    --chart-3: oklch(0.72 0.18 65);  /* Orange */
+    --chart-1: oklch(0.58 0.2 255); /* Blue */
+    --chart-2: oklch(0.7 0.18 145); /* Green */
+    --chart-3: oklch(0.72 0.18 190); /* Teal */
     --chart-4: oklch(0.74 0.14 220); /* Cyan */
-    --chart-5: oklch(0.65 0.20 15);  /* Pink */
+    --chart-5: oklch(0.65 0.2 15); /* Pink */
 
     /* Sidebar */
     --sidebar: oklch(0.96 0.005 250);
     --sidebar-foreground: oklch(0 0 0);
-    --sidebar-primary: oklch(0.58 0.20 255);
+    --sidebar-primary: oklch(0.58 0.2 255);
     --sidebar-primary-foreground: oklch(1 0 0);
     --sidebar-accent: oklch(0.92 0.03 250);
     --sidebar-accent-foreground: oklch(0 0 0);
     --sidebar-border: oklch(0.92 0.01 250);
-    --sidebar-ring: oklch(0.58 0.20 255);
+    --sidebar-ring: oklch(0.58 0.2 255);
 
     /* Brand gradients */
-    --brand-1: oklch(0.58 0.20 255); /* Blue */
-    --brand-2: oklch(0.70 0.18 145); /* Green */
-    --brand-3: oklch(0.72 0.18 65);  /* Orange */
+    --brand-1: oklch(0.58 0.2 255); /* Blue */
+    --brand-2: oklch(0.7 0.18 145); /* Green */
+    --brand-3: oklch(0.72 0.18 190); /* Teal */
 
     /* Ambient glow effects */
     --glow-calm: oklch(0.74 0.14 220 / 15%);
-    --glow-growth: oklch(0.70 0.18 145 / 15%);
-    --glow-energy: oklch(0.72 0.18 65 / 12%);
+    --glow-growth: oklch(0.7 0.18 145 / 15%);
+    --glow-energy: oklch(0.72 0.18 190 / 12%);
 }
 
 .dark {
@@ -181,7 +181,7 @@
     --popover-foreground: oklch(1 0 0);
 
     /* Primary - Apple System Blue dark */
-    --primary: oklch(0.62 0.20 255);
+    --primary: oklch(0.62 0.2 255);
     --primary-foreground: oklch(1 0 0);
 
     /* Secondary - System Gray 6 dark */
@@ -192,8 +192,8 @@
     --muted: oklch(0.18 0.01 250);
     --muted-foreground: oklch(0.62 0.02 250);
 
-    /* Accent - Apple System Orange dark */
-    --accent: oklch(0.74 0.18 65);
+    /* Accent - Apple System Teal dark */
+    --accent: oklch(0.74 0.18 190);
     --accent-foreground: oklch(0 0 0);
 
     /* Destructive - Apple System Red dark */
@@ -202,7 +202,7 @@
     /* Borders & Inputs - System Gray 4 dark */
     --border: oklch(0.28 0.01 250);
     --input: oklch(0.28 0.01 250);
-    --ring: oklch(0.62 0.20 255);
+    --ring: oklch(0.62 0.2 255);
 
     /* Semantic colors - Dark mode */
     --calm: oklch(0.78 0.14 220);
@@ -213,39 +213,39 @@
     --growth-foreground: oklch(0 0 0);
     --growth-soft: oklch(0.28 0.06 145);
 
-    --energy: oklch(0.74 0.18 65);
+    --energy: oklch(0.74 0.18 190);
     --energy-foreground: oklch(0 0 0);
-    --energy-soft: oklch(0.30 0.06 65);
+    --energy-soft: oklch(0.3 0.06 190);
 
     --success: oklch(0.74 0.18 145);
     --success-foreground: oklch(0 0 0);
 
     /* Charts - Dark mode */
-    --chart-1: oklch(0.62 0.20 255);
+    --chart-1: oklch(0.62 0.2 255);
     --chart-2: oklch(0.74 0.18 145);
-    --chart-3: oklch(0.74 0.18 65);
+    --chart-3: oklch(0.74 0.18 190);
     --chart-4: oklch(0.78 0.14 220);
-    --chart-5: oklch(0.70 0.18 15);
+    --chart-5: oklch(0.7 0.18 15);
 
     /* Sidebar */
     --sidebar: oklch(0.18 0.01 250);
     --sidebar-foreground: oklch(1 0 0);
-    --sidebar-primary: oklch(0.62 0.20 255);
+    --sidebar-primary: oklch(0.62 0.2 255);
     --sidebar-primary-foreground: oklch(0 0 0);
     --sidebar-accent: oklch(0.28 0.04 250);
     --sidebar-accent-foreground: oklch(1 0 0);
     --sidebar-border: oklch(0.28 0.01 250);
-    --sidebar-ring: oklch(0.62 0.20 255);
+    --sidebar-ring: oklch(0.62 0.2 255);
 
     /* Brand gradients */
-    --brand-1: oklch(0.62 0.20 255);
+    --brand-1: oklch(0.62 0.2 255);
     --brand-2: oklch(0.74 0.18 145);
-    --brand-3: oklch(0.74 0.18 65);
+    --brand-3: oklch(0.74 0.18 190);
 
     /* Ambient glow effects */
     --glow-calm: oklch(0.78 0.14 220 / 20%);
     --glow-growth: oklch(0.74 0.18 145 / 20%);
-    --glow-energy: oklch(0.74 0.18 65 / 15%);
+    --glow-energy: oklch(0.74 0.18 190 / 15%);
 }
 
 /* ============================================
@@ -256,7 +256,8 @@
     * {
         @apply border-border outline-ring/50;
     }
-    html, body {
+    html,
+    body {
         @apply bg-background text-foreground h-full overflow-hidden;
     }
 
@@ -296,7 +297,9 @@
 
     /* Hover lift effect */
     .hover-lift {
-        transition: transform 0.2s ease, box-shadow 0.2s ease;
+        transition:
+            transform 0.2s ease,
+            box-shadow 0.2s ease;
     }
     .hover-lift:hover {
         transform: translateY(-1px);
@@ -325,7 +328,12 @@
 
     /* Gradient text */
     .text-gradient-brand {
-        background: linear-gradient(135deg, var(--brand-1) 0%, var(--brand-2) 50%, var(--brand-3) 100%);
+        background: linear-gradient(
+            135deg,
+            var(--brand-1) 0%,
+            var(--brand-2) 50%,
+            var(--brand-3) 100%
+        );
         -webkit-background-clip: text;
         -webkit-text-fill-color: transparent;
         background-clip: text;
@@ -409,24 +417,48 @@
 
 /* Subtle border glow */
 .border-glow {
-    box-shadow: inset 0 0 0 1px var(--border), 0 0 0 1px var(--border);
+    box-shadow:
+        inset 0 0 0 1px var(--border),
+        0 0 0 1px var(--border);
 }
 
 /* ============================================
    UTILITY CLASSES FOR SEMANTIC COLORS
    ============================================ */
 
-.bg-calm { background-color: var(--calm); }
-.text-calm { color: var(--calm); }
-.bg-calm-soft { background-color: var(--calm-soft); }
+.bg-calm {
+    background-color: var(--calm);
+}
+.text-calm {
+    color: var(--calm);
+}
+.bg-calm-soft {
+    background-color: var(--calm-soft);
+}
 
-.bg-growth { background-color: var(--growth); }
-.text-growth { color: var(--growth); }
-.bg-growth-soft { background-color: var(--growth-soft); }
+.bg-growth {
+    background-color: var(--growth);
+}
+.text-growth {
+    color: var(--growth);
+}
+.bg-growth-soft {
+    background-color: var(--growth-soft);
+}
 
-.bg-energy { background-color: var(--energy); }
-.text-energy { color: var(--energy); }
-.bg-energy-soft { background-color: var(--energy-soft); }
+.bg-energy {
+    background-color: var(--energy);
+}
+.text-energy {
+    color: var(--energy);
+}
+.bg-energy-soft {
+    background-color: var(--energy-soft);
+}
 
-.bg-success { background-color: var(--success); }
-.text-success { color: var(--success); }
+.bg-success {
+    background-color: var(--success);
+}
+.text-success {
+    color: var(--success);
+}
