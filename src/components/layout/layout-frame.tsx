@@ -25,7 +25,7 @@ export function LayoutFrame({ children }: { children: React.ReactNode }) {
       <RouteChangeListener />
 
       {/* Sidebar rail – always visible */}
-      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[var(--sidebar-width)] border-r border-border/40 bg-background lg:block">
+      <aside className="fixed left-0 top-0 z-40 hidden h-screen w-[var(--sidebar-width)] border-r border-border/40 bg-background md:block">
         <SidebarNav />
       </aside>
 
@@ -35,7 +35,7 @@ export function LayoutFrame({ children }: { children: React.ReactNode }) {
       {/* Scrim – click to close left panel */}
       {isLeftPanelOpen && (
         <div
-          className="fixed inset-0 z-20 hidden bg-black/20 lg:block"
+          className="fixed inset-0 z-20 hidden bg-black/20 md:block"
           style={{ left: `calc(var(--sidebar-width) + var(--left-panel-width))` }}
           onClick={closeLeftPanel}
         />
@@ -43,7 +43,7 @@ export function LayoutFrame({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className={cn(
-        "min-w-0 h-screen overflow-hidden overflow-x-hidden pt-14 pb-16 md:pt-0 md:pb-0 transition-[padding] duration-200 ease-out lg:pl-[var(--sidebar-width)] lg:pr-0",
+        "min-w-0 h-screen overflow-hidden overflow-x-hidden pt-14 pb-16 md:pt-0 md:pb-0 transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width)] md:pr-0",
       )}>
         {children}
       </main>
