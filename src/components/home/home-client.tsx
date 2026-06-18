@@ -53,7 +53,7 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
   );
 
   // Fetch plan adjustment suggestions
-  const { suggestions = [], loading: suggestionsLoading, applySuggestion, dismissSuggestion } = usePlanAdjustments();
+  const { data: suggestions = [], isPending: suggestionsLoading, applySuggestion, dismissSuggestion } = usePlanAdjustments();
 
   // Billing entitlements for plan adjustment limit
   const { data: billing } = useBillingOverview();
@@ -256,7 +256,7 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
                     id={a.id}
                     title={a.title}
                     excerpt={a.excerpt}
-                    image={a.imageUrl ?? '/images/article-placeholder.svg'}
+                    image={a.imageUrl || '/images/article-placeholder.svg'}
                     category={a.category?.name}
                     postedAt={a.publishedAt}
                     likes={a.likeCount ?? 0}

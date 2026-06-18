@@ -23,7 +23,7 @@ export function usePlanAdjustments(autoLoad = true) {
   const queryClient = useQueryClient();
   const hasToken = useAuthStore((s) => s.isAuthenticated);
 
-  const { data: suggestions = [], isLoading: loading, error } = useQuery({
+  const { data = [], isPending, error } = useQuery({
     queryKey: ['plan-adjustments'],
     queryFn: () => getPendingPlanAdjustmentSuggestions(),
     enabled: autoLoad && hasToken,
@@ -86,10 +86,10 @@ export function usePlanAdjustments(autoLoad = true) {
   }, [queryClient]);
 
   return {
-    suggestions,
-    loading,
+    data,
+    isPending,
     error: error instanceof ApiError ? error.message : null,
-    total: suggestions.length,
+    total: data.length,
     createSuggestion,
     updateStatus,
     acceptSuggestion,

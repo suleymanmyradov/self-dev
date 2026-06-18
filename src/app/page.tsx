@@ -3,11 +3,11 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import { HomeClient } from '@/components/home/home-client';
 import {
-    listArticlesServer,
     listHabitsServer,
     getTodayCheckInsServer,
-    listCategoriesServer,
 } from '@/api/server';
+import { listArticlesCached, listCategoriesCached } from '@/api/server-cache';
+import { swallowOptional } from '@/lib/server-data';
 import { HomeSkeleton } from '@/components/home/home-skeleton';
 
 const AUTH_COOKIE_NAME = 'auth-token';
@@ -27,23 +27,19 @@ export default async function HomePage({
     const params = await searchParams;
     const category = typeof params?.category === 'string' ? params.category : undefined;
 
-    const categoriesPromise = listCategoriesServer('article').catch(err => {
-        if (process.env.NODE_ENV === 'development') {
-            console.error('[HomePage] Failed to load categories:', err);
-        }
-        return { data: [] };
-    });
-    const articlesPromise = (
-        category ? listArticlesServer({ category }) : listArticlesServer()
-    ).catch(() => ({ data: [], page: { total: 0, page: 1, limit: 20, totalPages: 0 } }));
-    const habitsPromise = listHabitsServer({ page: 1, limit: 100 }).catch(() => ({
-        data: [],
-        page: { total: 0, page: 1, limit: 100, totalPages: 0 },
-    }));
-    const checkInsPromise = getTodayCheckInsServer().catch(() => ({
-        data: [],
-        page: { total: 0, page: 1, limit: 20, totalPages: 0 },
-    }));
+    // Categories are non-critical — the client has hardcoded defaults.
+    // Uses the cached (unauthenticated) fetch since categories are public.
+    const categoriesPromise = swallowOptional(
+        listCategoriesCached('article'),
+        { data: [] },
+    );
+    // Articles are public content — use the cached fetch. Habits and check-ins
+    // are per-user and remain authenticated server fetches.
+    const articlesPromise = category
+        ? listArticlesCached({ category })
+        : listArticlesCached();
+    const habitsPromise = listHabitsServer({ page: 1, limit: 100 });
+    const checkInsPromise = getTodayCheckInsServer();
 
     return (
         <Suspense fallback={<HomeSkeleton />}>

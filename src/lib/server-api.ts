@@ -1,6 +1,7 @@
 import 'server-only';
 
 import { cookies } from 'next/headers';
+import { redirect } from 'next/navigation';
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { config, isDev } from './config';
 import { ApiError } from '@/api/axios-client';
@@ -19,10 +20,45 @@ export async function getServerAccessToken(): Promise<string | null> {
   return cookieStore.get(AUTH_COOKIE_NAME)?.value ?? null;
 }
 
-export async function serverRequest<T>(cfg: AxiosRequestConfig): Promise<T> {
-  const token = await getServerAccessToken();
-  const baseUrl = buildServerBaseUrl();
+/**
+ * Exchange a refresh token for a fresh token pair via the backend gateway.
+ * Used as a fallback when the proxy middleware's refresh didn't cover a
+ * request (e.g. clock-skew window between proxy and backend token validation).
+ *
+ * Note: the new cookies cannot be persisted from a Server Component (Next.js
+ * only allows cookie writes in Server Actions / Route Handlers). The proxy
+ * middleware remains the primary refresh mechanism; this is a last-resort
+ * retry to avoid crashing the server render with a 401.
+ */
+async function tryServerRefresh(
+  refreshToken: string,
+): Promise<{ accessToken: string; refreshToken: string } | null> {
+  const apiUrl = (process.env.NEXT_PUBLIC_API_PROXY_URL || 'http://localhost:8080')
+    .replace(/\/+$/, '')
+    .replace(/\/api\/v1$/, '');
   try {
+    const res = await fetch(`${apiUrl}/api/v1/auth/refresh`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refreshToken }),
+    });
+    if (!res.ok) return null;
+    const data = (await res.json().catch(() => null)) as
+      | { accessToken?: string; refreshToken?: string }
+      | null;
+    if (!data?.accessToken || !data?.refreshToken) return null;
+    return { accessToken: data.accessToken, refreshToken: data.refreshToken };
+  } catch {
+    return null;
+  }
+}
+
+export async function serverRequest<T>(cfg: AxiosRequestConfig): Promise<T> {
+  const cookieStore = await cookies();
+  let accessToken = cookieStore.get(AUTH_COOKIE_NAME)?.value ?? null;
+  const baseUrl = buildServerBaseUrl();
+
+  const doRequest = async (token: string | null): Promise<T> => {
     const response = await axios({
       ...cfg,
       url: `${baseUrl}${cfg.url}`,
@@ -34,7 +70,41 @@ export async function serverRequest<T>(cfg: AxiosRequestConfig): Promise<T> {
       timeout: cfg.timeout || 15000,
     });
     return response.data as T;
+  };
+
+  try {
+    return await doRequest(accessToken);
   } catch (error) {
+    // 401: the proxy middleware should have refreshed already, but a clock-skew
+    // window or a token revoked server-side can still cause this. Try one
+    // silent refresh; if that also fails, redirect to login instead of
+    // throwing (which would crash the streaming render).
+    if (error instanceof AxiosError && error.response?.status === 401) {
+      const refreshToken = cookieStore.get('refresh-token')?.value;
+      if (refreshToken) {
+        const refreshed = await tryServerRefresh(refreshToken);
+        if (refreshed) {
+          accessToken = refreshed.accessToken;
+          try {
+            return await doRequest(accessToken);
+          } catch (retryError) {
+            if (isDev) {
+              console.error('[Server API] Retry after refresh also failed:', retryError);
+            }
+            // Refresh succeeded but the retried request still 401'd — session
+            // is unrecoverable here. Redirect to login.
+            redirect('/login');
+          }
+        }
+      }
+      // No refresh token or refresh failed — session is dead.
+      if (isDev) {
+        console.error('[Server API] 401: no valid refresh token, redirecting to login');
+      }
+      redirect('/login');
+    }
+
+    // Non-401 error — surface as ApiError for error boundaries / callers.
     if (error instanceof AxiosError) {
       const status = error.response?.status ?? 0;
       const statusText = error.response?.statusText ?? 'Network Error';

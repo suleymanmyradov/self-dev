@@ -35,9 +35,15 @@ export function LayoutFrame({ children }: { children: React.ReactNode }) {
       {/* Scrim – click to close left panel */}
       {isLeftPanelOpen && (
         <div
-          className="fixed inset-0 z-20 hidden bg-black/20 md:block"
+          role="button"
+          tabIndex={0}
+          aria-label="Close panel"
+          className="fixed inset-0 z-20 hidden bg-black/20 md:block cursor-pointer"
           style={{ left: `calc(var(--sidebar-width) + var(--left-panel-width))` }}
           onClick={closeLeftPanel}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape' || e.key === 'Enter') closeLeftPanel();
+          }}
         />
       )}
 

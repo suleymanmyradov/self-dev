@@ -54,10 +54,15 @@ async function checkToken(token: string): Promise<TokenStatus> {
 
   try {
     const secret = new TextEncoder().encode(JWT_SECRET);
+    // clockTolerance must be ≤ the backend's DefaultLeeway (30s). With a
+    // larger value, the proxy considers a token "valid" after the backend
+    // has already expired it, causing 401s in server components. Using 0
+    // ensures the proxy refreshes as soon as the token expires, well before
+    // the backend would reject it (the backend's 30s leeway covers clock skew).
     const { payload } = await jwtVerify(token, secret, {
       issuer: JWT_ISSUER,
       audience: JWT_AUDIENCE,
-      clockTolerance: 60,
+      clockTolerance: 0,
     });
     return payload.typ === 'access' ? 'valid' : 'invalid';
   } catch (err: unknown) {

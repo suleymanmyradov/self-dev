@@ -195,7 +195,12 @@ export const CreateCheckInResponseDataSchema = z.object({
   aiFeedback: z.string().optional(),
 });
 
-export const CheckInsResponseSchema = ApiResponseSchema(z.array(CheckInSchema));
+// The backend returns { checkIns: [...] } for today/history endpoints, not
+// { data: [...] }. Accept both shapes and normalize to { data: [...] }.
+export const CheckInsResponseSchema = z.union([
+  ApiResponseSchema(z.array(CheckInSchema)),
+  z.object({ checkIns: z.array(CheckInSchema) }).transform((v) => ({ data: v.checkIns })),
+]);
 export const CheckInResponseSchema = ApiResponseSchema(CheckInSchema);
 
 // ============================================
@@ -223,6 +228,7 @@ export const ArticleSchema = z.object({
   isSaved: z.boolean().optional(),
   likeCount: z.number().int().nonnegative().optional(),
   isLiked: z.boolean().optional(),
+  tags: z.array(z.string()).optional(),
 });
 
 export const ArticlesResponseSchema = ApiResponseSchema(z.array(ArticleSchema)).extend({
@@ -461,7 +467,7 @@ export const CategorySchema = z.object({
   id: z.string(),
   name: z.string(),
   slug: z.string(),
-  entityType: EntityTypeSchema,
+  entityType: EntityTypeSchema.optional().or(z.literal('').transform(() => undefined)),
   sortOrder: z.number().int(),
   createdAt: z.string(),
   updatedAt: z.string(),

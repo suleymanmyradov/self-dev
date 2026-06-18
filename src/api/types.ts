@@ -228,6 +228,7 @@ export interface Article {
   isSaved?: boolean;
   likeCount?: number;
   isLiked?: boolean;
+  tags?: string[];
 }
 
 export interface ArticlesResponse extends ApiResponse<Article[]> {
@@ -532,7 +533,7 @@ export interface Category {
   id: string;
   name: string;
   slug: string;
-  entityType: EntityType;
+  entityType?: EntityType;
   sortOrder: number;
   createdAt: string;
   updatedAt: string;

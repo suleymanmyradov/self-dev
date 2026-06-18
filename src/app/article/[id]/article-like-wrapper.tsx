@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
+import { useState, useCallback } from "react";
 import { useLikeArticle } from "@/hooks";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
@@ -18,11 +18,16 @@ export default function ArticleLikeWrapper({ articleId, likeCount, isLiked }: Ar
   const [displayCount, setDisplayCount] = useState(likeCount);
   const [displayLiked, setDisplayLiked] = useState(isLiked);
 
-  // Keep local state in sync when navigating to a different article
-  useEffect(() => {
+  // Reset local state when navigating to a different article (render-time
+  // adjustment per React's "storing info from previous renders" pattern).
+  const [prevLikeCount, setPrevLikeCount] = useState(likeCount);
+  const [prevIsLiked, setPrevIsLiked] = useState(isLiked);
+  if (likeCount !== prevLikeCount || isLiked !== prevIsLiked) {
+    setPrevLikeCount(likeCount);
+    setPrevIsLiked(isLiked);
     setDisplayCount(likeCount);
     setDisplayLiked(isLiked);
-  }, [likeCount, isLiked]);
+  }
 
   const handleToggleLike = useCallback(() => {
     if (likeMutation.isPending) return;

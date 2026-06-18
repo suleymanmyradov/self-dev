@@ -23,10 +23,18 @@ export function ProfileClient({ profile }: ProfileClientProps) {
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Close the editor once a successful submission lands. Done as a render-time
+  // state adjustment (React's "storing info from previous renders" pattern)
+  // rather than setState-in-effect.
+  const [prevSuccess, setPrevSuccess] = useState(state.success);
+  if (state.success !== prevSuccess) {
+    setPrevSuccess(state.success);
+    if (state.success) setIsEditing(false);
+  }
+
   useEffect(() => {
     if (state.success) {
       toast.success("Profile updated successfully");
-      setIsEditing(false);
     } else if (state.error) {
       toast.error(state.error);
     }

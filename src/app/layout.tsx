@@ -1,4 +1,5 @@
 import type React from 'react';
+import { Suspense } from 'react';
 import type { Metadata } from 'next';
 import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
 import './globals.css';
@@ -11,6 +12,7 @@ import { ViewportWatcher } from '@/components/shared/viewport-watcher';
 import { MobileTopBar } from '@/components/shared/mobile-topbar';
 import { BottomTabBar } from '@/components/shared/bottom-tab-bar';
 import { Toaster } from '@/components/ui/sonner';
+import { WebVitals } from '@/app/web-vitals';
 
 const jakarta = Plus_Jakarta_Sans({
     subsets: ['latin'],
@@ -48,11 +50,16 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                         <ViewportWatcher />
                         <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
                             <MobileTopBar />
-                            <LayoutFrame>
-                                {children}
-                            </LayoutFrame>
-                            <BottomTabBar />
+                            <Suspense fallback={null}>
+                                <LayoutFrame>
+                                    {children}
+                                </LayoutFrame>
+                            </Suspense>
+                            <Suspense fallback={null}>
+                                <BottomTabBar />
+                            </Suspense>
                         </div>
+                        <WebVitals />
                         <Toaster />
                     </QueryProvider>
                 </ThemeProvider>
