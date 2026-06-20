@@ -4,16 +4,15 @@ import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 import { getCategoryBadgeClass } from '@/lib/category-styles';
 import type { HabitTemplate, GoalTemplate } from '@/types/explore';
-import type { HabitCategory, GoalCategory } from '@/api/types';
 
 interface HabitTemplateCardProps {
   template: HabitTemplate;
-  onAdd: (data: { name: string; description: string; category: HabitCategory }) => void;
+  onAdd: (data: { name: string; description: string; category: string }) => void;
 }
 
 interface GoalTemplateCardProps {
   template: GoalTemplate;
-  onAdd: (data: { title: string; description: string; category: GoalCategory }) => void;
+  onAdd: (data: { title: string; description: string; category: string }) => void;
 }
 
 export function HabitTemplateCard({ template, onAdd }: HabitTemplateCardProps) {
@@ -36,7 +35,7 @@ export function HabitTemplateCard({ template, onAdd }: HabitTemplateCardProps) {
             onAdd({
               name: template.name,
               description: template.description,
-              category: template.category as HabitCategory,
+              category: template.category,
             })
           }
         >
@@ -67,7 +66,7 @@ export function GoalTemplateCard({ template, onAdd }: GoalTemplateCardProps) {
             onAdd({
               title: template.title,
               description: template.description,
-              category: template.category as GoalCategory,
+              category: template.category,
             })
           }
         >

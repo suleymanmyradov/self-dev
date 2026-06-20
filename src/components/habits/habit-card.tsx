@@ -99,12 +99,12 @@ export const HabitCard = memo(function HabitCard({ habit: h, onEdit, onDelete, o
             </div>
             <div className="flex flex-wrap gap-1">
               {Array.from({ length: 28 }).map((_, i) => {
-                // Index 27 is today. If recentHistory is missing/short but the
-                // habit is marked completed today, still light up today's cell
-                // so the graph agrees with the completed flag across the
-                // midnight timezone boundary.
-                const isToday = i === 27;
-                const done = h.recentHistory?.[i] ?? (isToday && h.completed);
+                // Render left=today, right=27 days ago. recentHistory is
+                // stored oldest-first (index 0 = 27 days ago, 27 = today),
+                // so reverse the index when looking up.
+                const histIdx = 27 - i;
+                const isToday = histIdx === 27;
+                const done = h.recentHistory?.[histIdx] ?? (isToday && h.completed);
                 return (
                   <div
                     key={i}

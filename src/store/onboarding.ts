@@ -3,7 +3,6 @@
 import { create } from 'zustand';
 import { persist, createJSONStorage } from 'zustand/middleware';
 import { getSafeStorage } from '@/lib/safe-storage';
-import type { GoalCategory } from '@/api/types';
 import type { AccountabilityStyle } from '@/lib/constants';
 
 export type HabitSuggestion = {
@@ -14,7 +13,7 @@ export type HabitSuggestion = {
 
 export type OnboardingData = {
   goalTitle: string;
-  goalCategory: GoalCategory;
+  goalCategory: string;
   motivation: string;
   blocker: string;
   dailyMinutes: number;
@@ -27,7 +26,7 @@ export const TOTAL_STEPS = 7;
 
 const initialData: OnboardingData = {
   goalTitle: '',
-  goalCategory: 'productivity',
+  goalCategory: '',
   motivation: '',
   blocker: '',
   dailyMinutes: 30,

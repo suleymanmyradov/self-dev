@@ -5,8 +5,9 @@ import type { Goal } from '@/api';
 const DEFAULT_FORM: GoalFormValues = {
   title: '',
   description: '',
-  category: 'productivity',
+  category: '',
   progress: 0,
+  relatedHabitIds: [],
 };
 
 export function useGoalForm(initial?: Partial<GoalFormValues>) {
@@ -41,6 +42,16 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
     setForm((f) => ({ ...f, progress }));
   }, []);
 
+  const toggleHabitId = useCallback((habitId: string) => {
+    setForm((f) => {
+      const current = f.relatedHabitIds ?? [];
+      const next = current.includes(habitId)
+        ? current.filter((id) => id !== habitId)
+        : [...current, habitId];
+      return { ...f, relatedHabitIds: next };
+    });
+  }, []);
+
   const reset = useCallback((override?: Partial<GoalFormValues>) => {
     setForm({ ...DEFAULT_FORM, ...(override ?? initialRef.current) });
     setError(null);
@@ -50,9 +61,10 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
     setForm({
       title: goal.title,
       description: goal.description,
-      category: goal.category as GoalFormValues['category'],
+      category: goal.category,
       dueDate: goal.dueDate,
       progress: goal.progress,
+      relatedHabitIds: goal.relatedHabitIds ?? [],
     });
     setError(null);
   }, []);
@@ -70,6 +82,7 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
       description: form.description.trim(),
       category: form.category,
       dueDate: form.dueDate,
+      relatedHabitIds: form.relatedHabitIds ?? [],
     };
   }, [form]);
 
@@ -81,6 +94,7 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
     setCategory,
     setDueDate,
     setProgress,
+    toggleHabitId,
     reset,
     loadGoal,
     validate,

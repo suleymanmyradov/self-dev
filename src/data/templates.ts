@@ -8,7 +8,7 @@ export const HABIT_TEMPLATES: HabitTemplate[] = [
 ];
 
 export const GOAL_TEMPLATES: GoalTemplate[] = [
-  { title: 'Ship a side project', description: 'MVP within 4 weeks', category: 'productivity', progress: 0 },
-  { title: 'Run 5K', description: 'Train 3x weekly for 6 weeks', category: 'health', progress: 0 },
-  { title: '30-day meditation', description: 'Daily 10 minutes', category: 'mindfulness', progress: 0 },
+  { title: 'Ship a side project', description: 'MVP within 4 weeks', category: 'work', progress: 0 },
+  { title: 'Run 5K', description: 'Train 3x weekly for 6 weeks', category: 'leisure', progress: 0 },
+  { title: '30-day meditation', description: 'Daily 10 minutes', category: 'calm', progress: 0 },
 ];

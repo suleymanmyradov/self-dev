@@ -30,7 +30,8 @@ export type EmptyResponse = Record<string, never>;
 // Goal Types
 // ============================================
 
-export type GoalCategory = 'productivity' | 'health' | 'mindfulness';
+// Category slugs come from the DB categories table, not a hardcoded enum.
+export type GoalCategory = string;
 
 export interface Goal {
   id: string;

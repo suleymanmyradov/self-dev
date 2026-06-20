@@ -3,11 +3,8 @@
  */
 
 // Categories
-export const HABIT_CATEGORIES = ['productivity', 'health', 'mindfulness'] as const;
-export type HabitCategory = (typeof HABIT_CATEGORIES)[number];
-
-export const GOAL_CATEGORIES = ['productivity', 'health', 'mindfulness'] as const;
-export type GoalCategory = (typeof GOAL_CATEGORIES)[number];
+// Category slugs come from the DB categories table, not a hardcoded enum.
+// See useCategories() hook and the categories API.
 
 // Category color styles - shared across components (habits, goals, articles)
 // All entries use consistent pattern: bg-*-soft text-* border-*/20

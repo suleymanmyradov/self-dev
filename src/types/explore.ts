@@ -1,4 +1,5 @@
-import type { HabitCategory, GoalCategory } from '@/api/types';
+// Category slugs come from the DB categories table (string), shared by habits and goals.
+export type TemplateCategory = string;
 
 export type ArticleCategory =
   | 'productivity'
@@ -7,8 +8,6 @@ export type ArticleCategory =
   | 'philosophy'
   | 'relationships'
   | 'psychology';
-
-export type TemplateCategory = HabitCategory | GoalCategory;
 
 export interface HabitTemplate {
   name: string;

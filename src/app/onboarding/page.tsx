@@ -8,7 +8,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
 import { createGoal, createHabit, updateSettings } from '@/api';
 import {
-  GOAL_CATEGORIES,
   ACCOUNTABILITY_STYLES,
   ACCOUNTABILITY_STYLE_LABELS,
   ACCOUNTABILITY_STYLE_DESCRIPTIONS,
@@ -16,6 +15,7 @@ import {
   CHECK_IN_HOURS,
   DAILY_COMMITMENT_OPTIONS,
 } from '@/lib/constants';
+import { useCategories } from '@/hooks';
 import { useOnboardingStore, TOTAL_STEPS } from '@/store/onboarding';
 import { ArrowLeft, ArrowRight, Check, Loader2, Sparkles } from 'lucide-react';
 
@@ -57,6 +57,8 @@ export default function OnboardingPage() {
   const setError = useOnboardingStore((s) => s.setError);
   const setHabitSuggestions = useOnboardingStore((s) => s.setHabitSuggestions);
   const toggleHabitSelection = useOnboardingStore((s) => s.toggleHabitSelection);
+
+  const { data: categories = [] } = useCategories('goal');
 
   const update = <K extends keyof typeof state>(key: K, value: (typeof state)[K]) => {
     updateField(key, value);
@@ -253,21 +255,25 @@ Rules:
                 <div className="space-y-2">
                   <label className="text-sm font-medium">Category</label>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                    {GOAL_CATEGORIES.map((cat) => (
-                      <button
-                        key={cat}
-                        type="button"
-                        onClick={() => update('goalCategory', cat)}
-                        className={cn(
-                          'rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2',
-                          state.goalCategory === cat
-                            ? 'border-primary bg-primary/10 text-primary'
-                            : 'border-border/60 bg-background hover:border-border hover:bg-muted/40'
-                        )}
-                      >
-                        {cat}
-                      </button>
-                    ))}
+                    {categories.length === 0 ? (
+                      <p className="col-span-full text-sm text-muted-foreground">Loading categories…</p>
+                    ) : (
+                      categories.map((cat) => (
+                        <button
+                          key={cat.slug}
+                          type="button"
+                          onClick={() => update('goalCategory', cat.slug)}
+                          className={cn(
+                            'rounded-lg border px-3 py-2 text-sm font-medium capitalize transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2',
+                            state.goalCategory === cat.slug
+                              ? 'border-primary bg-primary/10 text-primary'
+                              : 'border-border/60 bg-background hover:border-border hover:bg-muted/40'
+                          )}
+                        >
+                          {cat.name}
+                        </button>
+                      ))
+                    )}
                   </div>
                 </div>
               </div>

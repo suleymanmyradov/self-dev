@@ -13,7 +13,7 @@ import { useBillingUIStore } from "@/store/billing-ui";
 import { useShallow } from "zustand/react/shallow";
 
 const GoalFormDialog = dynamic(() => import("@/components/goals/goal-form-dialog").then((mod) => mod.GoalFormDialog));
-import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useConfirmDelete, useBillingOverview } from "@/hooks";
+import { useGoals, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useConfirmDelete, useBillingOverview, useCategories, useHabits } from "@/hooks";
 import type { Goal, GoalsResponse } from "@/api";
 import Link from "next/link";
 import { Plus, Target, Trophy } from "lucide-react";
@@ -33,6 +33,8 @@ export function GoalsClient({ goalsPromise }: GoalsClientProps) {
   const { data: billing } = useBillingOverview();
   const isPro = billing?.subscription?.planCode === "pro";
   const trackUpgradeEvent = useTrackUpgradeEvent();
+  const { data: categories = [] } = useCategories('goal');
+  const { data: habits = [] } = useHabits();
 
   const { data: articlesData } = useQuery({
     queryKey: ["articles", "recommended"],
@@ -70,7 +72,7 @@ export function GoalsClient({ goalsPromise }: GoalsClientProps) {
   const deleteConfirm = useConfirmDelete<string>();
 
   const handleCreate = useCallback(
-    (validated: { title: string; description: string; category: string; dueDate?: string }) => {
+    (validated: { title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[] }) => {
       // Check entitlement before creating
       if (entitlements && !entitlements.canCreateGoal) {
         showUpgradePrompt("goal_create_limit", "goal_limit");
@@ -82,7 +84,7 @@ export function GoalsClient({ goalsPromise }: GoalsClientProps) {
         });
         return;
       }
-      createMutation.mutate({ ...validated, category: validated.category as import("@/api").GoalCategory }, {
+      createMutation.mutate(validated, {
         onSuccess: () => {
           setCreateOpen(false);
         },
@@ -104,10 +106,10 @@ export function GoalsClient({ goalsPromise }: GoalsClientProps) {
   }, []);
 
   const handleSaveEdit = useCallback(
-    (validated: { title: string; description: string; category: string; dueDate?: string }) => {
+    (validated: { title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[] }) => {
       if (!editingGoal) return;
       updateMutation.mutate(
-        { id: editingGoal.id, data: { ...validated, category: validated.category as import("@/api").GoalCategory } },
+        { id: editingGoal.id, data: validated },
         { onSuccess: () => setEditOpen(false) }
       );
     },
@@ -273,6 +275,8 @@ export function GoalsClient({ goalsPromise }: GoalsClientProps) {
         open={createOpen}
         onOpenChange={setCreateOpen}
         mode="create"
+        categories={categories}
+        habits={habits}
         onSubmit={handleCreate}
       />
 
@@ -281,12 +285,15 @@ export function GoalsClient({ goalsPromise }: GoalsClientProps) {
         open={editOpen}
         onOpenChange={setEditOpen}
         mode="edit"
+        categories={categories}
+        habits={habits}
         initialValues={editingGoal ? {
           title: editingGoal.title,
           description: editingGoal.description,
           category: editingGoal.category,
           dueDate: editingGoal.dueDate,
           progress: editingGoal.progress,
+          relatedHabitIds: editingGoal.relatedHabitIds ?? [],
         } : undefined}
         onProgressChange={handleProgressChange}
         onSubmit={handleSaveEdit}

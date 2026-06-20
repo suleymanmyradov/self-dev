@@ -81,16 +81,16 @@ export const AuthResponseSchema = z.object({
 // Goal Schemas
 // ============================================
 
-export const GoalCategorySchema = z.enum(['productivity', 'health', 'mindfulness']);
+export const GoalCategorySchema = z.string().min(1).max(50);
 
 export const GoalSchema = z.object({
   id: z.string(),
   title: z.string().min(1).max(200),
   description: z.string().max(2000),
-  // Tolerant on read: the DB categories table may contain slugs (or empty
-  // strings from NULL category_id LEFT JOINs) that aren't in the frontend
-  // enum. Fall back to 'productivity' so list responses never throw.
-  category: GoalCategorySchema.catch('productivity'),
+  // The raw category slug from the DB. May be an empty string or an unknown
+  // slug if the goal's category_id is missing/unrecognized — surfaced rather
+  // than masked.
+  category: z.string(),
   dueDate: z.string().optional(),
   progress: z.number().min(0).max(100),
   completed: z.boolean(),

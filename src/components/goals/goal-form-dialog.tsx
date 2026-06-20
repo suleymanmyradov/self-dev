@@ -6,8 +6,11 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Progress } from "@/components/ui/progress";
-import { GOAL_CATEGORIES } from "@/lib/constants";
+import { Checkbox } from "@/components/ui/checkbox";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { ChevronDown, Link2 } from "lucide-react";
 import type { GoalFormValues } from "@/lib/validators/goal";
+import type { Category, Habit } from "@/api";
 import { useGoalForm } from "@/hooks";
 
 export type GoalFormDialogProps = {
@@ -19,9 +22,12 @@ export type GoalFormDialogProps = {
   onSubmit: (data: {
     title: string;
     description: string;
-    category: GoalFormValues["category"];
+    category: string;
     dueDate?: string;
+    relatedHabitIds: string[];
   }) => void;
+  categories?: Category[]; // DB categories (source of truth for the dropdown)
+  habits?: Habit[]; // User's habits to link to the goal
 };
 
 export function GoalFormDialog({
@@ -31,8 +37,10 @@ export function GoalFormDialog({
   initialValues,
   onProgressChange,
   onSubmit,
+  categories = [],
+  habits = [],
 }: GoalFormDialogProps) {
-  const { form, error, setTitle, setDescription, setCategory, setDueDate, setProgress, reset, validate } =
+  const { form, error, setTitle, setDescription, setCategory, setDueDate, setProgress, toggleHabitId, reset, validate } =
     useGoalForm(initialValues);
 
   // Reset form when dialog opens with new initial values
@@ -72,19 +80,30 @@ export function GoalFormDialog({
             />
           </div>
           <div className="grid gap-1">
-            <label htmlFor="goal-category" className="text-sm font-medium">Category</label>
-            <select
-              id="goal-category"
-              className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2"
-              value={form.category}
-              onChange={(e) => setCategory(e.target.value as GoalFormValues["category"])}
-            >
-              {GOAL_CATEGORIES.map((c) => (
-                <option key={c} value={c} className="capitalize">
-                  {c}
-                </option>
-              ))}
-            </select>
+            <label className="text-sm font-medium">Category</label>
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button variant="outline" className="justify-between capitalize">
+                  {form.category || "Select a category"}
+                  <ChevronDown className="ml-2 h-4 w-4 opacity-60" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="start" className="w-56">
+                {categories.length === 0 ? (
+                  <DropdownMenuItem disabled>Loading categories…</DropdownMenuItem>
+                ) : (
+                  categories.map((c) => (
+                    <DropdownMenuItem
+                      key={c.slug}
+                      onClick={() => setCategory(c.slug)}
+                      className="capitalize"
+                    >
+                      {c.name}
+                    </DropdownMenuItem>
+                  ))
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
           <div className="grid gap-1">
             <label className="text-sm font-medium">Due date</label>
@@ -93,6 +112,42 @@ export function GoalFormDialog({
               value={form.dueDate ?? ""}
               onChange={(e) => setDueDate(e.target.value || undefined)}
             />
+          </div>
+          {/* Linked habits */}
+          <div className="grid gap-1.5">
+            <div className="flex items-center gap-1.5">
+              <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+              <label className="text-sm font-medium">Linked habits</label>
+              {(form.relatedHabitIds?.length ?? 0) > 0 && (
+                <span className="text-xs text-muted-foreground">
+                  {form.relatedHabitIds!.length} selected
+                </span>
+              )}
+            </div>
+            {habits.length === 0 ? (
+              <p className="text-xs text-muted-foreground">
+                No habits yet. Create habits first to link them to this goal.
+              </p>
+            ) : (
+              <div className="max-h-40 overflow-y-auto rounded-lg border border-border p-1">
+                {habits.map((h) => {
+                  const checked = form.relatedHabitIds?.includes(h.id) ?? false;
+                  return (
+                    <label
+                      key={h.id}
+                      className="flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-1.5 text-sm hover:bg-accent transition-colors"
+                    >
+                      <Checkbox
+                        checked={checked}
+                        onCheckedChange={() => toggleHabitId(h.id)}
+                        aria-label={`Link habit ${h.name}`}
+                      />
+                      <span className="truncate">{h.name}</span>
+                    </label>
+                  );
+                })}
+              </div>
+            )}
           </div>
           {mode === "edit" && onProgressChange && (
             <div className="grid gap-2">
