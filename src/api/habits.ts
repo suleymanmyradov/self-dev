@@ -16,7 +16,6 @@ import type {
 const ENDPOINTS = {
   HABITS: '/habits',
   HABIT: (id: string) => `/habits/${encodeURIComponent(id)}`,
-  HABIT_TOGGLE: (id: string) => `/habits/${encodeURIComponent(id)}/toggle`,
   HABITS_RESET_TODAY: '/habits/reset-today',
 };
 
@@ -59,14 +58,6 @@ export async function updateHabit(id: string, data: UpdateHabitRequest): Promise
  */
 export async function deleteHabit(id: string): Promise<void> {
   await api.delete(ENDPOINTS.HABIT(id));
-}
-
-/**
- * Toggle habit completion status
- */
-export async function toggleHabit(id: string): Promise<HabitResponse> {
-  const response = await api.post<unknown>(ENDPOINTS.HABIT_TOGGLE(id));
-  return HabitResponseSchema.parse(response);
 }
 
 /**
