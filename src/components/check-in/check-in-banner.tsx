@@ -23,7 +23,7 @@ export function CheckInBanner({ habits, todayCheckIns = [], onCheckInAll }: Chec
 
   if (habits.length === 0) {
     return (
-      <div className="card-elevated rounded-lg p-4 text-sm text-muted-foreground">
+      <div className="card-elevated mb-6 rounded-lg p-4 text-sm text-muted-foreground">
         No habits yet. Create one to start checking in daily.
       </div>
     );
@@ -31,7 +31,7 @@ export function CheckInBanner({ habits, todayCheckIns = [], onCheckInAll }: Chec
 
   return (
     <div className={cn(
-      "card-elevated rounded-xl p-4 transition-all duration-300",
+      "card-elevated mb-6 rounded-xl p-4 transition-all duration-300",
       allChecked && "bg-growth/5 border-growth/20"
     )}>
       <div className="flex items-center justify-between">

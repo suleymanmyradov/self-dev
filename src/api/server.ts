@@ -45,6 +45,24 @@ export async function listHabitsServer(params: PageParams = { page: 1, limit: 20
   return HabitsResponseSchema.parse(data);
 }
 
+// Fetch every habits page server-side so the SSR initial data is not truncated
+// for users with >100 habits (the API caps `limit` at 100). The returned
+// `page` metadata reflects the totals from the first page.
+export async function listAllHabitsServer(): Promise<HabitsResponse> {
+  const limit = 100;
+  const first = await listHabitsServer({ page: 1, limit });
+  if (first.data.length >= first.page.total) {
+    return first;
+  }
+  const all = [...first.data];
+  for (let page = 2; page <= first.page.totalPages; page++) {
+    const res = await listHabitsServer({ page, limit });
+    all.push(...res.data);
+    if (all.length >= first.page.total) break;
+  }
+  return { data: all, page: first.page };
+}
+
 export async function getTodayCheckInsServer(params: PageParams = { page: 1, limit: 20 }): Promise<CheckInsResponse> {
   const data = await serverGet<unknown>('/check-ins/today', params);
   return CheckInsResponseSchema.parse(data);

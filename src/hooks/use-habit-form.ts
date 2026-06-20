@@ -5,13 +5,7 @@ import type { Habit } from '@/api';
 const DEFAULT_FORM: HabitFormValues = {
   name: '',
   description: '',
-  category: 'productivity',
-};
-
-const DEFAULT_EDIT_FORM: HabitFormValues & { streak: number; completed: boolean } = {
-  ...DEFAULT_FORM,
-  streak: 0,
-  completed: false,
+  category: '', // set from the DB categories dropdown
 };
 
 export function useHabitForm() {
@@ -41,23 +35,21 @@ export function useHabitForm() {
 export function useHabitEditForm() {
   const [open, setOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState<HabitFormValues & { streak: number; completed: boolean }>(DEFAULT_EDIT_FORM);
+  const [form, setForm] = useState<HabitFormValues>(DEFAULT_FORM);
 
   const openEdit = useCallback((habit: Habit) => {
     setEditingId(habit.id);
     setForm({
       name: habit.name,
       description: habit.description,
-      category: habit.category as HabitFormValues['category'],
-      streak: habit.streak,
-      completed: habit.completed,
+      category: habit.category,
     });
     setOpen(true);
   }, []);
 
   const reset = useCallback(() => {
     setEditingId(null);
-    setForm(DEFAULT_EDIT_FORM);
+    setForm(DEFAULT_FORM);
     setOpen(false);
   }, []);
 

@@ -1,12 +1,14 @@
 import { z } from 'zod';
-import { HABIT_CATEGORIES } from '@/lib/constants';
 
+// Category slugs come from the DB categories table (fetched at runtime), not a
+// hardcoded enum. Validate that it's a non-empty string; the DB FK enforces
+// existence.
+// Streak and completed are derived from check_ins history — not editable
+// from the form. The form only edits name, description, and category.
 export const HabitSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
   description: z.string().optional().default(''),
-  category: z.enum(HABIT_CATEGORIES, { message: 'Invalid category' }),
-  streak: z.number().int().min(0).optional(),
-  completed: z.boolean().optional(),
+  category: z.string().min(1, 'Category is required'),
 });
 
 export const CreateHabitSchema = HabitSchema.pick({

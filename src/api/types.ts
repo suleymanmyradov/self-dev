@@ -76,7 +76,8 @@ export type GoalResponse = ApiResponse<Goal>;
 // Habit Types
 // ============================================
 
-export type HabitCategory = 'productivity' | 'health' | 'mindfulness';
+// Category slugs come from the DB categories table, not a hardcoded enum.
+export type HabitCategory = string;
 
 export interface Habit {
   id: string;
@@ -84,8 +85,14 @@ export interface Habit {
   description: string;
   streak: number;
   completed: boolean;
-  category: HabitCategory;
+  // The raw category slug from the DB. May be an empty string or an unknown
+  // slug if the habit's category_id is missing/unrecognized — surfaced rather
+  // than masked.
+  category: string;
   userId: string;
+  // Last 28 days of completion (oldest first, index 0 = 27 days ago).
+  // Populated by ListHabits; may be empty for single-habit responses.
+  recentHistory?: boolean[];
   createdAt: string;
   updatedAt: string;
 }
@@ -93,13 +100,13 @@ export interface Habit {
 export interface CreateHabitRequest {
   name: string;
   description: string;
-  category: HabitCategory;
+  category: string;
 }
 
 export interface UpdateHabitRequest {
   name?: string;
   description?: string;
-  category?: HabitCategory;
+  category?: string;
 }
 
 export interface HabitsResponse extends ApiResponse<Habit[]> {

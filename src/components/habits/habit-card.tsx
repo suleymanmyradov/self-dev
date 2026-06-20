@@ -19,7 +19,8 @@ export type HabitCardProps = {
 };
 
 export const HabitCard = memo(function HabitCard({ habit: h, onEdit, onDelete, onCheckIn, deleting }: HabitCardProps) {
-  const categoryStyle = CATEGORY_COLORS[h.category] || "bg-secondary text-secondary-foreground border-border";
+  const categoryStyle = CATEGORY_COLORS[h.category as keyof typeof CATEGORY_COLORS] || "bg-secondary text-secondary-foreground border-border";
+  const categoryLabel = h.category ? h.category : "uncategorized";
 
   return (
     <Card
@@ -62,9 +63,9 @@ export const HabitCard = memo(function HabitCard({ habit: h, onEdit, onDelete, o
             </h3>
             <div className="flex items-center gap-2">
               <Badge variant="outline" className={cn("shrink-0 capitalize border", categoryStyle)}>
-                {h.category}
+                {categoryLabel}
               </Badge>
-              <DropdownMenu>
+              <DropdownMenu modal={false}>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" size="icon-sm" className="h-8 w-8" aria-label="Open actions menu">
                     <MoreHorizontal className="h-4 w-4" />
@@ -98,20 +99,19 @@ export const HabitCard = memo(function HabitCard({ habit: h, onEdit, onDelete, o
             </div>
             <div className="flex flex-wrap gap-1">
               {Array.from({ length: 28 }).map((_, i) => {
-                const intensity = Math.min(3, Math.floor((h.streak + i * 0.5) % 4));
-                const colors = [
-                  "bg-muted",
-                  "bg-growth/30",
-                  "bg-growth/60",
-                  "bg-growth"
-                ];
+                // Index 27 is today. If recentHistory is missing/short but the
+                // habit is marked completed today, still light up today's cell
+                // so the graph agrees with the completed flag across the
+                // midnight timezone boundary.
+                const isToday = i === 27;
+                const done = h.recentHistory?.[i] ?? (isToday && h.completed);
                 return (
                   <div
                     key={i}
                     aria-hidden="true"
                     className={cn(
                       "h-3 w-2.5 rounded-sm transition-colors",
-                      colors[intensity]
+                      done ? "bg-growth" : "bg-muted"
                     )}
                   />
                 );
@@ -127,6 +127,7 @@ export const HabitCard = memo(function HabitCard({ habit: h, onEdit, onDelete, o
           size="sm"
           variant={h.completed ? "success" : "growth"}
           onClick={() => onCheckIn(h)}
+          disabled={h.completed}
           className="min-w-[120px]"
         >
           {h.completed ? (

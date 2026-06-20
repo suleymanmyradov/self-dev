@@ -1,9 +1,10 @@
 import type { HabitTemplate, GoalTemplate } from '@/types/explore';
 
+// Category slugs must match the categories table in the DB.
 export const HABIT_TEMPLATES: HabitTemplate[] = [
-  { name: 'Morning Walk', description: '15-minute walk to start the day fresh', category: 'health' },
-  { name: 'Read 10 pages', description: 'Non-fiction personal growth', category: 'productivity' },
-  { name: 'Meditate', description: '5–10 minutes of mindfulness', category: 'mindfulness' },
+  { name: 'Morning Walk', description: '15-minute walk to start the day fresh', category: 'leisure' },
+  { name: 'Read 10 pages', description: 'Non-fiction personal growth', category: 'work' },
+  { name: 'Meditate', description: '5–10 minutes of mindfulness', category: 'calm' },
 ];
 
 export const GOAL_TEMPLATES: GoalTemplate[] = [

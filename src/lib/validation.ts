@@ -87,7 +87,10 @@ export const GoalSchema = z.object({
   id: z.string(),
   title: z.string().min(1).max(200),
   description: z.string().max(2000),
-  category: GoalCategorySchema,
+  // Tolerant on read: the DB categories table may contain slugs (or empty
+  // strings from NULL category_id LEFT JOINs) that aren't in the frontend
+  // enum. Fall back to 'productivity' so list responses never throw.
+  category: GoalCategorySchema.catch('productivity'),
   dueDate: z.string().optional(),
   progress: z.number().min(0).max(100),
   completed: z.boolean(),
@@ -127,7 +130,11 @@ export const GoalResponseSchema = ApiResponseSchema(GoalSchema);
 // Habit Schemas
 // ============================================
 
-export const HabitCategorySchema = z.enum(['productivity', 'health', 'mindfulness']);
+// Category slugs are driven by the `categories` table in the DB, not a
+// hardcoded frontend enum — the DB is the source of truth and new categories
+// can be added without a frontend deploy. Validate that it's a non-empty
+// slug string on the write side; the DB FK enforces existence.
+export const HabitCategorySchema = z.string().min(1).max(50);
 
 export const HabitSchema = z.object({
   id: z.string(),
@@ -135,8 +142,18 @@ export const HabitSchema = z.object({
   description: z.string().max(2000),
   streak: z.number().int().nonnegative(),
   completed: z.boolean(),
-  category: HabitCategorySchema,
+  // Accept the raw category slug from the DB. An empty string (from a NULL
+  // category_id LEFT JOIN) is surfaced to the UI as "uncategorized" instead of
+  // being masked.
+  category: z.string(),
   userId: z.string(),
+  // The Go backend serializes unset `[]bool` fields as `null` (go-zero's
+  // `optional` tag is not `omitempty`). Normalize null → undefined so the
+  // parsed type stays `boolean[] | undefined`.
+  recentHistory: z.preprocess(
+    (v) => (v === null ? undefined : v),
+    z.array(z.boolean()).optional(),
+  ),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -168,14 +185,20 @@ export const CheckInMoodSchema = z.enum(['great', 'okay', 'low', 'stressed']);
 export const CheckInEnergySchema = z.enum(['high', 'medium', 'low']);
 export const CheckInBlockerSchema = z.enum(['lack_of_time', 'low_motivation', 'too_distracted', 'unclear_plan', 'other']);
 
+// The Go backend serializes unset optional enum fields as empty strings ("")
+// because go-zero's `optional` struct tag is not `omitempty`. Normalize "" to
+// undefined so Zod's enum schemas accept the response.
+const optionalEnum = <T extends z.ZodTypeAny>(schema: T) =>
+  z.preprocess((v) => (v === '' || v === null ? undefined : v), schema.optional());
+
 export const CheckInSchema = z.object({
   id: z.string(),
   userId: z.string(),
   habitId: z.string(),
   status: CheckInStatusSchema,
-  mood: CheckInMoodSchema.optional(),
-  energy: CheckInEnergySchema.optional(),
-  blocker: CheckInBlockerSchema.optional(),
+  mood: optionalEnum(CheckInMoodSchema),
+  energy: optionalEnum(CheckInEnergySchema),
+  blocker: optionalEnum(CheckInBlockerSchema),
   note: z.string().max(2000).optional(),
   createdAt: z.string(),
 });

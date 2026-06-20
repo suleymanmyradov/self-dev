@@ -158,7 +158,6 @@ export {
   createHabit,
   updateHabit,
   deleteHabit,
-  toggleHabit,
   resetTodayHabits,
 } from './habits';
 

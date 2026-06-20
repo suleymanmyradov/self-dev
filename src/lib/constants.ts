@@ -12,17 +12,23 @@ export type GoalCategory = (typeof GOAL_CATEGORIES)[number];
 // Category color styles - shared across components (habits, goals, articles)
 // All entries use consistent pattern: bg-*-soft text-* border-*/20
 export const CATEGORY_COLORS: Record<string, string> = {
-  // Core categories
+  // Core categories (legacy frontend enum — kept for backward compat)
   health: "bg-growth-soft text-growth border-growth/20",
   productivity: "bg-primary/10 text-primary border-primary/20",
   mindfulness: "bg-calm-soft text-calm border-calm/20",
+  // Actual DB category slugs (categories table)
+  calm: "bg-calm-soft text-calm border-calm/20",
+  leisure: "bg-energy-soft text-energy border-energy/20",
+  relationships: "bg-energy-soft text-energy border-energy/20",
+  "self-knowledge": "bg-primary/10 text-primary border-primary/20",
+  sociability: "bg-energy-soft text-energy border-energy/20",
+  work: "bg-primary/10 text-primary border-primary/20",
   // Goal-specific
   career: "bg-energy-soft text-energy border-energy/20",
   personal: "bg-calm-soft text-calm border-calm/20",
   // Article-specific
   philosophy: "bg-calm-soft text-calm border-calm/20",
   habits: "bg-growth-soft text-growth border-growth/20",
-  relationships: "bg-energy-soft text-energy border-energy/20",
   // Additional common article categories
   learning: "bg-primary/10 text-primary border-primary/20",
   wellness: "bg-growth-soft text-growth border-growth/20",

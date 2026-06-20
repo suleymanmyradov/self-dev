@@ -1,10 +1,10 @@
 import { Suspense } from 'react';
 import { HabitsClient } from '@/components/habits/habits-client';
-import { listHabitsServer, getTodayCheckInsServer } from '@/api/server';
+import { listAllHabitsServer, getTodayCheckInsServer } from '@/api/server';
 import { HabitsSkeleton } from '@/components/habits/habits-skeleton';
 
 export default async function HabitsPage() {
-  const habitsPromise = listHabitsServer({ page: 1, limit: 100 });
+  const habitsPromise = listAllHabitsServer();
   const checkInsPromise = getTodayCheckInsServer();
 
   return (

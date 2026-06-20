@@ -1,13 +1,12 @@
 "use client";
 
-import { use, useCallback } from "react";
+import { use, useCallback, useState } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
-import { HABIT_CATEGORIES } from "@/lib/constants";
 import { Plus, RotateCcw, Target, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HabitCard } from "@/components/habits/habit-card";
@@ -35,6 +34,7 @@ import {
   useEntitlements,
   useTrackUpgradeEvent,
   useBillingOverview,
+  useCategories,
 } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 
@@ -52,6 +52,9 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
   const { data: billing } = useBillingOverview();
   const isPro = billing?.subscription?.planCode === "pro";
   const trackUpgradeEvent = useTrackUpgradeEvent();
+
+  // Categories are fetched from the DB (source of truth) — not a hardcoded enum.
+  const { data: categories = [] } = useCategories('habit');
 
   // Mutations
   const createMutation = useCreateHabit();
@@ -89,55 +92,9 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
 
   // Create form
   const createForm = useHabitForm();
-  const handleCreate = () => {
-    // Check entitlement before creating
-    if (entitlements && !entitlements.canCreateHabit) {
-      showUpgradePrompt("habit_create_limit", "habit_limit");
-      trackUpgradeEvent.mutate({
-        eventType: "prompt_viewed",
-        surface: "habit_create_limit",
-        trigger: "habit_limit",
-        planCode: "pro",
-      });
-      return;
-    }
-    const validated = createForm.validate();
-    if (validated) {
-      createMutation.mutate(
-        {
-          name: validated.name.trim(),
-          description: validated.description.trim(),
-          category: validated.category,
-        },
-        {
-          onError: (error: unknown) => {
-            const err = error as { data?: { code?: string } };
-            if (err?.data?.code === "plan_limit_reached") {
-              showUpgradePrompt("habit_create_limit", "habit_limit");
-            }
-          },
-        }
-      );
-      createForm.reset();
-    }
-  };
 
   // Edit form
   const editForm = useHabitEditForm();
-  const handleEdit = () => {
-    const validated = editForm.validate();
-    if (validated && editForm.editingId) {
-      updateMutation.mutate({
-        id: editForm.editingId,
-        data: {
-          name: validated.name.trim(),
-          description: validated.description.trim(),
-          category: validated.category,
-        },
-      });
-      editForm.reset();
-    }
-  };
 
   // Delete confirmation
   const deleteConfirm = useConfirmDelete<string>();
@@ -148,6 +105,14 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
         onSettled: () => deleteConfirm.stopDeleting(id),
       });
     }
+  };
+
+  // Reset confirmation — Reset destroys today's check-ins for every habit, so
+  // require an explicit confirmation dialog (same pattern as delete).
+  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
+  const handleResetConfirm = () => {
+    setResetConfirmOpen(false);
+    resetMutation.mutate();
   };
 
   // Check-in handler
@@ -187,7 +152,7 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
                 <p className="mt-1 text-sm text-muted-foreground">Build consistency one day at a time.</p>
               </div>
               <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => resetMutation.mutate()}>
+                <Button variant="outline" size="sm" onClick={() => setResetConfirmOpen(true)}>
                   <RotateCcw className="mr-2 h-4 w-4" /> Reset
                 </Button>
                 <Button size="sm" variant="growth" onClick={() => createForm.setOpen(true)}>
@@ -244,8 +209,8 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
                 onChange={(e) => setCategoryFilter(e.target.value)}
               >
                 <option value="all">All</option>
-                {HABIT_CATEGORIES.map((c) => (
-                  <option key={c} value={c} className="capitalize">{c}</option>
+                {categories.map((c) => (
+                  <option key={c.slug} value={c.slug} className="capitalize">{c.name}</option>
                 ))}
               </select>
             </div>
@@ -321,7 +286,40 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
         title="New habit"
         onOpenChange={createForm.setOpen}
         initialValues={createForm.form}
-        onSubmit={(vals) => { createForm.setForm(vals); handleCreate(); }}
+        onSubmit={(vals) => {
+          // Check entitlement before creating
+          if (entitlements && !entitlements.canCreateHabit) {
+            showUpgradePrompt("habit_create_limit", "habit_limit");
+            trackUpgradeEvent.mutate({
+              eventType: "prompt_viewed",
+              surface: "habit_create_limit",
+              trigger: "habit_limit",
+              planCode: "pro",
+            });
+            return;
+          }
+          // Pass the form dialog's validated data directly to the mutation.
+          // Do NOT round-trip through createForm.setForm + handleCreate —
+          // React state updates are async, so handleCreate would read stale
+          // state and lose the category the user selected.
+          createMutation.mutate(
+            {
+              name: vals.name.trim(),
+              description: vals.description.trim(),
+              category: vals.category,
+            },
+            {
+              onError: (error: unknown) => {
+                const err = error as { data?: { code?: string } };
+                if (err?.data?.code === "plan_limit_reached") {
+                  showUpgradePrompt("habit_create_limit", "habit_limit");
+                }
+              },
+            }
+          );
+          createForm.reset();
+        }}
+        categories={categories}
       />
 
       {/* Edit Habit Dialog */}
@@ -330,8 +328,22 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
         title="Edit habit"
         onOpenChange={editForm.setOpen}
         initialValues={editForm.form}
-        onSubmit={(vals) => { editForm.setForm({ ...editForm.form, ...vals }); handleEdit(); }}
-        showAdvanced
+        onSubmit={(vals) => {
+          // Pass the form dialog's validated data directly to the mutation
+          // (same reason as create — avoid stale state).
+          if (editForm.editingId) {
+            updateMutation.mutate({
+              id: editForm.editingId,
+              data: {
+                name: vals.name.trim(),
+                description: vals.description.trim(),
+                category: vals.category,
+              },
+            });
+            editForm.reset();
+          }
+        }}
+        categories={categories}
       />
 
       {/* Delete Confirmation */}
@@ -358,6 +370,24 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
         onSubmit={handleSubmitCheckIn}
         isSubmitting={checkInMutation.isPending}
       />
+
+      {/* Reset Confirmation */}
+      <Dialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Reset today&apos;s habits</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            This will remove today&apos;s check-ins for all habits. This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setResetConfirmOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleResetConfirm} disabled={resetMutation.isPending}>
+              Reset
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
