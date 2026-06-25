@@ -105,8 +105,10 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
     }
   }
 
-  const responseBody = await upstream.arrayBuffer();
-  const res = new NextResponse(responseBody, {
+  // Stream the response body directly instead of buffering it. This keeps
+  // Server-Sent Events (e.g., /weekly-reviews/generate-stream) flowing to the
+  // browser as they arrive from the gateway.
+  const res = new NextResponse(upstream.body, {
     status: upstream.status,
     statusText: upstream.statusText,
   });

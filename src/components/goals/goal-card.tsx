@@ -1,17 +1,18 @@
 "use client";
 
-import { memo } from "react";
+import { memo, useMemo, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import type { Goal } from "@/api";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import type { Goal, Habit } from "@/api";
 import { Checkbox } from "@/components/ui/checkbox";
 import Link from "next/link";
 import { cn } from "@/lib/utils";
 import { CATEGORY_COLORS } from "@/lib/constants";
-import { CalendarDays, CheckCircle2, MoreHorizontal, MessageSquare, Target, Sparkles } from "lucide-react";
+import { CalendarDays, CheckCircle2, MoreHorizontal, MessageSquare, Target, Sparkles, Link2, Flame } from "lucide-react";
 
 export type GoalCardProps = {
   goal: Goal;
@@ -20,9 +21,13 @@ export type GoalCardProps = {
   onDelete: (id: string) => void;
   onProgressChange?: (id: string, progress: number) => void;
   deleting?: boolean;
+  habits?: Habit[];
 };
 
-export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelete, onProgressChange, deleting }: GoalCardProps) {
+const MAX_INLINE_HABITS = 2;
+
+export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelete, onProgressChange, deleting, habits = [] }: GoalCardProps) {
+  const [habitsOpen, setHabitsOpen] = useState(false);
   const due = goal.dueDate
     ? new Date(goal.dueDate).toLocaleDateString('en-US', {
         month: 'short',
@@ -33,6 +38,18 @@ export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelet
   const categoryStyle = CATEGORY_COLORS[goal.category] || "bg-secondary text-secondary-foreground border-border";
   const isNearCompletion = goal.progress >= 75 && goal.progress < 100;
   const isCompleted = goal.completed || goal.progress >= 100;
+
+  // Resolve linked habit IDs to habit objects.
+  const linkedHabits = useMemo(() => {
+    const ids = goal.relatedHabitIds ?? [];
+    if (ids.length === 0) return [];
+    const byId = new Map(habits.map((h) => [h.id, h]));
+    return ids
+      .map((id) => byId.get(id))
+      .filter((h): h is Habit => h !== undefined);
+  }, [goal.relatedHabitIds, habits]);
+  const inlineHabits = linkedHabits.slice(0, MAX_INLINE_HABITS);
+  const remainingCount = linkedHabits.length - inlineHabits.length;
 
   return (
     <Card
@@ -115,9 +132,35 @@ export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelet
           </div>
 
           {/* Linked habits */}
-          {goal.relatedHabitIds && goal.relatedHabitIds.length > 0 && (
-            <div className="mt-2 text-xs text-muted-foreground">
-              Linked habits: {goal.relatedHabitIds.length}
+          {linkedHabits.length > 0 && (
+            <div className="mt-3">
+              <div className="flex items-center gap-1.5 mb-1.5">
+                <Link2 className="h-3.5 w-3.5 text-muted-foreground" />
+                <span className="text-xs font-medium text-muted-foreground">
+                  Linked habits
+                </span>
+              </div>
+              <div className="flex flex-wrap items-center gap-1.5">
+                {inlineHabits.map((h) => (
+                  <span
+                    key={h.id}
+                    className="inline-flex items-center gap-1 rounded-md bg-muted px-2 py-0.5 text-xs"
+                  >
+                    <Flame className="h-3 w-3 text-muted-foreground" />
+                    <span className="truncate max-w-[140px]">{h.name}</span>
+                  </span>
+                ))}
+                {remainingCount > 0 && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-6 px-2 text-xs text-muted-foreground"
+                    onClick={() => setHabitsOpen(true)}
+                  >
+                    +{remainingCount} more
+                  </Button>
+                )}
+              </div>
             </div>
           )}
 
@@ -160,6 +203,46 @@ export const GoalCard = memo(function GoalCard({ goal, onToggle, onEdit, onDelet
           </DropdownMenu>
         </div>
       </div>
+
+      {/* Linked habits dialog */}
+      <Dialog open={habitsOpen} onOpenChange={setHabitsOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Linked habits — {goal.title}</DialogTitle>
+          </DialogHeader>
+          <div className="max-h-[60vh] overflow-y-auto">
+            <ul className="space-y-1.5">
+              {linkedHabits.map((h) => (
+                <li
+                  key={h.id}
+                  className="flex items-start gap-2.5 rounded-lg border border-border p-2.5"
+                >
+                  <div className={cn(
+                    "flex flex-col items-center justify-center rounded-lg p-1.5 shrink-0",
+                    h.completed ? "bg-growth text-growth-foreground" : "bg-muted"
+                  )}>
+                    <Flame className={cn("h-3.5 w-3.5", h.completed ? "text-growth-foreground" : "text-muted-foreground")} />
+                    <span className={cn(
+                      "text-xs font-bold tabular-nums",
+                      h.completed ? "text-growth-foreground" : "text-muted-foreground"
+                    )}>
+                      {h.streak}
+                    </span>
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-medium truncate">{h.name}</p>
+                    {h.description && (
+                      <p className="text-xs text-muted-foreground line-clamp-2 mt-0.5">
+                        {h.description}
+                      </p>
+                    )}
+                  </div>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 });

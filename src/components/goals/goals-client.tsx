@@ -202,6 +202,7 @@ export function GoalsClient({ goalsPromise }: GoalsClientProps) {
               <GoalCard
                 key={g.id}
                 goal={g}
+                habits={habits}
                 deleting={deleteConfirm.isDeleting(g.id)}
                 onToggle={handleToggleGoal}
                 onEdit={openEdit}

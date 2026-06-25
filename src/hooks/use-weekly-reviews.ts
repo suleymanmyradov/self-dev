@@ -1,5 +1,6 @@
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { generateWeeklyReview, getCurrentWeeklyReview, getWeeklyReview, listWeeklyReviews } from '@/api/weekly-reviews';
+import { generateWeeklyReview, generateWeeklyReviewStream, getCurrentWeeklyReview, getWeeklyReview, listWeeklyReviews } from '@/api/weekly-reviews';
 import type { ApiResponse, WeeklyReview } from '@/api';
 import { toast } from 'sonner';
 import { ApiError } from '@/api/axios-client';
@@ -50,4 +51,85 @@ export function useGenerateWeeklyReview() {
     },
     onError: handleMutationError,
   });
+}
+
+/**
+ * Streaming version of useGenerateWeeklyReview.
+ *
+ * Calls the SSE endpoint and exposes:
+ *   - streamingText: the AI summary text as it arrives (incremental)
+ *   - isStreaming: true while the stream is active
+ *   - mutate: starts the stream
+ *   - cancel: aborts the stream
+ *
+ * On completion, invalidates the weekly review queries so the UI picks up the
+ * persisted review (with adjustments, next-week plan, etc.).
+ */
+export function useGenerateWeeklyReviewStream() {
+  const queryClient = useQueryClient();
+  const controllerRef = useRef<AbortController | null>(null);
+  const [streamingText, setStreamingText] = useState('');
+  const [isStreaming, setIsStreaming] = useState(false);
+  const [isFinalizing, setIsFinalizing] = useState(false);
+  const [thinkingMessage, setThinkingMessage] = useState('');
+
+  useEffect(() => {
+    return () => {
+      controllerRef.current?.abort();
+      controllerRef.current = null;
+    };
+  }, []);
+
+  const mutate = useCallback(
+    (data: { weekStart?: string; forceRegenerate?: boolean }) => {
+      // Cancel any existing stream.
+      controllerRef.current?.abort();
+      setStreamingText('');
+      setIsStreaming(true);
+      setIsFinalizing(false);
+      setThinkingMessage('');
+
+      controllerRef.current = generateWeeklyReviewStream(data, {
+        onDelta: (text) => {
+          setStreamingText((prev) => prev + text);
+          setThinkingMessage('');
+        },
+        onThinking: (message) => {
+          setThinkingMessage(message);
+        },
+        onFinalizing: () => {
+          setIsFinalizing(true);
+          setThinkingMessage('');
+        },
+        onComplete: (review) => {
+          setIsStreaming(false);
+          setIsFinalizing(false);
+          setThinkingMessage('');
+          controllerRef.current = null;
+          queryClient.setQueryData(['weeklyReviews', 'current'], { data: review });
+          queryClient.invalidateQueries({ queryKey: ['weeklyReviews'] });
+          toast.success('Weekly review generated successfully');
+        },
+        onError: (message) => {
+          setIsStreaming(false);
+          setIsFinalizing(false);
+          setThinkingMessage('');
+          controllerRef.current = null;
+          console.error('[useGenerateWeeklyReviewStream] error:', message);
+          toast.error(message);
+        },
+      });
+    },
+    [queryClient],
+  );
+
+  const cancel = useCallback(() => {
+    controllerRef.current?.abort();
+    controllerRef.current = null;
+    setIsStreaming(false);
+    setIsFinalizing(false);
+    setThinkingMessage('');
+  }, []);
+
+  return { mutate, cancel, streamingText, isStreaming, isFinalizing, thinkingMessage };
 }

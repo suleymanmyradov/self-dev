@@ -30,8 +30,8 @@ export function WeeklyReviewSummaryCard({ review }: { review: WeeklyReview }) {
               <div className="text-xs text-muted-foreground">Completed</div>
             </div>
           </div>
-          <div className="flex items-center gap-2 rounded-lg bg-red-50 p-3">
-            <XCircle className="h-4 w-4 text-red-500" />
+          <div className="flex items-center gap-2 rounded-lg bg-destructive/10 p-3">
+            <XCircle className="h-4 w-4 text-destructive" />
             <div>
               <div className="text-lg font-bold">{review.missedCheckIns}</div>
               <div className="text-xs text-muted-foreground">Missed</div>
@@ -47,7 +47,7 @@ export function WeeklyReviewSummaryCard({ review }: { review: WeeklyReview }) {
         )}
         {review.hardestDay && (
           <div className="flex items-center gap-2 text-sm">
-            <XCircle className="h-4 w-4 text-red-400" />
+            <XCircle className="h-4 w-4 text-destructive" />
             <span className="text-muted-foreground">Hardest day:</span>
             <span className="font-medium">{review.hardestDay}</span>
           </div>

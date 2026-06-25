@@ -33,8 +33,8 @@ export function WeeklyReviewAdjustmentsCard({ adjustments }: { adjustments: Week
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
-        {adjustments.map((a) => (
-          <div key={a.habitId || a.habitName} className="rounded-lg bg-muted/50 p-3 space-y-1.5">
+        {adjustments.map((a, i) => (
+          <div key={a.habitId || `${a.habitName}-${i}`} className="rounded-lg bg-muted/50 p-3 space-y-1.5">
             <div className="flex items-center justify-between">
               <span className="text-sm font-medium">{a.habitName}</span>
               <Badge variant="secondary" className="text-xs">

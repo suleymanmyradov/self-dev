@@ -33,10 +33,10 @@ export function WeeklyReviewPatternsCard({ review }: { review: WeeklyReview }) {
       </CardHeader>
       <CardContent className="space-y-4">
         {review.topBlocker && (
-          <div className="flex items-start gap-2 rounded-lg bg-red-50 p-3">
-            <AlertTriangle className="h-4 w-4 text-red-500 mt-0.5" />
+          <div className="flex items-start gap-2 rounded-lg bg-destructive/10 p-3">
+            <AlertTriangle className="h-4 w-4 text-destructive mt-0.5" />
             <div>
-              <div className="text-xs font-medium text-red-600">Top Blocker</div>
+              <div className="text-xs font-medium text-destructive">Top Blocker</div>
               <div className="text-sm">{review.topBlocker}</div>
             </div>
           </div>

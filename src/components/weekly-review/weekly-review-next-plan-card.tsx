@@ -39,8 +39,8 @@ export function WeeklyReviewNextPlanCard({ plan }: { plan: WeeklyReviewNextWeekP
                 {plan.commitments?.length > 0 && (
                     <div className="space-y-1.5">
                         <div className="text-xs font-medium text-muted-foreground">Commitments</div>
-                        {plan.commitments.map(c => (
-                            <div key={c} className="flex items-start gap-2 text-sm">
+                        {plan.commitments.map((c, i) => (
+                            <div key={`${c}-${i}`} className="flex items-start gap-2 text-sm">
                                 <CheckCircle2 className="h-4 w-4 text-growth mt-0.5 shrink-0" />
                                 <span>{c}</span>
                             </div>
@@ -50,8 +50,8 @@ export function WeeklyReviewNextPlanCard({ plan }: { plan: WeeklyReviewNextWeekP
                 {plan.risks?.length > 0 && (
                     <div className="space-y-1.5">
                         <div className="text-xs font-medium text-muted-foreground">Risks</div>
-                        {plan.risks.map(r => (
-                            <div key={r} className="flex items-start gap-2 text-sm">
+                        {plan.risks.map((r, i) => (
+                            <div key={`${r}-${i}`} className="flex items-start gap-2 text-sm">
                                 <AlertTriangle className="h-4 w-4 text-energy mt-0.5 shrink-0" />
                                 <span>{r}</span>
                             </div>
@@ -63,8 +63,8 @@ export function WeeklyReviewNextPlanCard({ plan }: { plan: WeeklyReviewNextWeekP
                         <div className="text-xs font-medium text-muted-foreground">
                             Recovery Actions
                         </div>
-                        {plan.recoveryActions.map(a => (
-                            <div key={a} className="flex items-start gap-2 text-sm">
+                        {plan.recoveryActions.map((a, i) => (
+                            <div key={`${a}-${i}`} className="flex items-start gap-2 text-sm">
                                 <ArrowRight className="h-4 w-4 text-calm mt-0.5 shrink-0" />
                                 <span>{a}</span>
                             </div>

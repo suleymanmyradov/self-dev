@@ -23,6 +23,7 @@ export {
   useWeeklyReview,
   useWeeklyReviews,
   useGenerateWeeklyReview,
+  useGenerateWeeklyReviewStream,
 } from './use-weekly-reviews';
 export { useCoachingProfile } from './use-coaching-profile';
 export { usePersonalization } from './use-personalization';
