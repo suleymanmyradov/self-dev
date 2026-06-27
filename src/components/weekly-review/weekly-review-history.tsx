@@ -29,7 +29,7 @@ export function WeeklyReviewHistory({ reviews, isLoading }: { reviews: WeeklyRev
   return (
     <div className="space-y-3">
       {reviews.map((r) => (
-        <Card key={r.id}>
+        <Card key={r.id ?? `${r.weekStart}-${r.weekEnd}`}>
           <CardHeader className="pb-2">
             <CardTitle className="text-sm font-medium flex items-center gap-2">
               <Calendar className="h-4 w-4 text-muted-foreground" />

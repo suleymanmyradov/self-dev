@@ -66,3 +66,26 @@ export async function sendMessage(id: string, data: SendMessageRequest): Promise
   const parsed = MessageResponseSchema.parse(response);
   return parsed.data;
 }
+
+/**
+ * Archive a conversation
+ */
+export async function archiveConversation(id: string): Promise<ConversationResponse> {
+  const response = await api.put<unknown>(`${ENDPOINTS.CONVERSATION(id)}/archive`);
+  return ConversationResponseSchema.parse(response);
+}
+
+/**
+ * Unarchive a conversation
+ */
+export async function unarchiveConversation(id: string): Promise<ConversationResponse> {
+  const response = await api.put<unknown>(`${ENDPOINTS.CONVERSATION(id)}/unarchive`);
+  return ConversationResponseSchema.parse(response);
+}
+
+/**
+ * Delete a conversation
+ */
+export async function deleteConversation(id: string): Promise<void> {
+  await api.delete(ENDPOINTS.CONVERSATION(id));
+}

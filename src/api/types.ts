@@ -313,6 +313,7 @@ export interface Conversation {
   type: ConversationType;
   lastMessage: string;
   userId: string;
+  archived: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -423,8 +424,8 @@ export interface WeeklyReviewNextWeekPlan {
 }
 
 export interface WeeklyReview {
-  id: string;
-  userId: string;
+  id?: string;
+  userId?: string;
   weekStart: string;
   weekEnd: string;
   totalHabits: number;
@@ -723,10 +724,11 @@ export interface UpgradeEventRequest {
   metadataJson?: string;
 }
 
-export type BillingOverviewResponse = ApiResponse<BillingOverview>;
-export type UpgradeEventResponse = ApiResponse<{ eventId: string }>;
-export type CheckoutSessionResponse = ApiResponse<{ checkoutUrl: string }>;
-export type PortalSessionResponse = ApiResponse<{ portalUrl: string }>;
+// Billing endpoints return flat response bodies (no `data` envelope).
+export type BillingOverviewResponse = BillingOverview;
+export type UpgradeEventResponse = { eventId: string };
+export type CheckoutSessionResponse = { checkoutUrl?: string; sessionId?: string };
+export type PortalSessionResponse = { portalUrl?: string };
 
 export interface PlanLimitError {
   code: 'plan_limit_reached';

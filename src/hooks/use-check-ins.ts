@@ -2,12 +2,8 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { createCheckIn, getTodayCheckIns } from '@/api/check-ins';
 import type { CreateCheckInRequest, CheckInsResponse, HabitsResponse } from '@/api';
 import { toast } from 'sonner';
-import { ApiError } from '@/api/axios-client';
 
-function handleMutationError(error: unknown) {
-  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
-  toast.error(message);
-}
+type CheckInAllVariables = { habitIds: string[] };
 
 export function useTodayCheckIns(initialData?: CheckInsResponse) {
   return useQuery({
@@ -53,13 +49,77 @@ export function useCreateCheckIn() {
           queryClient.setQueryData(key, value);
         }
       }
-      handleMutationError(error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['checkIns'] });
       queryClient.invalidateQueries({ queryKey: ['habits'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
       toast.success('Check-in submitted successfully');
+    },
+  });
+}
+
+export function useCheckInAll() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async ({ habitIds }: CheckInAllVariables) => {
+      // Submit completed check-ins for every habit in parallel. Use
+      // allSettled so one failure (e.g. already checked in) doesn't
+      // abort the rest; the caller gets per-habit results to report.
+      const results = await Promise.allSettled(
+        habitIds.map((habitId) =>
+          createCheckIn({ habitId, status: 'completed' } as CreateCheckInRequest),
+        ),
+      );
+      return results;
+    },
+    onMutate: async ({ habitIds }: CheckInAllVariables) => {
+      // Optimistically flip every habit to completed + bump streaks so
+      // the cards update instantly without waiting for N round-trips.
+      await queryClient.cancelQueries({ queryKey: ['habits', 'list'] });
+      const previous = queryClient.getQueriesData<HabitsResponse>({ queryKey: ['habits', 'list'] });
+      const completedSet = new Set(habitIds);
+      queryClient.setQueriesData<HabitsResponse | undefined>(
+        { queryKey: ['habits', 'list'] },
+        (old) => {
+          if (!old) return old;
+          return {
+            ...old,
+            data: old.data.map((h) =>
+              completedSet.has(h.id)
+                ? { ...h, completed: true, streak: h.streak + 1 }
+                : h,
+            ),
+          };
+        },
+      );
+      return { previous };
+    },
+    onError: (error, _vars, context) => {
+      if (context?.previous) {
+        for (const [key, value] of context.previous) {
+          queryClient.setQueryData(key, value);
+        }
+      }
+    },
+    onSuccess: (results, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['checkIns'] });
+      queryClient.invalidateQueries({ queryKey: ['habits'] });
+      queryClient.invalidateQueries({ queryKey: ['activities'] });
+
+      const failed = results.filter((r) => r.status === 'rejected').length;
+      const succeeded = variables.habitIds.length - failed;
+      if (failed === 0) {
+        toast.success(
+          `Checked in ${succeeded} habit${succeeded === 1 ? '' : 's'} successfully`,
+        );
+      } else if (succeeded === 0) {
+        toast.error('Failed to check in. You may have already checked in today.');
+      } else {
+        toast.warning(
+          `Checked in ${succeeded} habit${succeeded === 1 ? '' : 's'}, ${failed} already done`,
+        );
+      }
     },
   });
 }

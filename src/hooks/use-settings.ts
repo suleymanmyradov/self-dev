@@ -2,12 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { getSettings, updateSettings } from '@/api/settings';
 import type { UpdateSettingsRequest, SettingsResponse } from '@/api';
 import { toast } from 'sonner';
-import { ApiError } from '@/api/axios-client';
-
-function handleMutationError(error: unknown) {
-  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
-  toast.error(message);
-}
 
 /**
  * Hook to fetch user settings
@@ -34,6 +28,5 @@ export function useUpdateSettings() {
       queryClient.invalidateQueries({ queryKey: ['settings'] });
       toast.success('Settings updated successfully');
     },
-    onError: handleMutationError,
   });
 }

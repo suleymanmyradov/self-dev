@@ -4,11 +4,6 @@ import type { UpdateCoachingProfilePreferencesRequest } from '../api';
 import { toast } from 'sonner';
 import { ApiError } from '@/api/axios-client';
 
-function handleMutationError(error: unknown) {
-  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
-  toast.error(message);
-}
-
 export function useCoachingProfile() {
   const queryClient = useQueryClient();
 
@@ -30,7 +25,6 @@ export function useCoachingProfile() {
       queryClient.invalidateQueries({ queryKey: ['coachingProfile'] });
       toast.success('Coaching preferences updated');
     },
-    onError: handleMutationError,
   });
 
   return {

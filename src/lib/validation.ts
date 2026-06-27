@@ -318,6 +318,7 @@ export const ConversationSchema = z.object({
   type: ConversationTypeSchema,
   lastMessage: z.string(),
   userId: z.string(),
+  archived: z.boolean().default(false),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -625,8 +626,8 @@ export const WeeklyReviewNextWeekPlanSchema = z.object({
 });
 
 export const WeeklyReviewSchema = z.object({
-  id: z.string(),
-  userId: z.string(),
+  id: z.string().optional(),
+  userId: z.string().optional(),
   weekStart: z.string(),
   weekEnd: z.string(),
   totalHabits: z.number().int(),
@@ -735,10 +736,15 @@ export const UpgradeEventRequestSchema = z.object({
   metadataJson: z.string().optional(),
 });
 
-export const BillingOverviewResponseSchema = ApiResponseSchema(BillingOverviewSchema);
-export const UpgradeEventResponseSchema = ApiResponseSchema(z.object({ eventId: z.string() }));
-export const CheckoutSessionResponseSchema = ApiResponseSchema(z.object({ checkoutUrl: z.string() }));
-export const PortalSessionResponseSchema = ApiResponseSchema(z.object({ portalUrl: z.string() }));
+// The billing endpoints return flat response bodies (no `data` envelope),
+// matching the gateway contract in services/gateway/contract/types.api.
+export const BillingOverviewResponseSchema = BillingOverviewSchema;
+export const UpgradeEventResponseSchema = z.object({ eventId: z.string() });
+export const CheckoutSessionResponseSchema = z.object({
+  checkoutUrl: z.string().optional(),
+  sessionId: z.string().optional(),
+});
+export const PortalSessionResponseSchema = z.object({ portalUrl: z.string().optional() });
 
 export const PlanLimitErrorSchema = z.object({
   code: z.literal('plan_limit_reached'),

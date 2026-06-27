@@ -2,12 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listGoals, getGoal, createGoal, updateGoal, deleteGoal, toggleGoal, updateGoalProgress } from '@/api';
 import type { CreateGoalRequest, UpdateGoalRequest, GoalsResponse } from '@/api';
 import { toast } from 'sonner';
-import { ApiError } from '@/api/axios-client';
-
-function handleMutationError(error: unknown) {
-  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
-  toast.error(message);
-}
 
 /**
  * Hook to fetch all goals
@@ -46,7 +40,6 @@ export function useCreateGoal() {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast.success('Goal created successfully');
     },
-    onError: handleMutationError,
   });
 }
 
@@ -63,7 +56,6 @@ export function useUpdateGoal() {
       queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });
       toast.success('Goal updated successfully');
     },
-    onError: handleMutationError,
   });
 }
 
@@ -79,7 +71,6 @@ export function useDeleteGoal() {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       toast.success('Goal deleted successfully');
     },
-    onError: handleMutationError,
   });
 }
 
@@ -95,7 +86,6 @@ export function useToggleGoal() {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals', id] });
     },
-    onError: handleMutationError,
   });
 }
 
@@ -111,6 +101,5 @@ export function useUpdateGoalProgress() {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });
     },
-    onError: handleMutationError,
   });
 }

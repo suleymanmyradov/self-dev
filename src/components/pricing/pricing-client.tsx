@@ -81,7 +81,7 @@ export function PricingClient() {
       { planCode: "pro", billingInterval },
       {
         onSuccess: (data) => {
-          const url = data.data?.checkoutUrl;
+          const url = data.checkoutUrl;
           if (url) {
             try {
               const parsed = new URL(url);

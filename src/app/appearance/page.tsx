@@ -57,11 +57,13 @@ export default function AppearancePage() {
     applyColorToRoot(color, isDark);
   }, [mounted, theme, systemTheme, secondaryColor]);
 
+  // Only treat a theme as active after mount to avoid hydration mismatch
+  // (next-themes reads localStorage on the client only).
   const isThemeActive = (value: string): boolean =>
-    theme === value || (!theme && value === "system");
+    mounted && (theme === value || (!theme && value === "system"));
 
   const isColorActive = (name: string): boolean =>
-    secondaryColor === name.toLowerCase();
+    mounted && secondaryColor === name.toLowerCase();
 
   return (
     <div className="h-full flex flex-col">

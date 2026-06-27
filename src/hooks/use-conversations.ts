@@ -1,13 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listConversations, startConversation, getConversation, getMessages, sendMessage } from '@/api/conversations';
+import { listConversations, startConversation, getConversation, getMessages, sendMessage, archiveConversation, unarchiveConversation, deleteConversation } from '@/api/conversations';
 import type { StartConversationRequest, SendMessageRequest, ListConversationsParams, PageParams } from '@/api';
-import { toast } from 'sonner';
-import { ApiError } from '@/api/axios-client';
-
-function handleMutationError(error: unknown) {
-  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
-  toast.error(message);
-}
 
 /**
  * Hook to fetch conversations
@@ -61,7 +54,6 @@ export function useStartConversation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['conversations'] });
     },
-    onError: handleMutationError,
   });
 }
 
@@ -77,6 +69,47 @@ export function useSendMessage() {
     onSuccess: (_, { conversationId }) => {
       queryClient.invalidateQueries({ queryKey: ['conversations', conversationId, 'messages'] });
     },
-    onError: handleMutationError,
+  });
+}
+
+/**
+ * Hook to archive a conversation
+ */
+export function useArchiveConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (conversationId: string) => archiveConversation(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}
+
+/**
+ * Hook to unarchive a conversation
+ */
+export function useUnarchiveConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (conversationId: string) => unarchiveConversation(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
+  });
+}
+
+/**
+ * Hook to delete a conversation
+ */
+export function useDeleteConversation() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (conversationId: string) => deleteConversation(conversationId),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['conversations'] });
+    },
   });
 }

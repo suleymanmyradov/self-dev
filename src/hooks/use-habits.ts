@@ -2,12 +2,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listHabits, getHabit, createHabit, updateHabit, deleteHabit, resetTodayHabits } from '@/api';
 import type { CreateHabitRequest, UpdateHabitRequest, HabitsResponse, Habit } from '@/api';
 import { toast } from 'sonner';
-import { ApiError } from '@/api/axios-client';
-
-function handleMutationError(error: unknown) {
-  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
-  toast.error(message);
-}
 
 // The API caps `limit` at 100 (see PageParamsSchema). To avoid silently
 // truncating users with >100 habits, the list query fetches every page and
@@ -67,7 +61,6 @@ export function useCreateHabit() {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
       toast.success('Habit created successfully');
     },
-    onError: handleMutationError,
   });
 }
 
@@ -84,7 +77,6 @@ export function useUpdateHabit() {
       queryClient.invalidateQueries({ queryKey: ['habits', 'detail', variables.id] });
       toast.success('Habit updated successfully');
     },
-    onError: handleMutationError,
   });
 }
 
@@ -127,14 +119,13 @@ export function useDeleteHabit() {
 
       return { previous };
     },
-    onError: (error, _id, context) => {
+    onError: (_error, _id, context) => {
       // Roll back to the snapshots on error.
       if (context?.previous) {
         for (const [key, value] of context.previous) {
           queryClient.setQueryData(key, value);
         }
       }
-      handleMutationError(error);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['habits'] });
@@ -159,6 +150,5 @@ export function useResetTodayHabits() {
       queryClient.invalidateQueries({ queryKey: ['checkIns'] });
       toast.success('Habits reset for today');
     },
-    onError: handleMutationError,
   });
 }

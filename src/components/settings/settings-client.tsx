@@ -299,8 +299,8 @@ function BillingSection() {
   const handleManageBilling = () => {
     portalMutation.mutate(undefined, {
       onSuccess: (data) => {
-        if (data.data?.portalUrl) {
-          window.location.href = data.data.portalUrl;
+        if (data.portalUrl) {
+          window.location.href = data.portalUrl;
         }
       },
     });

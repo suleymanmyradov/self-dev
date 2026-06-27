@@ -3,12 +3,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { generateWeeklyReview, generateWeeklyReviewStream, getCurrentWeeklyReview, getWeeklyReview, listWeeklyReviews } from '@/api/weekly-reviews';
 import type { ApiResponse, WeeklyReview } from '@/api';
 import { toast } from 'sonner';
-import { ApiError } from '@/api/axios-client';
-
-function handleMutationError(error: unknown) {
-  const message = error instanceof ApiError ? error.message : 'An unexpected error occurred';
-  toast.error(message);
-}
 
 export function useCurrentWeeklyReview(initialData?: ApiResponse<WeeklyReview | null>) {
   return useQuery({
@@ -49,7 +43,6 @@ export function useGenerateWeeklyReview() {
       queryClient.invalidateQueries({ queryKey: ['weeklyReviews'] });
       toast.success('Weekly review generated successfully');
     },
-    onError: handleMutationError,
   });
 }
 

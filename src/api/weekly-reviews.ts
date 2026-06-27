@@ -121,8 +121,12 @@ export function generateWeeklyReviewStream(
               console.log(`[weekly-review stream] finalizing event at ${eventTime}s, after ${deltaCount} deltas, ${totalDeltaChars} chars`);
               callbacks.onFinalizing();
             } else if (event.type === 'complete') {
-              const payload = JSON.parse(event.data) as ApiResponse<WeeklyReview>;
-              const parsed = WeeklyReviewResponseSchema.parse(payload);
+              const payload = JSON.parse(event.data);
+              // The backend wraps the review in {data: WeeklyReview}, but some
+              // code paths / older versions may send the raw review directly.
+              // Handle both shapes to avoid a Zod "data: Required" crash.
+              const rawReview = payload?.data ?? payload;
+              const parsed = WeeklyReviewResponseSchema.parse({ data: rawReview });
               console.log(`[weekly-review stream] complete event at ${eventTime}s, after ${deltaCount} deltas, ${totalDeltaChars} chars, aiSummary=${parsed.data.aiSummary?.length ?? 0} chars`);
               callbacks.onComplete(parsed.data);
               return;

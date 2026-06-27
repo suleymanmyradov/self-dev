@@ -3,7 +3,6 @@
 import { use } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { WeeklyReviewEmptyState } from "@/components/weekly-review/weekly-review-empty-state";
 import { WeeklyReviewSummaryCard } from "@/components/weekly-review/weekly-review-summary-card";
 import { WeeklyReviewCoachCard } from "@/components/weekly-review/weekly-review-coach-card";
@@ -12,11 +11,11 @@ import { WeeklyReviewPatternsCard } from "@/components/weekly-review/weekly-revi
 import { WeeklyReviewAdjustmentsCard } from "@/components/weekly-review/weekly-review-adjustments-card";
 import { WeeklyReviewNextPlanCard } from "@/components/weekly-review/weekly-review-next-plan-card";
 import { WeeklyReviewHistory } from "@/components/weekly-review/weekly-review-history";
-import { Sparkles, RotateCcw, Calendar } from "lucide-react";
+import { Sparkles, RotateCcw, Calendar, Target, Wrench, ArrowRight } from "lucide-react";
+import type { ReactNode } from "react";
 import { useCurrentWeeklyReview, useWeeklyReviews, useGenerateWeeklyReviewStream, useBillingOverview } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import { FeatureLock } from "@/components/billing/feature-lock";
-import { useSearchParamState } from "@/lib/url-state";
 import type { WeeklyReview, ApiResponse } from "@/api";
 
 interface WeeklyReviewClientProps {
@@ -24,9 +23,24 @@ interface WeeklyReviewClientProps {
   reviewsPromise: Promise<ApiResponse<WeeklyReview[]>>;
 }
 
-export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: WeeklyReviewClientProps) {
-  const [activeTab, setActiveTab] = useSearchParamState("tab", "overview");
+const SECTIONS = [
+  { id: "overview", label: "Overview" },
+  { id: "habits", label: "Habits" },
+  { id: "insights", label: "Insights" },
+  { id: "plan", label: "Next Week" },
+  { id: "history", label: "History" },
+] as const;
 
+function SectionHeading({ id, title, icon }: { id: string; title: string; icon: ReactNode }) {
+  return (
+    <h2 id={`${id}-heading`} className="scroll-mt-24 text-lg font-semibold tracking-tight flex items-center gap-2">
+      {icon}
+      {title}
+    </h2>
+  );
+}
+
+export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: WeeklyReviewClientProps) {
   const initialCurrent = use(currentReviewPromise);
   const initialReviews = use(reviewsPromise);
 
@@ -45,59 +59,8 @@ export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: Wee
   // review for the current week yet — treat that as the "no review" state.
   if (!currentReview || !currentReview.id) {
     return (
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
-        {generateStream.isStreaming ? (
-          <StreamingCoachCard
-            text={generateStream.streamingText}
-            isFinalizing={generateStream.isFinalizing}
-            thinkingMessage={generateStream.thinkingMessage}
-          />
-        ) : (
-          <WeeklyReviewEmptyState variant="no_review" onGenerate={handleGenerate} isGenerating={generateStream.isStreaming} />
-        )}
-      </div>
-    );
-  }
-
-  return (
-    <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
-      {/* Header */}
-      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-        <div>
-          <h1 className="text-2xl font-bold tracking-tight">Weekly Review</h1>
-          <p className="text-muted-foreground flex items-center gap-1.5 mt-1">
-            <Calendar className="h-4 w-4" />
-            {currentReview.weekStart} &ndash; {currentReview.weekEnd}
-          </p>
-        </div>
-        <Button
-          variant="outline"
-          onClick={handleGenerate}
-          disabled={generateStream.isStreaming}
-        >
-          {generateStream.isStreaming ? (
-            <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
-          ) : (
-            <Sparkles className="mr-2 h-4 w-4" />
-          )}
-          Regenerate
-        </Button>
-      </div>
-
-      <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="mb-6">
-          <TabsTrigger value="overview">Overview</TabsTrigger>
-          <TabsTrigger value="habits">Habits</TabsTrigger>
-          <TabsTrigger value="insights">Insights</TabsTrigger>
-          <TabsTrigger value="plan">Next Week</TabsTrigger>
-          <TabsTrigger value="history">History</TabsTrigger>
-        </TabsList>
-
-        <TabsContent value="overview" className="space-y-4">
-          <div className="grid gap-4 md:grid-cols-2">
-            <WeeklyReviewSummaryCard review={currentReview} />
-            <WeeklyReviewPatternsCard review={currentReview} />
-          </div>
+      <div className="h-full overflow-y-auto">
+        <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
           {generateStream.isStreaming ? (
             <StreamingCoachCard
               text={generateStream.streamingText}
@@ -105,42 +68,114 @@ export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: Wee
               thinkingMessage={generateStream.thinkingMessage}
             />
           ) : (
-            currentReview.aiSummary && <WeeklyReviewCoachCard review={currentReview} />
+            <WeeklyReviewEmptyState variant="no_review" onGenerate={handleGenerate} isGenerating={generateStream.isStreaming} />
           )}
-          {/* Value moment upgrade prompt for free users */}
-          {!isPro && currentReview.completionRate > 50 && (
-            <UpgradePrompt
-              surface="weekly_review_value_moment"
-              trigger="weekly_history"
-              title="Unlock your full weekly history"
-              description="You've built enough consistency to benefit from a fuller weekly history. Pro unlocks all past reviews."
-              compact
-              isPro={isPro}
-            />
-          )}
-        </TabsContent>
+        </div>
+      </div>
+    );
+  }
 
-        <TabsContent value="habits" className="space-y-4">
-          <WeeklyReviewHabitBreakdown habits={currentReview.habitBreakdown} />
-        </TabsContent>
+  return (
+    <div className="h-full overflow-y-auto">
+      <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
+        {/* Header */}
+        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+          <div>
+            <h1 className="text-2xl font-bold tracking-tight">Weekly Review</h1>
+            <p className="text-muted-foreground flex items-center gap-1.5 mt-1">
+              <Calendar className="h-4 w-4" />
+              {currentReview.weekStart} &ndash; {currentReview.weekEnd}
+            </p>
+          </div>
+          <Button
+            variant="outline"
+            onClick={handleGenerate}
+            disabled={generateStream.isStreaming}
+          >
+            {generateStream.isStreaming ? (
+              <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+            ) : (
+              <Sparkles className="mr-2 h-4 w-4" />
+            )}
+            Regenerate
+          </Button>
+        </div>
 
-        <TabsContent value="insights" className="space-y-4">
-          <WeeklyReviewAdjustmentsCard adjustments={currentReview.suggestedAdjustments} />
-          {currentReview.aiSummary && <WeeklyReviewCoachCard review={currentReview} />}
-        </TabsContent>
+        {/* In-page section nav (anchor links for quick jumping) */}
+        <nav className="sticky top-0 z-10 -mx-4 mb-6 bg-background/80 backdrop-blur px-4 py-2 border-b">
+          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            {SECTIONS.map((s) => (
+              <li key={s.id}>
+                <a
+                  href={`#${s.id}`}
+                  className="text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  {s.label}
+                </a>
+              </li>
+            ))}
+          </ul>
+        </nav>
 
-        <TabsContent value="plan" className="space-y-4">
-          <WeeklyReviewNextPlanCard plan={currentReview.nextWeekPlan} />
-        </TabsContent>
+        <div className="space-y-10">
+          {/* Overview */}
+          <section id="overview" aria-labelledby="overview-heading" className="scroll-mt-20 space-y-4">
+            <SectionHeading id="overview" title="Overview" icon={<Sparkles className="h-4 w-4 text-calm" />} />
+            <div className="grid gap-4 md:grid-cols-2">
+              <WeeklyReviewSummaryCard review={currentReview} />
+              <WeeklyReviewPatternsCard review={currentReview} />
+            </div>
+            {generateStream.isStreaming ? (
+              <StreamingCoachCard
+                text={generateStream.streamingText}
+                isFinalizing={generateStream.isFinalizing}
+                thinkingMessage={generateStream.thinkingMessage}
+              />
+            ) : (
+              currentReview.aiSummary && <WeeklyReviewCoachCard review={currentReview} />
+            )}
+            {/* Value moment upgrade prompt for free users */}
+            {!isPro && currentReview.completionRate > 50 && (
+              <UpgradePrompt
+                surface="weekly_review_value_moment"
+                trigger="weekly_history"
+                title="Unlock your full weekly history"
+                description="You've built enough consistency to benefit from a fuller weekly history. Pro unlocks all past reviews."
+                compact
+                isPro={isPro}
+              />
+            )}
+          </section>
 
-        <TabsContent value="history" className="space-y-4">
-          {isPro ? (
-            <WeeklyReviewHistory reviews={reviews} isLoading={false} />
-          ) : (
-            <FeatureLock feature="weekly_review_history" />
-          )}
-        </TabsContent>
-      </Tabs>
+          {/* Habits */}
+          <section id="habits" aria-labelledby="habits-heading" className="scroll-mt-20 space-y-4">
+            <SectionHeading id="habits" title="Habit Breakdown" icon={<Target className="h-4 w-4 text-growth" />} />
+            <WeeklyReviewHabitBreakdown habits={currentReview.habitBreakdown} />
+          </section>
+
+          {/* Insights */}
+          <section id="insights" aria-labelledby="insights-heading" className="scroll-mt-20 space-y-4">
+            <SectionHeading id="insights" title="Insights & Adjustments" icon={<Wrench className="h-4 w-4 text-energy" />} />
+            <WeeklyReviewAdjustmentsCard adjustments={currentReview.suggestedAdjustments} />
+          </section>
+
+          {/* Next Week */}
+          <section id="plan" aria-labelledby="plan-heading" className="scroll-mt-20 space-y-4">
+            <SectionHeading id="plan" title="Next Week Plan" icon={<ArrowRight className="h-4 w-4 text-growth" />} />
+            <WeeklyReviewNextPlanCard plan={currentReview.nextWeekPlan} />
+          </section>
+
+          {/* History */}
+          <section id="history" aria-labelledby="history-heading" className="scroll-mt-20 space-y-4">
+            <SectionHeading id="history" title="History" icon={<Calendar className="h-4 w-4 text-muted-foreground" />} />
+            {isPro ? (
+              <WeeklyReviewHistory reviews={reviews} isLoading={false} />
+            ) : (
+              <FeatureLock feature="weekly_review_history" />
+            )}
+          </section>
+        </div>
+      </div>
     </div>
   );
 }

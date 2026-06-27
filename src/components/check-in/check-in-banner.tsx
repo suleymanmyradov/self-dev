@@ -10,10 +10,11 @@ import type { Habit, CheckIn } from "@/api";
 export type CheckInBannerProps = {
   habits: Habit[];
   todayCheckIns?: CheckIn[];
+  isCheckingInAll?: boolean;
   onCheckInAll: () => void;
 };
 
-export function CheckInBanner({ habits, todayCheckIns = [], onCheckInAll }: CheckInBannerProps) {
+export function CheckInBanner({ habits, todayCheckIns = [], isCheckingInAll, onCheckInAll }: CheckInBannerProps) {
   const { checkedCount, remainingCount, allChecked } = useMemo(() => {
     const checkedHabitIds = new Set(todayCheckIns.map((ci) => ci.habitId));
     const checkedCount = habits.filter((h) => checkedHabitIds.has(h.id)).length;
@@ -60,8 +61,8 @@ export function CheckInBanner({ habits, todayCheckIns = [], onCheckInAll }: Chec
             <Badge variant="outline" className="text-xs">
               {checkedCount}/{habits.length}
             </Badge>
-            <Button variant="growth" size="sm" onClick={onCheckInAll}>
-              Check In
+            <Button variant="growth" size="sm" onClick={onCheckInAll} disabled={isCheckingInAll}>
+              {isCheckingInAll ? "Checking in..." : "Check In"}
             </Button>
           </div>
         )}

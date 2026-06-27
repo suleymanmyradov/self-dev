@@ -31,6 +31,7 @@ import {
   useConfirmDelete,
   useTodayCheckIns,
   useCreateCheckIn,
+  useCheckInAll,
   useEntitlements,
   useTrackUpgradeEvent,
   useBillingOverview,
@@ -62,6 +63,7 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
   const deleteMutation = useDeleteHabit();
   const resetMutation = useResetTodayHabits();
   const checkInMutation = useCreateCheckIn();
+  const checkInAllMutation = useCheckInAll();
 
   // Billing / upgrade UI from store
   const { upgradePromptOpen, upgradeSurface, upgradeTrigger, showUpgradePrompt, dismissUpgradePrompt } =
@@ -166,9 +168,12 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
           <CheckInBanner
             habits={habits}
             todayCheckIns={todayCheckIns}
+            isCheckingInAll={checkInAllMutation.isPending}
             onCheckInAll={() => {
-              if (habits.length > 0) {
-                handleCheckIn(habits[0]);
+              const checkedIds = new Set(todayCheckIns.map((ci) => ci.habitId));
+              const remaining = habits.filter((h) => !checkedIds.has(h.id));
+              if (remaining.length > 0) {
+                checkInAllMutation.mutate({ habitIds: remaining.map((h) => h.id) });
               }
             }}
           />

@@ -7,7 +7,7 @@ import { PlanAdjustmentCard } from '@/components/plan-adjustment-card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { CheckCircle2, CircleDashed, ArrowRight, Lightbulb } from 'lucide-react';
+import { CircleDashed, ArrowRight, Lightbulb } from 'lucide-react';
 import {
   useArticles,
   usePlanAdjustments,
@@ -176,20 +176,6 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
               </div>
             </div>
           )}
-          {checkInStats?.allChecked && (
-            <div className="mb-6 card-elevated rounded-xl p-4 bg-growth/5 border-growth/20">
-              <div className="flex items-center gap-3">
-                <CheckCircle2 className="h-5 w-5 text-growth" />
-                <div>
-                  <p className="text-sm font-medium text-growth">All habits checked in today!</p>
-                  <p className="text-xs text-muted-foreground">
-                    {checkInStats.checkedCount}/{checkInStats.total} completed
-                  </p>
-                </div>
-              </div>
-            </div>
-          )}
-
           {/* Plan Adjustment Suggestions */}
           {suggestions.length > 0 && !suggestionsLoading && (
             <div className="mb-6">

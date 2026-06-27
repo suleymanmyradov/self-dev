@@ -13,11 +13,11 @@ export { useConfirmDelete } from './use-confirm-delete';
 export { useToggleState } from './use-toggle-state';
 export { useLikeArticle } from './use-likes';
 export { useSavedItems, useSavedItemsDetailed, useSaveItem, useRemoveSavedItem } from './use-saved';
-export { useConversations, useConversation, useMessages, useStartConversation, useSendMessage } from './use-conversations';
+export { useConversations, useConversation, useMessages, useStartConversation, useSendMessage, useArchiveConversation, useUnarchiveConversation, useDeleteConversation } from './use-conversations';
 export { useSearch } from './use-search';
 export { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead } from './use-notifications';
 export { useSettings, useUpdateSettings } from './use-settings';
-export { useTodayCheckIns, useCreateCheckIn } from './use-check-ins';
+export { useTodayCheckIns, useCreateCheckIn, useCheckInAll } from './use-check-ins';
 export {
   useCurrentWeeklyReview,
   useWeeklyReview,
