@@ -1,4 +1,5 @@
 import api from './axios-client';
+import { config } from '@/lib/config';
 import {
   CoachingProfileResponseSchema,
   PersonalizationContextResponseSchema,
@@ -29,6 +30,7 @@ const ENDPOINTS = {
   PERSONALIZATION_CONTEXT: '/personalization/context',
   PLAN_ADJUSTMENT_SUGGESTIONS: '/personalization/plan-adjustments',
   PERSONALIZED_COACHING: '/personalization/coaching',
+  COACHING_STREAM: '/personalization/coaching-stream',
 };
 
 export interface UpsertCoachingProfileRequest {
@@ -145,4 +147,120 @@ export async function generatePersonalizedCoaching(
   const response = await api.post<unknown>(ENDPOINTS.PERSONALIZED_COACHING, validated);
   const parsed = PersonalizedCoachingResponseSchema.parse(response);
   return parsed.data;
+}
+
+export interface CoachingStreamCallbacks {
+  onDelta: (text: string) => void;
+  onComplete: (fullResponse: string) => void;
+  onError: (message: string) => void;
+  onThinking?: (message: string) => void;
+}
+
+/**
+ * Streams a personalized coaching response via SSE. The coaching text arrives
+ * as incremental deltas; the full response arrives in a "complete" event.
+ * Returns an AbortController so the caller can cancel.
+ *
+ * This goes through the gateway → client RPC → ai-coach microservice, which
+ * assembles the personalization context (goals, habits, check-ins, pattern
+ * insights) and builds the system prompt server-side. The frontend has zero
+ * prompt logic.
+ */
+export function streamPersonalizedCoaching(
+  data: { userMessage: string; context?: string; conversationId?: string },
+  callbacks: CoachingStreamCallbacks,
+): AbortController {
+  const controller = new AbortController();
+
+  (async () => {
+    try {
+      const streamUrl = `${config.apiUrl}${ENDPOINTS.COACHING_STREAM}`;
+      const response = await fetch(streamUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'text/event-stream',
+        },
+        body: JSON.stringify(data),
+        credentials: 'include',
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        const text = await response.text().catch(() => 'Request failed');
+        callbacks.onError(text);
+        return;
+      }
+
+      if (!response.body) {
+        callbacks.onError('Response body is null');
+        return;
+      }
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = '';
+
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) {
+          callbacks.onError('Stream ended unexpectedly');
+          return;
+        }
+
+        buffer += decoder.decode(value, { stream: true });
+
+        let idx: number;
+        while ((idx = buffer.indexOf('\n\n')) >= 0) {
+          const rawEvent = buffer.slice(0, idx);
+          buffer = buffer.slice(idx + 2);
+
+          const event = parseCoachingSSEEvent(rawEvent);
+          if (!event) continue;
+
+          try {
+            if (event.type === 'delta') {
+              const payload = JSON.parse(event.data) as { text: string };
+              callbacks.onDelta(payload.text);
+            } else if (event.type === 'thinking') {
+              const payload = JSON.parse(event.data) as { message: string };
+              callbacks.onThinking?.(payload.message);
+            } else if (event.type === 'complete') {
+              const payload = JSON.parse(event.data) as { fullResponse: string };
+              callbacks.onComplete(payload.fullResponse);
+              return;
+            } else if (event.type === 'error') {
+              const payload = JSON.parse(event.data) as { message: string };
+              callbacks.onError(payload.message);
+              return;
+            }
+          } catch (parseErr) {
+            callbacks.onError((parseErr as Error).message || 'Invalid stream payload');
+            return;
+          }
+        }
+      }
+    } catch (err) {
+      if ((err as Error).name === 'AbortError') {
+        return;
+      }
+      callbacks.onError((err as Error).message || 'Stream failed');
+    }
+  })();
+
+  return controller;
+}
+
+function parseCoachingSSEEvent(raw: string): { type: string; data: string } | null {
+  let type = 'message';
+  let data = '';
+  for (const line of raw.split('\n')) {
+    if (line.startsWith('event:')) {
+      type = line.slice(6).trim();
+    } else if (line.startsWith('data:')) {
+      data = line.slice(5).trim();
+    }
+  }
+  if (!data) return null;
+  return { type, data };
 }

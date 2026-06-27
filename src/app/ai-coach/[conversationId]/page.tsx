@@ -14,5 +14,5 @@ export default async function AICoachConversationPage({
     params: Promise<{ conversationId: string }>;
 }) {
     const { conversationId } = await params;
-    return <Assistant key={conversationId} />;
+    return <Assistant key={conversationId} conversationId={conversationId} />;
 }

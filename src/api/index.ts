@@ -206,6 +206,7 @@ export {
   updatePlanAdjustmentSuggestionStatus,
   applyPlanAdjustmentSuggestion,
   generatePersonalizedCoaching,
+  streamPersonalizedCoaching,
 } from './personalization';
 
 // Report API

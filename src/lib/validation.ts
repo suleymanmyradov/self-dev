@@ -327,7 +327,7 @@ export const ConversationDetailSchema = ConversationSchema.extend({
 });
 
 export const StartConversationRequestSchema = z.object({
-  type: ConversationTypeSchema,
+  type: ConversationTypeSchema.optional(),
   title: z.string().optional(),
   initialMessage: z.string().optional(),
 });
