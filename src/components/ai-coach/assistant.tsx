@@ -3,7 +3,7 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageCircle, Sparkles } from 'lucide-react';
+import { MessageCircle, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import {
     AssistantRuntimeProvider,
     useExternalStoreRuntime,
@@ -13,6 +13,7 @@ import {
 } from '@assistant-ui/react';
 import { Thread } from '@/components/ai-conversation/thread';
 import { ThreadList } from '@/components/ai-conversation/thread-list';
+import { TooltipIconButton } from '@/components/ai-conversation/tooltip-icon-button';
 import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
 import {
     useBillingOverview,
@@ -93,6 +94,7 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     const queryClient = useQueryClient();
     const [messages, setMessages] = useState<CoachingMessage[]>([]);
     const [isRunning, setIsRunning] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(
         conversationId,
     );
@@ -340,35 +342,45 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                 </div>
 
                 <div className="relative flex min-h-0 flex-1 gap-4 p-4 md:p-6">
-                    {/* Sidebar */}
-                    <aside className="card-elevated hidden w-[280px] shrink-0 overflow-hidden rounded-xl md:flex md:flex-col">
-                        <div className="border-b border-border/60 p-4">
-                            <div className="flex items-center gap-3">
-                                <div className="flex size-10 items-center justify-center rounded-xl bg-calm-soft text-calm">
-                                    <Sparkles className="size-5" />
-                                </div>
-                                <div className="min-w-0">
-                                    <h2 className="font-display text-xl font-bold tracking-tight">
-                                        AI Coach
-                                    </h2>
-                                    <p className="mt-0.5 text-sm text-muted-foreground">
-                                        Accountability sessions
-                                    </p>
+                    {/* Sidebar — collapsed state: thin strip with reopen button */}
+                    {isSidebarOpen ? (
+                        <aside className="card-elevated hidden w-[280px] shrink-0 overflow-hidden rounded-xl md:flex md:flex-col">
+                            <div className="border-b border-border/60 p-4">
+                                <div className="flex items-center gap-3">
+                                    <div className="flex size-10 items-center justify-center rounded-xl bg-calm-soft text-calm">
+                                        <Sparkles className="size-5" />
+                                    </div>
+                                    <div className="min-w-0 flex-1">
+                                        <h2 className="font-display text-xl font-bold tracking-tight">
+                                            AI Coach
+                                        </h2>
+                                        <p className="mt-0.5 text-sm text-muted-foreground">
+                                            Accountability sessions
+                                        </p>
+                                    </div>
+                                    <TooltipIconButton
+                                        tooltip="Hide sessions"
+                                        onClick={() => setIsSidebarOpen(false)}
+                                        className="text-muted-foreground hover:text-foreground"
+                                    >
+                                        <PanelLeftClose className="size-4" />
+                                    </TooltipIconButton>
                                 </div>
                             </div>
-                        </div>
 
-                        <div className="styled-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
-                            <div className="mb-3 flex items-center gap-2 px-2 text-xs font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                                <MessageCircle className="size-3.5" />
-                                Sessions
+                            <div className="styled-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
+                                <div className="mb-2 flex items-center gap-2 px-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
+                                    <MessageCircle className="size-3" />
+                                    Sessions
+                                </div>
+                                <ThreadListErrorBoundary>
+                                    {conversationsLoading ? <ThreadListSkeleton /> : <ThreadList />}
+                                </ThreadListErrorBoundary>
                             </div>
-                            <ThreadListErrorBoundary>
-                                {conversationsLoading ? <ThreadListSkeleton /> : <ThreadList />}
-                            </ThreadListErrorBoundary>
-                            {/* Personalized AI upgrade prompt for free users */}
+
+                            {/* Upgrade prompt pinned to the bottom of the sidebar */}
                             {!isPro && (
-                                <div className="mt-4">
+                                <div className="border-t border-border/60 p-3">
                                     <UpgradePrompt
                                         surface="assistant_personalization"
                                         trigger="personalized_ai"
@@ -379,8 +391,18 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                                     />
                                 </div>
                             )}
+                        </aside>
+                    ) : (
+                        <div className="hidden shrink-0 md:flex md:items-start md:pt-4">
+                            <TooltipIconButton
+                                tooltip="Show sessions"
+                                onClick={() => setIsSidebarOpen(true)}
+                                className="text-muted-foreground hover:text-foreground"
+                            >
+                                <PanelLeftOpen className="size-5" />
+                            </TooltipIconButton>
                         </div>
-                    </aside>
+                    )}
 
                     {/* Main chat area */}
                     <main className="card-elevated relative min-w-0 flex-1 overflow-hidden rounded-xl">

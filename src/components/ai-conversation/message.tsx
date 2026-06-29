@@ -29,7 +29,7 @@ export const AssistantMessage: FC = () => {
                 className="aui-assistant-message-root relative mx-auto w-full max-w-[var(--thread-max-width)] animate-in py-4 duration-200 fade-in slide-in-from-bottom-1 last:mb-28"
                 data-role="assistant"
             >
-                <div className="aui-assistant-message-content card-elevated mx-1 rounded-xl px-5 py-4 leading-7 break-words text-foreground md:mx-2">
+                <div className="aui-assistant-message-content card-elevated mx-1 rounded-xl px-5 py-4 text-sm leading-6 break-words text-foreground md:mx-2">
                     <MessagePrimitive.Parts
                         components={{
                             Text: MarkdownText,
@@ -95,7 +95,7 @@ export const UserMessage: FC = () => {
                 <UserMessageAttachments />
 
                 <div className="aui-user-message-content-wrapper relative col-start-2 min-w-0">
-                    <div className="aui-user-message-content rounded-2xl bg-primary px-5 py-3 break-words text-primary-foreground shadow-sm">
+                    <div className="aui-user-message-content rounded-2xl bg-primary px-5 py-3 text-sm leading-6 break-words text-primary-foreground shadow-sm">
                         <MessagePrimitive.Parts />
                     </div>
                     <div className="aui-user-action-bar-wrapper absolute top-1/2 left-0 -translate-x-full -translate-y-1/2 pr-2">

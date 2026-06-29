@@ -1,5 +1,5 @@
 import type { FC } from 'react';
-import { ThreadListItemPrimitive, ThreadListPrimitive } from '@assistant-ui/react';
+import { ThreadListItemPrimitive, ThreadListPrimitive, useThreadListItem } from '@assistant-ui/react';
 import { ArchiveIcon, ArchiveRestoreIcon, PlusIcon, TrashIcon } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -18,10 +18,10 @@ const ThreadListNew: FC = () => {
     return (
         <ThreadListPrimitive.New asChild>
             <Button
-                className="aui-thread-list-new h-10 justify-start gap-2 rounded-lg px-3 text-start text-sm font-medium"
+                className="aui-thread-list-new h-8 justify-start gap-2 rounded-lg px-3 text-start text-xs font-medium"
                 variant="calm"
             >
-                <PlusIcon />
+                <PlusIcon className="size-3.5" />
                 New Chat
             </Button>
         </ThreadListPrimitive.New>
@@ -35,12 +35,11 @@ const ThreadListItems: FC = () => {
 const ThreadListItem: FC = () => {
     return (
         <ThreadListItemPrimitive.Root className="aui-thread-list-item group flex items-center gap-2 rounded-lg border border-transparent transition-all hover:border-border/60 hover:bg-muted/60 focus-visible:bg-muted/60 focus-visible:ring-2 focus-visible:ring-ring focus-visible:outline-none data-active:border-calm/30 data-active:bg-calm-soft/40">
-            <ThreadListItemPrimitive.Trigger className="aui-thread-list-item-trigger min-w-0 flex-grow px-3 py-2 text-start">
+            <ThreadListItemPrimitive.Trigger className="aui-thread-list-item-trigger min-w-0 flex-grow px-3 py-1.5 text-start">
                 <ThreadListItemTitle />
             </ThreadListItemPrimitive.Trigger>
             <div className="mr-2 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
-                <ThreadListItemArchive />
-                <ThreadListItemUnarchive />
+                <ThreadListItemArchiveToggle />
                 <ThreadListItemDelete />
             </div>
         </ThreadListItemPrimitive.Root>
@@ -49,28 +48,15 @@ const ThreadListItem: FC = () => {
 
 const ThreadListItemTitle: FC = () => {
     return (
-        <span className="aui-thread-list-item-title block truncate text-sm font-medium leading-5">
+        <span className="aui-thread-list-item-title block truncate text-xs font-medium leading-4">
             <ThreadListItemPrimitive.Title fallback="New Chat" />
         </span>
     );
 };
 
-const ThreadListItemArchive: FC = () => {
-    return (
-        <ThreadListItemPrimitive.Archive asChild>
-            <TooltipIconButton
-                className="aui-thread-list-item-archive size-4 p-0 text-foreground hover:text-primary"
-                variant="ghost"
-                tooltip="Archive chat"
-            >
-                <ArchiveIcon />
-            </TooltipIconButton>
-        </ThreadListItemPrimitive.Archive>
-    );
-};
-
-const ThreadListItemUnarchive: FC = () => {
-    return (
+const ThreadListItemArchiveToggle: FC = () => {
+    const isArchived = useThreadListItem(s => s.status === 'archived');
+    return isArchived ? (
         <ThreadListItemPrimitive.Unarchive asChild>
             <TooltipIconButton
                 className="aui-thread-list-item-unarchive size-4 p-0 text-foreground hover:text-primary"
@@ -80,6 +66,16 @@ const ThreadListItemUnarchive: FC = () => {
                 <ArchiveRestoreIcon />
             </TooltipIconButton>
         </ThreadListItemPrimitive.Unarchive>
+    ) : (
+        <ThreadListItemPrimitive.Archive asChild>
+            <TooltipIconButton
+                className="aui-thread-list-item-archive size-4 p-0 text-foreground hover:text-primary"
+                variant="ghost"
+                tooltip="Archive chat"
+            >
+                <ArchiveIcon />
+            </TooltipIconButton>
+        </ThreadListItemPrimitive.Archive>
     );
 };
 
