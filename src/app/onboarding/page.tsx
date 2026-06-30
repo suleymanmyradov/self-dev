@@ -6,7 +6,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { cn } from '@/lib/utils';
-import { createGoal, createHabit, updateSettings } from '@/api';
+import { createGoal, createHabit, updateSettings, generateOnboardingHabits } from '@/api';
 import {
   ACCOUNTABILITY_STYLES,
   ACCOUNTABILITY_STYLE_LABELS,
@@ -70,53 +70,16 @@ export default function OnboardingPage() {
     setLoadingHabits(true);
     setError(null);
     try {
-      const systemPrompt = `You are an AI accountability coach. Generate exactly 3 specific, small, actionable daily habits for a user.
-
-User context:
-- Goal: ${state.goalTitle} (category: ${state.goalCategory})
-- Motivation: ${state.motivation}
-- Main blocker: ${state.blocker}
-- Daily time available: ${state.dailyMinutes} minutes
-- Accountability style: ${state.accountabilityStyle}
-
-Rules:
-- Each habit must fit within ${state.dailyMinutes} minutes total combined
-- Habits must be small enough to do even on low-motivation days
-- Be specific (not "exercise more" but "walk for 15 minutes after lunch")
-- Return exactly this JSON format, no extra text:
-[
-  {"name": "Habit name", "description": "One sentence describing when/how to do it"},
-  {"name": "Habit name", "description": "One sentence describing when/how to do it"},
-  {"name": "Habit name", "description": "One sentence describing when/how to do it"}
-]`;
-
-      const response = await fetch('/api/chat', {
-        method: 'POST',
-        credentials: 'same-origin',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          messages: [
-            {
-              id: 'onboarding-habits',
-              role: 'user',
-              content: 'Generate 3 daily habits for my goal.',
-              parts: [{ type: 'text', text: 'Generate 3 daily habits for my goal.' }],
-            },
-          ],
-          system: systemPrompt,
-        }),
+      const habits = await generateOnboardingHabits({
+        goalTitle: state.goalTitle,
+        goalCategory: state.goalCategory,
+        motivation: state.motivation,
+        blocker: state.blocker,
+        dailyMinutes: state.dailyMinutes,
+        accountabilityStyle: state.accountabilityStyle,
       });
 
-      if (!response.ok) throw new Error('Failed to generate habits');
-
-      const text = await response.text();
-      const jsonMatch = text.match(/\[[\s\S]*\]/);
-      if (!jsonMatch) throw new Error('Could not parse habit suggestions');
-
-      const parsed: Array<{ name: string; description: string }> = JSON.parse(jsonMatch[0]);
-      const suggestions = parsed.slice(0, 3).map((h) => ({
+      const suggestions = habits.slice(0, 3).map((h) => ({
         name: h.name,
         description: h.description,
         selected: true,

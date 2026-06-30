@@ -71,7 +71,7 @@ export const ArticleCardGrid = memo(function ArticleCardGrid({
             alt={title}
             fill
             sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 25vw"
-            priority={index < 4}
+            loading={index < 4 ? "eager" : "lazy"}
             className="object-cover transition-transform duration-500 group-hover:scale-105"
           />
           {/* Category badge on image */}

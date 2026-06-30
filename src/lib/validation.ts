@@ -592,6 +592,26 @@ export const PlanAdjustmentSuggestionResponseSchema = ApiResponseSchema(PlanAdju
 export const PersonalizedCoachingResponseSchema = ApiResponseSchema(GeneratePersonalizedCoachingResponseSchema);
 
 // ============================================
+// Onboarding Habit Generation Schemas
+// ============================================
+
+export const GenerateOnboardingHabitsRequestSchema = z.object({
+  goalTitle: z.string().min(1).max(200),
+  goalCategory: z.string().max(100).optional(),
+  motivation: z.string().max(500).optional(),
+  blocker: z.string().max(500).optional(),
+  dailyMinutes: z.number().int().min(1).max(600),
+  accountabilityStyle: z.enum(['gentle', 'balanced', 'strict']).optional(),
+});
+
+export const OnboardingHabitSuggestionSchema = z.object({
+  name: z.string(),
+  description: z.string(),
+});
+
+export const GenerateOnboardingHabitsResponseSchema = ApiResponseSchema(z.array(OnboardingHabitSuggestionSchema));
+
+// ============================================
 // Weekly Review Schemas
 // ============================================
 

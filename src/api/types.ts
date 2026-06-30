@@ -643,6 +643,26 @@ export type PlanAdjustmentSuggestionResponse = ApiResponse<PlanAdjustmentSuggest
 export type PersonalizedCoachingResponse = ApiResponse<GeneratePersonalizedCoachingResponse>;
 
 // ============================================
+// Onboarding Habit Generation Types
+// ============================================
+
+export interface GenerateOnboardingHabitsRequest {
+  goalTitle: string;
+  goalCategory?: string;
+  motivation?: string;
+  blocker?: string;
+  dailyMinutes: number;
+  accountabilityStyle?: 'gentle' | 'balanced' | 'strict';
+}
+
+export interface OnboardingHabitSuggestion {
+  name: string;
+  description: string;
+}
+
+export type GenerateOnboardingHabitsResponse = ApiResponse<OnboardingHabitSuggestion[]>;
+
+// ============================================
 // Billing / Monetization Types
 // ============================================
 

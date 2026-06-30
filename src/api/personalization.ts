@@ -11,6 +11,7 @@ import {
   ApplyPlanAdjustmentSuggestionRequestSchema,
   GeneratePersonalizedCoachingRequestSchema,
   PersonalizedCoachingResponseSchema,
+  GenerateOnboardingHabitsResponseSchema,
 } from '@/lib/validation';
 import type {
   CoachingProfile,
@@ -22,6 +23,8 @@ import type {
   ApplyPlanAdjustmentSuggestionRequest,
   GeneratePersonalizedCoachingRequest,
   GeneratePersonalizedCoachingResponse,
+  GenerateOnboardingHabitsRequest,
+  OnboardingHabitSuggestion,
 } from './types';
 
 const ENDPOINTS = {
@@ -31,6 +34,7 @@ const ENDPOINTS = {
   PLAN_ADJUSTMENT_SUGGESTIONS: '/personalization/plan-adjustments',
   PERSONALIZED_COACHING: '/personalization/coaching',
   COACHING_STREAM: '/personalization/coaching-stream',
+  ONBOARDING_HABITS: '/onboarding/generate-habits',
 };
 
 export interface UpsertCoachingProfileRequest {
@@ -263,4 +267,20 @@ function parseCoachingSSEEvent(raw: string): { type: string; data: string } | nu
   }
   if (!data) return null;
   return { type, data };
+}
+
+/**
+ * Generate 3 daily habit suggestions from structured onboarding data.
+ *
+ * This is a server-owned endpoint: the client sends only structured onboarding
+ * fields (goal, motivation, blocker, etc.), never a prompt or tools. The
+ * backend builds the prompt, runs the safety classifier on the user free-text,
+ * and returns validated structured JSON.
+ */
+export async function generateOnboardingHabits(
+  data: GenerateOnboardingHabitsRequest
+): Promise<OnboardingHabitSuggestion[]> {
+  const response = await api.post<unknown>(ENDPOINTS.ONBOARDING_HABITS, data);
+  const parsed = GenerateOnboardingHabitsResponseSchema.parse(response);
+  return parsed.data;
 }

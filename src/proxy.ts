@@ -32,8 +32,10 @@ const PROTECTED_ROUTES = [
 // Routes that should be accessible only when NOT authenticated
 const AUTH_ROUTES = ['/login', '/register'];
 
-// API routes that should bypass auth check (handled by their own logic)
-const PUBLIC_API_ROUTES = ['/api/chat'];
+// API routes that should bypass auth check (handled by their own logic).
+// The former /api/chat route was removed: onboarding habit generation now goes
+// through the authenticated backend gateway at /api/v1/onboarding/generate-habits.
+const PUBLIC_API_ROUTES: string[] = [];
 
 type TokenStatus = 'valid' | 'expired' | 'invalid';
 
