@@ -182,6 +182,33 @@ export interface AuthResponse {
   user: Profile;
 }
 
+export interface RegisterResponse {
+  requiresVerification: boolean;
+  message: string;
+}
+
+export interface VerifyEmailRequest {
+  token: string;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
+export interface GoogleLoginRequest {
+  authorizationCode: string;
+  redirectUri?: string;
+}
+
+export interface ForgotPasswordRequest {
+  email: string;
+}
+
+export interface ResetPasswordRequest {
+  token: string;
+  newPassword: string;
+}
+
 // ============================================
 // Profile Types
 // ============================================
@@ -198,6 +225,7 @@ export interface Profile {
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
+  emailVerified?: boolean;
 }
 
 export interface UpdateProfileRequest {

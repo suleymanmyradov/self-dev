@@ -8,6 +8,7 @@ import { Label } from '@/components/ui/label';
 import { loginAction } from '@/app/actions/auth';
 import { useAuthStore } from '@/store/auth';
 import { useLoginForm } from '@/hooks';
+import { GoogleButton } from '@/components/google-button';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -93,6 +94,12 @@ export function LoginForm() {
         <div className="grid gap-2">
           <div className="flex items-center justify-between">
             <Label htmlFor="password">Password</Label>
+            <Link
+              href="/forgot-password"
+              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-primary"
+            >
+              Forgot password?
+            </Link>
           </div>
           <Input
             id="password"
@@ -114,6 +121,15 @@ export function LoginForm() {
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPending ? 'Signing in...' : 'Sign In'}
         </Button>
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+        <GoogleButton />
       </div>
       <div className="text-center text-sm text-muted-foreground">
         Don&apos;t have an account?{' '}

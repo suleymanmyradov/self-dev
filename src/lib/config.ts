@@ -30,7 +30,14 @@ export const config = {
   // App Configuration
   appUrl: process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000',
   appEnv: process.env.NODE_ENV || 'development',
-  
+
+  // Google OAuth (public client ID — safe to expose; the client secret stays
+  // server-side in the auth microservice). Empty client ID disables the button.
+  googleClientId: process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || '',
+  googleRedirectUri:
+    process.env.NEXT_PUBLIC_GOOGLE_REDIRECT_URI ||
+    `${process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000'}/auth/callback/google`,
+
   // Feature Flags
   features: {
     enableAnalytics: process.env.NEXT_PUBLIC_ENABLE_ANALYTICS === 'true',

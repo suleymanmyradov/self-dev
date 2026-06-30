@@ -4,15 +4,26 @@ import {
   LoginRequestSchema,
   RegisterRequestSchema,
   AuthResponseSchema,
+  RegisterResponseSchema,
   ProfileResponseSchema,
   UpdateProfileRequestSchema,
+  ForgotPasswordRequestSchema,
+  ResetPasswordRequestSchema,
+  ResendVerificationRequestSchema,
+  VerifyEmailRequestSchema,
 } from '@/lib/validation';
 import type {
   LoginRequest,
   RegisterRequest,
   AuthResponse,
+  RegisterResponse,
   UpdateProfileRequest,
   ProfileResponse,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
+  ResendVerificationRequest,
+  VerifyEmailRequest,
+  GoogleLoginRequest,
 } from './types';
 
 const ENDPOINTS = {
@@ -20,6 +31,11 @@ const ENDPOINTS = {
   REGISTER: '/auth/register',
   LOGOUT: '/auth/logout',
   REFRESH: '/auth/refresh',
+  VERIFY_EMAIL: '/auth/verify-email',
+  RESEND_VERIFICATION: '/auth/resend-verification',
+  GOOGLE_LOGIN: '/auth/google',
+  FORGOT_PASSWORD: '/auth/forgot-password',
+  RESET_PASSWORD: '/auth/reset-password',
   PROFILE_ME: '/profile/me',
   PROFILE: '/profile',
 };
@@ -35,13 +51,59 @@ export async function login(data: LoginRequest): Promise<AuthResponse> {
 }
 
 /**
- * Register a new user
+ * Register a new user. With email verification enabled, the backend does NOT
+ * return tokens — it sends a verification email. The caller should show the
+ * "check your email" state from the returned message.
  */
-export async function register(data: RegisterRequest): Promise<AuthResponse> {
-  // Token cookies are set server-side (server action / BFF); the browser never stores them.
+export async function register(data: RegisterRequest): Promise<RegisterResponse> {
   const validated = RegisterRequestSchema.parse(data);
   const response = await api.post<unknown>(ENDPOINTS.REGISTER, validated);
+  return RegisterResponseSchema.parse(response);
+}
+
+/**
+ * Verify an email using the token from the verification link. Returns a fresh
+ * token pair so the user is logged in immediately after verifying.
+ */
+export async function verifyEmail(data: VerifyEmailRequest): Promise<AuthResponse> {
+  const validated = VerifyEmailRequestSchema.parse(data);
+  const response = await api.post<unknown>(ENDPOINTS.VERIFY_EMAIL, validated);
   return AuthResponseSchema.parse(response);
+}
+
+/**
+ * Resend the email verification link. Rate-limited server-side.
+ */
+export async function resendVerification(data: ResendVerificationRequest): Promise<void> {
+  const validated = ResendVerificationRequestSchema.parse(data);
+  await api.post<unknown>(ENDPOINTS.RESEND_VERIFICATION, validated);
+}
+
+/**
+ * Sign in with Google by exchanging the OAuth authorization code for tokens.
+ * The code is exchanged server-side (the client secret lives in the auth
+ * microservice); the browser only ever sees the public client ID.
+ */
+export async function googleLogin(data: GoogleLoginRequest): Promise<AuthResponse> {
+  const response = await api.post<unknown>(ENDPOINTS.GOOGLE_LOGIN, data);
+  return AuthResponseSchema.parse(response);
+}
+
+/**
+ * Request a password reset email. Always resolves (the backend does not reveal
+ * whether the email exists).
+ */
+export async function forgotPassword(data: ForgotPasswordRequest): Promise<void> {
+  const validated = ForgotPasswordRequestSchema.parse(data);
+  await api.post<unknown>(ENDPOINTS.FORGOT_PASSWORD, validated);
+}
+
+/**
+ * Reset a password using the token from the reset email.
+ */
+export async function resetPassword(data: ResetPasswordRequest): Promise<void> {
+  const validated = ResetPasswordRequestSchema.parse(data);
+  await api.post<unknown>(ENDPOINTS.RESET_PASSWORD, validated);
 }
 
 /**

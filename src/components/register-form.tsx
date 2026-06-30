@@ -9,6 +9,7 @@ import { Label } from '@/components/ui/label';
 import { registerAction } from '@/app/actions/auth';
 import { useAuthStore } from '@/store/auth';
 import { useRegisterForm } from '@/hooks';
+import { GoogleButton } from '@/components/google-button';
 import Link from 'next/link';
 import { toast } from 'sonner';
 
@@ -34,8 +35,14 @@ export function RegisterForm() {
   });
 
   useEffect(() => {
-    if (state.success && state.user) {
-      // Tokens were set as httpOnly cookies by the server action; we only track the user here.
+    if (state.success && state.requiresVerification) {
+      // Email verification flow: no tokens are issued yet. Send the user to a
+      // "check your email" page; they'll log in after verifying.
+      toast.success('Account created. Check your email to verify your account.');
+      reset();
+      router.push('/check-email');
+    } else if (state.success && state.user) {
+      // Fallback for non-verification flows (e.g. OAuth or future changes).
       setAuthUser(state.user);
       toast.success('Account created successfully');
       reset();
@@ -166,6 +173,15 @@ export function RegisterForm() {
         <Button type="submit" className="w-full" disabled={isPending}>
           {isPending ? 'Creating Account...' : 'Create Account'}
         </Button>
+        <div className="relative">
+          <div className="absolute inset-0 flex items-center">
+            <span className="w-full border-t" />
+          </div>
+          <div className="relative flex justify-center text-xs uppercase">
+            <span className="bg-card px-2 text-muted-foreground">or</span>
+          </div>
+        </div>
+        <GoogleButton label="Sign up with Google" />
       </div>
       <div className="text-center text-sm text-muted-foreground">
         Already have an account?{' '}

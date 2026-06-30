@@ -5,8 +5,11 @@ import { redirect } from 'next/navigation';
 import {
   LoginRequestSchema,
   RegisterRequestSchema,
+  ForgotPasswordRequestSchema,
+  ResetPasswordRequestSchema,
+  ResendVerificationRequestSchema,
 } from '@/lib/validation';
-import { login, register } from '@/api/auth';
+import { login, register, verifyEmail, resendVerification, googleLogin, forgotPassword, resetPassword } from '@/api/auth';
 import { serverPost } from '@/lib/server-api';
 import type { LoginRequest, RegisterRequest, Profile } from '@/api/types';
 
@@ -47,6 +50,9 @@ export interface AuthActionState {
   user?: Profile;
   accessToken?: string;
   refreshToken?: string;
+  // Registration flow: no tokens are issued until the email is verified.
+  requiresVerification?: boolean;
+  message?: string;
 }
 
 export async function loginAction(
@@ -111,9 +117,33 @@ export async function registerAction(
       return { success: false, fieldErrors };
     }
 
+    // With email verification enabled, register does NOT return tokens. The
+    // backend sends a verification email; the user must verify before logging in.
     const response = await register(validated.data);
 
-    // Set HttpOnly cookies
+    return {
+      success: true,
+      requiresVerification: response.requiresVerification,
+      message: response.message,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Registration failed. Please try again.';
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Verify an email using the token from the verification link. On success the
+ * backend issues a fresh token pair, so the user is logged in immediately.
+ */
+export async function verifyEmailAction(token: string): Promise<AuthActionState> {
+  try {
+    if (!token) {
+      return { success: false, error: 'Verification token is required.' };
+    }
+
+    const response = await verifyEmail({ token });
     await setAuthCookies(response.accessToken, response.refreshToken);
 
     return {
@@ -124,7 +154,135 @@ export async function registerAction(
     };
   } catch (error) {
     const message =
-      error instanceof Error ? error.message : 'Registration failed. Please try again.';
+      error instanceof Error ? error.message : 'Email verification failed.';
+    return { success: false, error: message };
+  }
+}
+
+export interface ResendVerificationActionState {
+  success: boolean;
+  error?: string;
+  message?: string;
+}
+
+export async function resendVerificationAction(
+  email: string
+): Promise<ResendVerificationActionState> {
+  try {
+    const validated = ResendVerificationRequestSchema.safeParse({ email });
+    if (!validated.success) {
+      return { success: false, error: 'Please enter a valid email address.' };
+    }
+
+    await resendVerification(validated.data);
+    return {
+      success: true,
+      message: 'If the email is registered and unverified, a new verification link has been sent.',
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to resend verification email.';
+    return { success: false, error: message };
+  }
+}
+
+/**
+ * Complete Google sign-in by exchanging the OAuth authorization code (returned
+ * by Google to the callback page) for app tokens. Sets httpOnly cookies on
+ * success.
+ */
+export async function googleLoginAction(authorizationCode: string): Promise<AuthActionState> {
+  try {
+    if (!authorizationCode) {
+      return { success: false, error: 'Missing Google authorization code.' };
+    }
+
+    const response = await googleLogin({ authorizationCode });
+    await setAuthCookies(response.accessToken, response.refreshToken);
+
+    return {
+      success: true,
+      user: response.user,
+      accessToken: response.accessToken,
+      refreshToken: response.refreshToken,
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Google sign-in failed. Please try again.';
+    return { success: false, error: message };
+  }
+}
+
+export interface ForgotPasswordActionState {
+  success: boolean;
+  error?: string;
+  message?: string;
+  fieldErrors?: Record<string, string[]>;
+}
+
+export async function forgotPasswordAction(
+  _prevState: ForgotPasswordActionState,
+  formData: FormData
+): Promise<ForgotPasswordActionState> {
+  try {
+    const raw = { email: formData.get('email') as string };
+
+    const validated = ForgotPasswordRequestSchema.safeParse(raw);
+    if (!validated.success) {
+      const fieldErrors: Record<string, string[]> = {};
+      validated.error.errors.forEach((err) => {
+        const path = err.path[0] as string;
+        if (!fieldErrors[path]) fieldErrors[path] = [];
+        fieldErrors[path].push(err.message);
+      });
+      return { success: false, fieldErrors };
+    }
+
+    await forgotPassword(validated.data);
+    // Always report success to avoid leaking which emails are registered.
+    return {
+      success: true,
+      message: 'If an account exists for that email, a reset link has been sent.',
+    };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to request password reset.';
+    return { success: false, error: message };
+  }
+}
+
+export interface ResetPasswordActionState {
+  success: boolean;
+  error?: string;
+  fieldErrors?: Record<string, string[]>;
+}
+
+export async function resetPasswordAction(
+  _prevState: ResetPasswordActionState,
+  formData: FormData
+): Promise<ResetPasswordActionState> {
+  try {
+    const raw = {
+      token: formData.get('token') as string,
+      newPassword: formData.get('newPassword') as string,
+    };
+
+    const validated = ResetPasswordRequestSchema.safeParse(raw);
+    if (!validated.success) {
+      const fieldErrors: Record<string, string[]> = {};
+      validated.error.errors.forEach((err) => {
+        const path = err.path[0] as string;
+        if (!fieldErrors[path]) fieldErrors[path] = [];
+        fieldErrors[path].push(err.message);
+      });
+      return { success: false, fieldErrors };
+    }
+
+    await resetPassword(validated.data);
+    return { success: true };
+  } catch (error) {
+    const message =
+      error instanceof Error ? error.message : 'Failed to reset password.';
     return { success: false, error: message };
   }
 }

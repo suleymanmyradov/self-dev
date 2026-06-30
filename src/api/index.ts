@@ -42,6 +42,12 @@ export type {
   RegisterRequest,
   RefreshRequest,
   AuthResponse,
+  RegisterResponse,
+  VerifyEmailRequest,
+  ResendVerificationRequest,
+  GoogleLoginRequest,
+  ForgotPasswordRequest,
+  ResetPasswordRequest,
 
   // Profile Types
   Profile,
@@ -138,6 +144,11 @@ export {
   logout,
   getCurrentUser,
   isAuthenticated,
+  verifyEmail,
+  resendVerification,
+  googleLogin,
+  forgotPassword,
+  resetPassword,
 } from './auth';
 
 // Goals API
