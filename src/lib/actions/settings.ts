@@ -1,7 +1,7 @@
 'use server';
 
 import { revalidatePath } from 'next/cache';
-import { serverPut, serverPatch } from '@/lib/server-api';
+import { serverPut } from '@/lib/server-api';
 import {
   UpdateProfileRequestSchema,
   UpdateSettingsRequestSchema,
@@ -106,7 +106,7 @@ export async function updateSettingsAction(
       };
     }
 
-    await serverPatch('/settings', validated.data);
+    await serverPut('/settings', validated.data);
     revalidatePath('/settings');
     return { success: true };
   } catch (error) {
@@ -135,7 +135,7 @@ export async function updateCoachingPreferencesAction(
       };
     }
 
-    await serverPatch('/personalization/coaching-profile/preferences', validated.data);
+    await serverPut('/personalization/coaching-profile/preferences', validated.data);
     revalidatePath('/settings');
     return { success: true };
   } catch (error) {

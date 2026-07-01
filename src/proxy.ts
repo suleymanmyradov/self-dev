@@ -17,7 +17,6 @@ const PROTECTED_ROUTES = [
   '/activity',
   '/profile',
   '/settings',
-  '/appearance',
   '/saved',
   '/report',
   '/weekly-review',

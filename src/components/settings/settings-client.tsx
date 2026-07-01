@@ -1,6 +1,7 @@
 "use client";
 
-import { useActionState, useCallback, useEffect } from "react";
+import { useActionState, useCallback, useEffect, useState } from "react";
+import { useTheme } from "next-themes";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
@@ -12,10 +13,12 @@ import {
   updateProfileAction,
   updateSettingsAction,
   updateCoachingPreferencesAction,
-} from "@/app/actions/settings";
+} from "@/lib/actions/settings";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { Crown, Sparkles } from "lucide-react";
 import Link from "next/link";
+import { useUIStore } from "@/store/uiStore";
+import { SECONDARY_COLORS } from "@/lib/secondary-colors";
 
 interface SettingsClientProps {
   settings: Settings | null;
@@ -140,6 +143,9 @@ export function SettingsClient({ settings, profile, coachingProfile }: SettingsC
               </CardFooter>
             </Card>
           </form>
+
+          {/* Appearance */}
+          <AppearanceSection />
 
           {/* Billing / Plan */}
           <Card className="mb-4">
@@ -359,5 +365,77 @@ function BillingSection() {
         </>
       )}
     </>
+  );
+}
+
+function AppearanceSection() {
+  const { theme, setTheme, systemTheme } = useTheme();
+  const [mounted, setMounted] = useState(false);
+  const secondaryColor = useUIStore((s) => s.secondaryColor);
+  const setSecondaryColor = useUIStore((s) => s.setSecondaryColor);
+
+  useEffect(() => {
+    const id = requestAnimationFrame(() => setMounted(true));
+    return () => cancelAnimationFrame(id);
+  }, []);
+
+  const isThemeActive = (value: string): boolean =>
+    mounted && (theme === value || (!theme && value === "system"));
+
+  const isColorActive = (name: string): boolean =>
+    mounted && secondaryColor === name.toLowerCase();
+
+  return (
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle>Appearance</CardTitle>
+      </CardHeader>
+      <CardContent className="grid gap-6">
+        <div>
+          <span className="text-sm font-medium">Theme</span>
+          <p className="text-xs text-muted-foreground mb-3">Choose how the app looks to you.</p>
+          <div className="flex items-center gap-2">
+            {(["light", "dark", "system"] as const).map((t) => (
+              <Button
+                key={t}
+                variant="outline"
+                onClick={() => setTheme(t)}
+                className={isThemeActive(t) ? "bg-primary text-primary-foreground" : ""}
+              >
+                {t.charAt(0).toUpperCase() + t.slice(1)}
+              </Button>
+            ))}
+          </div>
+          <Separator className="my-3" />
+          <p className="text-xs text-muted-foreground">
+            {mounted
+              ? theme === "system" || !theme
+                ? `Following system: ${systemTheme ?? "light"}`
+                : `Current theme: ${theme}`
+              : "Detecting current theme..."}
+          </p>
+        </div>
+        <Separator />
+        <div>
+          <span className="text-sm font-medium">Secondary Color</span>
+          <p className="text-xs text-muted-foreground mb-3">
+            Choose the accent color for secondary elements.
+          </p>
+          <div className="flex flex-wrap gap-3">
+            {SECONDARY_COLORS.map((color) => (
+              <button
+                key={color.name}
+                onClick={() => setSecondaryColor(color.name.toLowerCase())}
+                className={`w-10 h-10 rounded-full border-2 transition-transform hover:scale-105 ${
+                  isColorActive(color.name) ? "ring-2 ring-primary ring-offset-2" : ""
+                }`}
+                style={{ backgroundColor: color.value }}
+                title={color.name}
+              />
+            ))}
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }

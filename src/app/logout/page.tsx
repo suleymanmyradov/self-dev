@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { logoutAction } from "@/app/actions/auth";
+import { logoutAction } from "@/lib/actions/auth";
 import { useAuthStore } from "@/store/auth";
 
 export default function LogoutPage() {

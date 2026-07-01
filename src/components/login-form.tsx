@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { loginAction } from '@/app/actions/auth';
+import { loginAction } from '@/lib/actions/auth';
 import { useAuthStore } from '@/store/auth';
 import { useLoginForm } from '@/hooks';
 import { GoogleButton } from '@/components/google-button';

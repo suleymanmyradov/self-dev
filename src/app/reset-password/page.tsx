@@ -4,7 +4,7 @@ import { useActionState, startTransition, useState, Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { GalleryVerticalEnd } from 'lucide-react';
-import { resetPasswordAction } from '@/app/actions/auth';
+import { resetPasswordAction } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

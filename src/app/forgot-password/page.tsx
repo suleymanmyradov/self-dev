@@ -3,7 +3,7 @@
 import { useActionState, startTransition, useState } from 'react';
 import Link from 'next/link';
 import { GalleryVerticalEnd } from 'lucide-react';
-import { forgotPasswordAction } from '@/app/actions/auth';
+import { forgotPasswordAction } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';

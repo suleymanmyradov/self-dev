@@ -4,7 +4,7 @@ import { useEffect, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GalleryVerticalEnd, Loader2, XCircle } from 'lucide-react';
-import { googleLoginAction } from '@/app/actions/auth';
+import { googleLoginAction } from '@/lib/actions/auth';
 import { useAuthStore } from '@/store/auth';
 import { toast } from 'sonner';
 

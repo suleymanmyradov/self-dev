@@ -57,7 +57,7 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
     if (!q) return allArticles;
     return allArticles.filter((a) =>
       [a.title, a.excerpt, a.category?.name].some((f) =>
-        f?.toLowerCase().includes(q),
+        f?.toLowerCase()?.includes(q),
       ),
     );
   }, [query, articlesData]);

@@ -8,7 +8,7 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
 import { Camera, Pencil, MapPin, Tag } from "lucide-react";
 import type { Profile } from "@/api";
-import { updateProfileAction } from "@/app/actions/settings";
+import { updateProfileAction } from "@/lib/actions/settings";
 
 interface ProfileClientProps {
   profile: Profile;

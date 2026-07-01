@@ -123,7 +123,10 @@ export const GoalSchema = z.object({
   dueDate: z.string().optional(),
   progress: z.number().min(0).max(100),
   completed: z.boolean(),
-  relatedHabitIds: z.array(z.string()).optional(),
+  relatedHabitIds: z.preprocess(
+    (v) => (v === null ? undefined : v),
+    z.array(z.string()).optional()
+  ),
   userId: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),

@@ -4,7 +4,7 @@ import { useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { GalleryVerticalEnd, MailCheck } from 'lucide-react';
-import { resendVerificationAction } from '@/app/actions/auth';
+import { resendVerificationAction } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
