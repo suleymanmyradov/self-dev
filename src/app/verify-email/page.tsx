@@ -38,7 +38,9 @@ function VerifyEmailContent() {
         setAuth(result.user);
         setStatus('success');
         toast.success('Email verified! Welcome to Growth.');
-        setTimeout(() => router.push('/habits'), 1500);
+        // New users should go through onboarding; /onboarding redirects to
+        // /habits if onboarding was already completed.
+        setTimeout(() => router.push('/onboarding'), 1500);
       } else {
         setStatus('error');
         setError(result.error ?? 'Verification failed.');

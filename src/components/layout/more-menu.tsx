@@ -19,7 +19,6 @@ const items: Array<
   { type: "item", label: "Saved", href: "/saved" },
   { type: "separator" },
   { type: "item", label: "Pricing", href: "/pricing" },
-  { type: "item", label: "Weekly Review", href: "/weekly-review" },
   { type: "separator" },
   { type: "item", label: "Report a problem", href: "/report" },
   { type: "separator" },

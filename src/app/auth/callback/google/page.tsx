@@ -34,7 +34,10 @@ function GoogleCallbackContent() {
       if (result.success && result.user) {
         setAuth(result.user);
         toast.success('Signed in with Google');
-        router.push('/habits');
+        // Route through /onboarding: it redirects to /habits when onboarding is
+        // already complete, so returning users skip it while new users are guided
+        // through the setup flow.
+        router.push('/onboarding');
       } else {
         setError(result.error ?? 'Google sign-in failed.');
       }

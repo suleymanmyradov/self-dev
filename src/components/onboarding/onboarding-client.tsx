@@ -1,5 +1,6 @@
 'use client';
 
+import { useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { useMutation } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
@@ -57,8 +58,15 @@ export function OnboardingClient() {
   const setError = useOnboardingStore((s) => s.setError);
   const setHabitSuggestions = useOnboardingStore((s) => s.setHabitSuggestions);
   const toggleHabitSelection = useOnboardingStore((s) => s.toggleHabitSelection);
+  const reset = useOnboardingStore((s) => s.reset);
 
   const { data: categories = [] } = useCategories('goal');
+
+  // Guards against double-submission (rapid double-clicks fire before React
+  // Query's isPending flips the button disabled state) and against re-entry
+  // while the persisted onboarding store still holds the submitted suggestions.
+  const submittingRef = useRef(false);
+  const generatingRef = useRef(false);
 
   const update = <K extends keyof typeof state>(key: K, value: (typeof state)[K]) => {
     updateField(key, value);
@@ -67,6 +75,8 @@ export function OnboardingClient() {
   // ─── Habit AI generation ─────────────────────────────────────────────────
 
   const generateHabits = async () => {
+    if (generatingRef.current) return;
+    generatingRef.current = true;
     setLoadingHabits(true);
     setError(null);
     try {
@@ -107,6 +117,7 @@ export function OnboardingClient() {
       setHabitSuggestions(fallback);
     } finally {
       setLoadingHabits(false);
+      generatingRef.current = false;
     }
   };
 
@@ -126,6 +137,13 @@ export function OnboardingClient() {
   const isSubmitting = creatingGoal || creatingHabit || updatingSettings;
 
   const handleFinish = async () => {
+    // Guard against double-submission: a fast second click (or re-entry while
+    // the persisted store still holds the suggestions) would re-create the
+    // goal and every selected habit, producing duplicates. isSubmitting from
+    // React Query flips asynchronously, so the button isn't disabled yet on
+    // the first synchronous tick after a click.
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setError(null);
     try {
       await doCreateGoal({
@@ -153,9 +171,14 @@ export function OnboardingClient() {
         onboardingCompleted: true,
       });
 
+      // Clear the persisted onboarding state so a back/refresh can't re-submit
+      // and re-create the habits. Done only after every call succeeds so a
+      // mid-flow failure keeps the suggestions for the user to retry.
+      reset();
       router.push('/habits');
     } catch {
       setError('Something went wrong. Please try again.');
+      submittingRef.current = false;
     }
   };
 

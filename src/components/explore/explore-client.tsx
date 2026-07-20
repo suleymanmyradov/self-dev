@@ -11,14 +11,18 @@ import {
   GoalTemplateCard,
   CommunityCard,
 } from "@/components/explore";
-import { HABIT_TEMPLATES, GOAL_TEMPLATES } from "@/data/templates";
 import { useSearchParamState } from "@/lib/url-state";
 import { useCreateHabit, useCreateGoal, useSavedItems, useSaveItem, useRemoveSavedItem } from "@/hooks";
 import { toast } from "@/components/ui/sonner";
-import type { ArticlesResponse } from "@/api";
+import type { ArticlesResponse, ExploreSettings, Article } from "@/api";
+import type { HabitTemplate, GoalTemplate } from "@/types/explore";
 
 interface ExploreClientProps {
   articlesPromise: Promise<ArticlesResponse>;
+  settings: ExploreSettings;
+  featuredArticle: Article | null;
+  habitTemplates: HabitTemplate[];
+  goalTemplates: GoalTemplate[];
 }
 
 function useDebounceValue<T>(value: T, delay: number): T {
@@ -32,7 +36,7 @@ function useDebounceValue<T>(value: T, delay: number): T {
   return debounced;
 }
 
-export function ExploreClient({ articlesPromise }: ExploreClientProps) {
+export function ExploreClient({ articlesPromise, settings, featuredArticle, habitTemplates, goalTemplates }: ExploreClientProps) {
   const articlesData = use(articlesPromise);
 
   const createHabit = useCreateHabit().mutate;
@@ -120,8 +124,8 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
         <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-8">
           {/* Header */}
           <header className="mb-6">
-            <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">Explore</h1>
-            <p className="mt-1 text-sm text-muted-foreground">Discover content to inspire your growth journey.</p>
+            <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">{settings.header.title}</h1>
+            <p className="mt-1 text-sm text-muted-foreground">{settings.header.subtitle}</p>
           </header>
 
           {/* Search */}
@@ -139,7 +143,7 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
 
           <Tabs value={tab} onValueChange={setTab} className="w-full">
             <TabsList className="mb-6 flex-wrap h-auto">
-              {(["articles", "habits", "goals", "community"] as const).map((tabValue) => (
+              {settings.tabs.map((tabValue) => (
                 <TabsTrigger key={tabValue} value={tabValue}>
                   {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}
                 </TabsTrigger>
@@ -148,7 +152,7 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
 
             {/* Articles */}
             <TabsContent value="articles" className="space-y-6">
-              <FeaturedCard />
+              {featuredArticle && <FeaturedCard article={featuredArticle} />}
               {articles.length === 0 ? (
                 <div className="flex flex-col items-center justify-center py-16 text-center">
                   <Search className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
@@ -173,7 +177,7 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
             {/* Habits */}
             <TabsContent value="habits">
               <div className="grid gap-4 md:grid-cols-2">
-                {HABIT_TEMPLATES.map((habit) => (
+                {habitTemplates.map((habit) => (
                   <HabitTemplateCard
                     key={habit.name}
                     template={habit}
@@ -186,7 +190,7 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
             {/* Goals */}
             <TabsContent value="goals">
               <div className="grid gap-4 md:grid-cols-2">
-                {GOAL_TEMPLATES.map((goal) => (
+                {goalTemplates.map((goal) => (
                   <GoalTemplateCard
                     key={goal.title}
                     template={goal}
@@ -198,7 +202,12 @@ export function ExploreClient({ articlesPromise }: ExploreClientProps) {
 
             {/* Community */}
             <TabsContent value="community">
-              <CommunityCard />
+              <CommunityCard
+                title={settings.community.title}
+                description={settings.community.description}
+                discordUrl={settings.community.discordUrl}
+                xUrl={settings.community.xUrl}
+              />
             </TabsContent>
           </Tabs>
         </div>

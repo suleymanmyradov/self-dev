@@ -579,6 +579,75 @@ export interface Category {
 export type CategoriesResponse = ApiResponse<Category[]>;
 
 // ============================================
+// Site Settings Types
+// ============================================
+
+export interface SiteSettingItem {
+  key: string;
+  value: string;
+  updatedAt: string;
+}
+
+export type SiteSettingsResponse = ApiResponse<SiteSettingItem[]>;
+
+// Parsed explore-page settings derived from site_settings keys.
+export interface ExploreHeaderSetting {
+  title: string;
+  subtitle: string;
+}
+
+export interface CommunityCardSetting {
+  title: string;
+  description: string;
+  discordUrl: string;
+  xUrl: string;
+}
+
+export interface ExploreSettings {
+  header: ExploreHeaderSetting;
+  tabs: string[];
+  community: CommunityCardSetting;
+}
+
+// ============================================
+// Template Types (explore page suggestion library)
+// ============================================
+
+export interface TemplateCategory {
+  id: string;
+  name: string;
+  slug: string;
+}
+
+export interface HabitTemplateItem {
+  id: string;
+  name: string;
+  description: string;
+  category?: TemplateCategory | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface GoalTemplateItem {
+  id: string;
+  title: string;
+  description: string;
+  category?: TemplateCategory | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface HabitTemplatesResponse {
+  data: HabitTemplateItem[];
+}
+
+export interface GoalTemplatesResponse {
+  data: GoalTemplateItem[];
+}
+
+// ============================================
 // Personalization Types
 // ============================================
 

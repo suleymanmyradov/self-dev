@@ -185,6 +185,13 @@ export { listCategories } from './categories';
 // Category Types
 export type { Category, CategoriesResponse, EntityType } from './types';
 
+// Site Settings API
+export { listSiteSettings } from './site-settings';
+export type { SiteSettingItem, SiteSettingsResponse, ExploreSettings, ExploreHeaderSetting, CommunityCardSetting } from './types';
+
+// Template Types
+export type { HabitTemplateItem, GoalTemplateItem, HabitTemplatesResponse, GoalTemplatesResponse, TemplateCategory } from './types';
+
 // Articles API
 export { listArticles, getArticle, likeArticle, shareArticle, getAuthorArticles } from './articles';
 

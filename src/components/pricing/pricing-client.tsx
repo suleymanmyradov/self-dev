@@ -12,10 +12,11 @@ import { FakeDoorFeedbackDialog } from "@/components/billing/fake-door-feedback-
 import type { Plan } from "@/api";
 import { useSearchParamEnum } from "@/lib/url-state";
 import { useShallow } from "zustand/react/shallow";
+import { Switch } from "@/components/ui/switch";
 
 const FREE_FEATURES = [
-  "1 active goal",
-  "3 active habits",
+  "3 active goals",
+  "5 active habits",
   "Daily check-ins",
   "Basic AI feedback",
   "Current weekly review",
@@ -104,13 +105,15 @@ export function PricingClient() {
     );
   };
 
-  const annualSavings = billing
-    ? billing.plans.find((p) => p.code === "pro")
-    : null;
-  const monthlyPrice = annualSavings?.priceMonthlyCents ?? 900;
-  const annualPrice = annualSavings?.priceAnnualCents ?? 7200;
-  const annualMonthly = annualPrice / 12;
-  const savingsPercent = Math.round((1 - annualPrice / (monthlyPrice * 12)) * 100);
+  const proPlan = billing ? billing.plans.find((p) => p.code === "pro") : null;
+  // Prices come from the API in cents (DB seed: 999 monthly, 9990 annual).
+  const monthlyPriceCents = proPlan?.priceMonthlyCents ?? 999;
+  const annualPriceCents = proPlan?.priceAnnualCents ?? 9990;
+  // Convert to dollars for display.
+  const annualMonthlyDollars = annualPriceCents / 100 / 12;
+  const savingsPercent = Math.round(
+    (1 - annualPriceCents / (monthlyPriceCents * 12)) * 100
+  );
 
   return (
     <div className="h-full flex flex-col">
@@ -144,26 +147,11 @@ export function PricingClient() {
             >
               Monthly
             </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={billingInterval === "annual"}
+            <Switch
+              checked={billingInterval === "annual"}
+              onCheckedChange={(checked) => setBillingInterval(checked ? "annual" : "monthly")}
               aria-label="Toggle annual billing"
-              onClick={() => setBillingInterval(billingInterval === "annual" ? "monthly" : "annual")}
-              className={cn(
-                "relative rounded-full p-1 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2",
-                billingInterval === "annual" ? "bg-primary/15" : "bg-muted"
-              )}
-            >
-              <div
-                className={cn(
-                  "h-5 w-5 rounded-full transition-transform",
-                  billingInterval === "annual"
-                    ? "translate-x-5 bg-primary"
-                    : "translate-x-0 bg-muted-foreground/40"
-                )}
-              />
-            </button>
+            />
             <button
               className={cn(
                 "text-sm font-medium transition-colors",
@@ -257,7 +245,7 @@ export function PricingClient() {
                     {billingInterval === "monthly" ? (
                       <div>
                         <span className="text-4xl font-bold">
-                          {formatPrice(monthlyPrice)}
+                          {formatPrice(monthlyPriceCents)}
                         </span>
                         <span className="text-muted-foreground text-sm">
                           /month
@@ -266,13 +254,13 @@ export function PricingClient() {
                     ) : (
                       <div>
                         <span className="text-4xl font-bold">
-                          ${annualMonthly.toFixed(0)}
+                          ${annualMonthlyDollars.toFixed(2)}
                         </span>
                         <span className="text-muted-foreground text-sm">
                           /month, billed annually
                         </span>
                         <p className="text-xs text-muted-foreground mt-1">
-                          {formatPrice(annualPrice)}/year
+                          {formatPrice(annualPriceCents)}/year
                         </p>
                       </div>
                     )}

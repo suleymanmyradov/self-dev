@@ -1,13 +1,10 @@
 'use client';
 
 import { use, useMemo, useCallback } from 'react';
-import Link from 'next/link';
 import { ArticleCardGrid } from '@/components/home/article-card-grid';
 import { PlanAdjustmentCard } from '@/components/plan-adjustment-card';
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { CircleDashed, ArrowRight, Lightbulb } from 'lucide-react';
+import { Lightbulb } from 'lucide-react';
 import {
   useArticles,
   usePlanAdjustments,
@@ -18,7 +15,7 @@ import {
   useRemoveSavedItem,
 } from '@/hooks';
 import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
-import type { HabitsResponse, CheckInsResponse, CategoriesResponse, ArticlesResponse } from '@/api';
+import type { CategoriesResponse, ArticlesResponse } from '@/api';
 import { useSearchParamState } from '@/lib/url-state';
 
 const TAB_TRIGGER_CLASS =
@@ -35,17 +32,13 @@ const DEFAULT_CATEGORIES: { value: string; label: string }[] = [
 interface HomeClientProps {
   categoriesPromise: Promise<CategoriesResponse>;
   articlesPromise: Promise<ArticlesResponse>;
-  habitsPromise: Promise<HabitsResponse>;
-  checkInsPromise: Promise<CheckInsResponse>;
 }
 
-export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, checkInsPromise }: HomeClientProps) {
+export function HomeClient({ categoriesPromise, articlesPromise }: HomeClientProps) {
   const [filter, setFilter] = useSearchParamState('category', 'all');
 
   const categoriesData = use(categoriesPromise);
   const initialArticlesData = use(articlesPromise);
-  const habitsData = use(habitsPromise);
-  const checkInsData = use(checkInsPromise);
 
   const { data: articles = [], isFetching: isArticlesFetching } = useArticles(
     filter !== 'all' ? { category: filter } : undefined,
@@ -58,16 +51,6 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
   // Billing entitlements for plan adjustment limit
   const { data: billing } = useBillingOverview();
   const canCreatePlanAdjustment = billing?.entitlements?.canCreatePlanAdjustment ?? true;
-
-  const checkInStats = useMemo(() => {
-    const habits = habitsData.data ?? [];
-    const todayCheckIns = checkInsData.data ?? [];
-    if (habits.length === 0) return null;
-    const checkedHabitIds = new Set(todayCheckIns.map((ci) => ci.habitId));
-    const checkedCount = habits.filter((h) => checkedHabitIds.has(h.id)).length;
-    const remainingCount = habits.length - checkedCount;
-    return { checkedCount, remainingCount, total: habits.length, allChecked: remainingCount === 0 };
-  }, [habitsData, checkInsData]);
 
   const categories = useMemo(() => {
     const cats = categoriesData.data;
@@ -150,32 +133,6 @@ export function HomeClient({ categoriesPromise, articlesPromise, habitsPromise, 
 
       <div className="relative flex-1 overflow-y-auto no-scrollbar">
         <div className="w-full px-6 lg:px-10 pb-10">
-          {/* Today's Check-in Widget */}
-          {checkInStats && !checkInStats.allChecked && (
-            <div className="mb-6 card-elevated rounded-xl p-4">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-3">
-                  <CircleDashed className="h-5 w-5 text-muted-foreground" />
-                  <div>
-                    <p className="text-sm font-medium">Today&apos;s Check-in</p>
-                    <p className="text-xs text-muted-foreground">
-                      {checkInStats.remainingCount} habit{checkInStats.remainingCount === 1 ? '' : 's'} left
-                    </p>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Badge variant="outline" className="text-xs">
-                    {checkInStats.checkedCount}/{checkInStats.total}
-                  </Badge>
-                  <Button variant="ghost" size="sm" asChild>
-                    <Link href="/habits" className="flex items-center gap-1">
-                      Check In <ArrowRight className="h-3 w-3" />
-                    </Link>
-                  </Button>
-                </div>
-              </div>
-            </div>
-          )}
           {/* Plan Adjustment Suggestions */}
           {suggestions.length > 0 && !suggestionsLoading && (
             <div className="mb-6">

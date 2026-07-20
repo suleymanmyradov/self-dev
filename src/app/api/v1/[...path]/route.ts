@@ -72,6 +72,7 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
   const cookieStore = await cookies();
 
   let accessToken = cookieStore.get(AUTH_COOKIE_NAME)?.value ?? null;
+  const hadRefreshToken = !!cookieStore.get(REFRESH_COOKIE_NAME)?.value;
   const url = buildUpstreamUrl(req, path);
   const method = req.method.toUpperCase();
   const hasBody = method !== 'GET' && method !== 'HEAD';
@@ -105,6 +106,13 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
     }
   }
 
+  // Whether the request was ever authenticated (had any token cookie). Used to
+  // decide whether a 401 should clear cookies: an unauthenticated request (e.g.
+  // StoreHydrator firing on the Google callback page before login completes)
+  // must NOT delete cookies, or it can race with a concurrent server action
+  // that just set them.
+  const wasAuthenticated = accessToken !== null || hadRefreshToken;
+
   // Stream the response body directly instead of buffering it. This keeps
   // Server-Sent Events (e.g., /weekly-reviews/generate-stream) flowing to the
   // browser as they arrive from the gateway.
@@ -119,8 +127,11 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
   if (rotated) {
     res.cookies.set(AUTH_COOKIE_NAME, rotated.accessToken, COOKIE_OPTS);
     res.cookies.set(REFRESH_COOKIE_NAME, rotated.refreshToken, COOKIE_OPTS);
-  } else if (upstream.status === 401) {
-    // Refresh impossible or failed — the session is dead; drop the stale cookies.
+  } else if (upstream.status === 401 && wasAuthenticated) {
+    // Session was authenticated but is now dead (expired/revoked tokens) — drop
+    // the stale cookies. Only do this when there WAS a token; an unauthenticated
+    // 401 (no cookies) must not touch cookies, or it can race with a concurrent
+    // login (e.g. Google OAuth callback) that just set them.
     res.cookies.delete(AUTH_COOKIE_NAME);
     res.cookies.delete(REFRESH_COOKIE_NAME);
   }

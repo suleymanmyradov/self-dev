@@ -818,3 +818,53 @@ export const ChatRequestSchema = z.object({
 export const RefreshRequestSchema = z.object({
   refreshToken: z.string().min(1),
 });
+
+// ============================================
+// Site Settings Schemas
+// ============================================
+
+export const SiteSettingItemSchema = z.object({
+  key: z.string(),
+  value: z.string(),
+  updatedAt: z.string(),
+});
+
+export const SiteSettingsResponseSchema = ApiResponseSchema(z.array(SiteSettingItemSchema));
+
+// ============================================
+// Template Schemas
+// ============================================
+
+export const TemplateCategorySchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  slug: z.string(),
+});
+
+export const HabitTemplateItemSchema = z.object({
+  id: z.string(),
+  name: z.string(),
+  description: z.string().optional().default(""),
+  category: TemplateCategorySchema.nullable().optional(),
+  sortOrder: z.number().int().nonnegative(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const GoalTemplateItemSchema = z.object({
+  id: z.string(),
+  title: z.string(),
+  description: z.string().optional().default(""),
+  category: TemplateCategorySchema.nullable().optional(),
+  sortOrder: z.number().int().nonnegative(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+});
+
+export const HabitTemplatesResponseSchema = z.object({
+  data: z.array(HabitTemplateItemSchema),
+});
+
+export const GoalTemplatesResponseSchema = z.object({
+  data: z.array(GoalTemplateItemSchema),
+});
