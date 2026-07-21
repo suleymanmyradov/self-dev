@@ -1,6 +1,6 @@
 import 'server-only';
 
-import { serverGet } from '@/lib/server-api';
+import { serverGet, getServerAccessToken } from '@/lib/server-api';
 import {
   HabitsResponseSchema,
   CheckInsResponseSchema,
@@ -11,6 +11,7 @@ import {
   WeeklyReviewsResponseSchema,
   ArticlesResponseSchema,
   SettingsResponseSchema,
+  NotificationPreferencesResponseSchema,
   CoachingProfileResponseSchema,
   ProfileResponseSchema,
   ArticleResponseSchema,
@@ -18,6 +19,7 @@ import {
   ConversationsResponseSchema,
   MessagesResponseSchema,
   CategoriesResponseSchema,
+  BillingOverviewResponseSchema,
 } from '@/lib/validation';
 import type {
   PageParams,
@@ -30,6 +32,7 @@ import type {
   WeeklyReview,
   ArticlesResponse,
   SettingsResponse,
+  NotificationPreferencesResponse,
   CoachingProfile,
   ProfileResponse,
   ArticleResponse,
@@ -38,6 +41,7 @@ import type {
   MessagesResponse,
   CategoriesResponse,
   EntityType,
+  BillingOverviewResponse,
 } from './types';
 
 export async function listHabitsServer(params: PageParams = { page: 1, limit: 20 }): Promise<HabitsResponse> {
@@ -103,6 +107,11 @@ export async function getSettingsServer(): Promise<SettingsResponse> {
   return SettingsResponseSchema.parse(data);
 }
 
+export async function getNotificationPreferencesServer(): Promise<NotificationPreferencesResponse> {
+  const data = await serverGet<unknown>('/notification-preferences');
+  return NotificationPreferencesResponseSchema.parse(data);
+}
+
 export async function getCoachingProfileServer(): Promise<CoachingProfile> {
   const data = await serverGet<unknown>('/personalization/coaching-profile');
   return CoachingProfileResponseSchema.parse(data).data;
@@ -136,4 +145,35 @@ export async function listConversationsServer(params: PageParams = { page: 1, li
 export async function listCategoriesServer(entityType: EntityType): Promise<CategoriesResponse> {
   const data = await serverGet<unknown>('/categories', { entityType });
   return CategoriesResponseSchema.parse(data);
+}
+
+/**
+ * Fetch billing overview server-side for SSR initial data.
+ *
+ * Returns `null` when there is no auth cookie (unauthenticated users on the
+ * public pricing page) so the caller can skip prefetch and let the client
+ * query handle it after auth hydrates. Authenticated users get the full
+ * overview, which is passed as `initialData` to `useBillingOverview` so the
+ * plan cards render immediately without a client-side waterfall.
+ */
+export async function getBillingOverviewServer(): Promise<BillingOverviewResponse | null> {
+  const token = await getServerAccessToken();
+  if (!token) return null;
+  try {
+    const data = await serverGet<unknown>('/billing/overview');
+    return BillingOverviewResponseSchema.parse(data);
+  } catch (error) {
+    // Re-throw Next.js redirect/notFound digests so the framework can handle them.
+    if (
+      error instanceof Error &&
+      'digest' in error &&
+      typeof error.digest === 'string' &&
+      error.digest.startsWith('NEXT_')
+    ) {
+      throw error;
+    }
+    // Swallow other errors (expired token, network) — the client-side query
+    // will retry after auth hydrates, and the cards render with defaults.
+    return null;
+  }
 }

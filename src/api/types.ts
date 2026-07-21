@@ -387,10 +387,6 @@ export interface Settings {
   theme: 'light' | 'dark' | 'system';
   language: string;
   timezone: string;
-  emailNotifications: boolean;
-  pushNotifications: boolean;
-  habitReminders: boolean;
-  goalReminders: boolean;
   accountabilityStyle: 'gentle' | 'balanced' | 'strict';
   checkInTime: string;
   onboardingCompleted: boolean;
@@ -399,14 +395,29 @@ export interface Settings {
   updatedAt: string;
 }
 
+export interface NotificationPreferences {
+  emailEnabled: boolean;
+  pushEnabled: boolean;
+  habitRemindersEnabled: boolean;
+  goalRemindersEnabled: boolean;
+}
+
+export interface NotificationPreferencesResponse {
+  preferences: NotificationPreferences;
+}
+
+export interface UpdateNotificationPreferencesRequest {
+  preferences: NotificationPreferences;
+}
+
+export interface UnreadNotificationCountResponse {
+  count: number;
+}
+
 export interface UpdateSettingsRequest {
   theme?: 'light' | 'dark' | 'system';
   language?: string;
   timezone?: string;
-  emailNotifications?: boolean;
-  pushNotifications?: boolean;
-  habitReminders?: boolean;
-  goalReminders?: boolean;
   accountabilityStyle?: AccountabilityStyle;
   checkInTime?: string;
   onboardingCompleted?: boolean;

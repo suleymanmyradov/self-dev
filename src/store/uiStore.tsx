@@ -17,7 +17,6 @@ interface UIState {
     checkInModalOpen: boolean;
     checkInHabitId: string | null;
     // Appearance
-    secondaryColor: string;
     hasHydrated: boolean;
     toggleSidebar: () => void;
     openRightPanel: (type: 'notifications') => void;
@@ -29,7 +28,6 @@ interface UIState {
     setSidebarCollapsed: (collapsed: boolean) => void;
     openCheckInModal: (habitId: string) => void;
     closeCheckInModal: () => void;
-    setSecondaryColor: (color: string) => void;
     setHydrated: (state: boolean) => void;
 }
 
@@ -45,7 +43,6 @@ const useUIStore = create<UIState>()(
       leftPanelType: null,
       checkInModalOpen: false,
       checkInHabitId: null,
-      secondaryColor: 'gray',
       hasHydrated: false,
       toggleSidebar: () => set((state) => ({ isSidebarCollapsed: !state.isSidebarCollapsed })),
       openRightPanel: (type) => set({ isRightPanelOpen: true, rightPanelType: type }),
@@ -59,14 +56,12 @@ const useUIStore = create<UIState>()(
       setSidebarCollapsed: (collapsed) => set({ isSidebarCollapsed: collapsed }),
       openCheckInModal: (habitId) => set({ checkInModalOpen: true, checkInHabitId: habitId }),
       closeCheckInModal: () => set({ checkInModalOpen: false, checkInHabitId: null }),
-      setSecondaryColor: (color) => set({ secondaryColor: color }),
       setHydrated: (state) => set({ hasHydrated: state }),
     }),
     {
       name: 'ui-appearance',
       storage: createJSONStorage(getSafeStorage),
       partialize: (state) => ({
-        secondaryColor: state.secondaryColor,
         isSidebarCollapsed: state.isSidebarCollapsed,
       }),
       skipHydration: true,

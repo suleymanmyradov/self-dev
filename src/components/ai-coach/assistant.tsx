@@ -275,6 +275,18 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
         );
     }, []);
 
+    // Abort any in-flight stream when the component unmounts (e.g. navigating
+    // away mid-stream). Without this, stream callbacks keep firing setMessages
+    // / setIsRunning on an unmounted component, which races with assistant-ui's
+    // internal fiber cleanup and surfaces as "Tried to unmount a fiber that is
+    // already unmounted".
+    useEffect(() => {
+        return () => {
+            abortRef.current?.abort();
+            abortRef.current = null;
+        };
+    }, []);
+
     // Build the thread list adapter so the sidebar shows real conversations,
     // "New Chat" works, and clicking a chat navigates to it.
     const threadListAdapter = useMemo<ExternalStoreThreadListAdapter>(() => {

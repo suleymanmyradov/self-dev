@@ -90,6 +90,10 @@ export type {
   Settings,
   UpdateSettingsRequest,
   SettingsResponse,
+  NotificationPreferences,
+  NotificationPreferencesResponse,
+  UpdateNotificationPreferencesRequest,
+  UnreadNotificationCountResponse,
 
   // Personalization Types
   PreferredTone,

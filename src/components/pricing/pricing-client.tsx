@@ -9,7 +9,7 @@ import { useBillingOverview, useTrackUpgradeEvent, useCreateCheckoutSession } fr
 import { useBillingUIStore } from "@/store/billing-ui";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { FakeDoorFeedbackDialog } from "@/components/billing/fake-door-feedback-dialog";
-import type { Plan } from "@/api";
+import type { BillingOverviewResponse, Plan } from "@/api";
 import { useSearchParamEnum } from "@/lib/url-state";
 import { useShallow } from "zustand/react/shallow";
 import { Switch } from "@/components/ui/switch";
@@ -37,7 +37,7 @@ function formatPrice(cents: number): string {
   return dollars % 1 === 0 ? `$${dollars}` : `$${dollars.toFixed(2)}`;
 }
 
-export function PricingClient() {
+export function PricingClient({ billingInitialData }: { billingInitialData?: BillingOverviewResponse }) {
   const [billingInterval, setBillingInterval] = useSearchParamEnum<"monthly" | "annual">(
     "interval",
     ["monthly", "annual"] as const,
@@ -52,7 +52,7 @@ export function PricingClient() {
     }))
   );
 
-  const { data: billing, isLoading } = useBillingOverview();
+  const { data: billing } = useBillingOverview(billingInitialData);
   const trackEvent = useTrackUpgradeEvent();
   const checkout = useCreateCheckoutSession();
 
@@ -170,18 +170,9 @@ export function PricingClient() {
             )}
           </div>
 
-          {/* Plan cards */}
-          {isLoading ? (
-            <div className="grid gap-6 md:grid-cols-2">
-              {[1, 2].map((i) => (
-                <Card key={i} className="animate-pulse">
-                  <CardHeader className="h-24" />
-                  <CardContent className="h-48" />
-                </Card>
-              ))}
-            </div>
-          ) : (
-            <div className="grid gap-6 md:grid-cols-2">
+          {/* Plan cards — render immediately; Pro price uses fallback defaults
+              until billing data arrives (server-prefetched for authed users). */}
+          <div className="grid gap-6 md:grid-cols-2">
               {/* Free Plan */}
               <Card
                 className={cn(
@@ -295,8 +286,7 @@ export function PricingClient() {
                   )}
                 </CardFooter>
               </Card>
-            </div>
-          )}
+          </div>
 
           {/* Trust and safety */}
           <div className="mt-10 text-center text-sm text-muted-foreground space-y-2">

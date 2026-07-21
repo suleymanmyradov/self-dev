@@ -1,7 +1,8 @@
 import api from './axios-client';
-import { NotificationsResponseSchema } from '@/lib/validation';
+import { NotificationsResponseSchema, UnreadNotificationCountResponseSchema } from '@/lib/validation';
 import type {
   NotificationsResponse,
+  UnreadNotificationCountResponse,
   PageParams,
 } from './types';
 
@@ -9,6 +10,7 @@ const ENDPOINTS = {
   NOTIFICATIONS: '/notifications',
   NOTIFICATION_READ: (id: string) => `/notifications/${encodeURIComponent(id)}/read`,
   NOTIFICATIONS_READ_ALL: '/notifications/read-all',
+  NOTIFICATIONS_UNREAD_COUNT: '/notifications/unread-count',
 };
 
 /**
@@ -17,6 +19,14 @@ const ENDPOINTS = {
 export async function listNotifications(params: PageParams = { page: 1, limit: 20 }): Promise<NotificationsResponse> {
   const response = await api.get<unknown>(ENDPOINTS.NOTIFICATIONS, params);
   return NotificationsResponseSchema.parse(response);
+}
+
+/**
+ * Get the unread notification count (server-authoritative, supports >100).
+ */
+export async function getUnreadNotificationCount(): Promise<UnreadNotificationCountResponse> {
+  const response = await api.get<unknown>(ENDPOINTS.NOTIFICATIONS_UNREAD_COUNT);
+  return UnreadNotificationCountResponseSchema.parse(response);
 }
 
 /**

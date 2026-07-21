@@ -4,7 +4,7 @@ import * as React from "react"
 import { Button } from "@/components/ui/button"
 import { useUIStore } from "@/store/uiStore"
 import { useShallow } from "zustand/react/shallow"
-import { useNotifications, useConversations, useMarkAllNotificationsRead } from "@/hooks"
+import { useNotifications, useConversations, useMarkAllNotificationsRead, useMarkNotificationRead } from "@/hooks"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
 import { X, MessageSquare, Bell, CheckCheck, Target, CalendarCheck, Trophy, AlertCircle, Sparkles, Info } from "lucide-react"
@@ -67,7 +67,7 @@ export function LeftNestedPanel() {
   return (
     <aside
       className={cn(
-        "fixed top-0 z-30 hidden h-screen w-[280px] border-r border-border/40 bg-background shadow-lg lg:block",
+        "fixed top-0 z-30 hidden h-screen w-[280px] border-r border-border/40 bg-background shadow-lg md:block",
         "transition-transform duration-200 ease-out",
         show ? "translate-x-0" : "-translate-x-full"
       )}
@@ -152,16 +152,40 @@ function relativeTime(dateStr: string): string {
 }
 
 function NotificationsList() {
-  const { data: notifications = [], isLoading } = useNotifications({ page: 1, limit: 20 })
+  const { data: notifications = [], isLoading, isError, refetch, isFetching } = useNotifications({ page: 1, limit: 20 })
   const markAllRead = useMarkAllNotificationsRead()
+  const markRead = useMarkNotificationRead()
   const closeLeftPanel = useUIStore(s => s.closeLeftPanel)
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0
+
+  const handleMarkRead = (id: string, isRead: boolean) => {
+    if (isRead) return
+    markRead.mutate(id)
+  }
 
   if (isLoading) {
     return (
       <div className="p-4 text-sm text-muted-foreground">
         Loading notifications...
+      </div>
+    )
+  }
+
+  if (isError) {
+    return (
+      <div className="p-4 text-sm text-muted-foreground flex flex-col items-center gap-3">
+        <AlertCircle className="h-8 w-8 opacity-50" />
+        <p>Failed to load notifications.</p>
+        <Button
+          variant="ghost"
+          size="sm"
+          className="h-7 text-xs"
+          onClick={() => refetch()}
+          disabled={isFetching}
+        >
+          Retry
+        </Button>
       </div>
     )
   }
@@ -214,7 +238,10 @@ function NotificationsList() {
               <Link
                 key={n.id}
                 href="/weekly-review"
-                onClick={closeLeftPanel}
+                onClick={() => {
+                  handleMarkRead(n.id, n.read)
+                  closeLeftPanel()
+                }}
                 className={cn(
                   "flex gap-3 rounded-md p-3 text-sm hover:bg-accent",
                   !n.read && "bg-accent/50"
@@ -228,6 +255,7 @@ function NotificationsList() {
           return (
             <button
               key={n.id}
+              onClick={() => handleMarkRead(n.id, n.read)}
               className={cn(
                 "flex w-full gap-3 rounded-md p-3 text-sm text-left hover:bg-accent focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2",
                 !n.read && "bg-accent/50"

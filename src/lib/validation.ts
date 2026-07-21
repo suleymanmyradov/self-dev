@@ -391,10 +391,6 @@ export const SettingsSchema = z.object({
   theme: z.enum(['light', 'dark', 'system']),
   language: z.string(),
   timezone: z.string(),
-  emailNotifications: z.boolean(),
-  pushNotifications: z.boolean(),
-  habitReminders: z.boolean(),
-  goalReminders: z.boolean(),
   accountabilityStyle: z.enum(['gentle', 'balanced', 'strict']),
   checkInTime: z.string(),
   onboardingCompleted: z.boolean(),
@@ -407,16 +403,31 @@ export const UpdateSettingsRequestSchema = z.object({
   theme: z.enum(['light', 'dark', 'system']).optional(),
   language: z.string().optional(),
   timezone: z.string().optional(),
-  emailNotifications: z.boolean().optional(),
-  pushNotifications: z.boolean().optional(),
-  habitReminders: z.boolean().optional(),
-  goalReminders: z.boolean().optional(),
   accountabilityStyle: z.enum(['gentle', 'balanced', 'strict']).optional(),
   checkInTime: z.string().optional(),
   onboardingCompleted: z.boolean().optional(),
 });
 
 export const SettingsResponseSchema = ApiResponseSchema(SettingsSchema);
+
+export const NotificationPreferencesSchema = z.object({
+  emailEnabled: z.boolean(),
+  pushEnabled: z.boolean(),
+  habitRemindersEnabled: z.boolean(),
+  goalRemindersEnabled: z.boolean(),
+});
+
+export const NotificationPreferencesResponseSchema = z.object({
+  preferences: NotificationPreferencesSchema,
+});
+
+export const UpdateNotificationPreferencesRequestSchema = z.object({
+  preferences: NotificationPreferencesSchema,
+});
+
+export const UnreadNotificationCountResponseSchema = z.object({
+  count: z.number(),
+});
 
 // ============================================
 // Notification Schemas

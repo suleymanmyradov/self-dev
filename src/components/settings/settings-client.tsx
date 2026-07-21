@@ -2,40 +2,38 @@
 
 import { useActionState, useCallback, useEffect, useState } from "react";
 import { useTheme } from "next-themes";
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Separator } from "@/components/ui/separator";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/sonner";
 import { useBillingOverview, useCreateCustomerPortalSession } from "@/hooks";
-import type { AccountabilityStyle, PreferredTone, DifficultyPreference, Profile, Settings } from "@/api";
+import type { AccountabilityStyle, PreferredTone, DifficultyPreference, Settings, NotificationPreferences } from "@/api";
 import {
-  updateProfileAction,
   updateSettingsAction,
+  updateNotificationPreferencesAction,
   updateCoachingPreferencesAction,
 } from "@/lib/actions/settings";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { Crown, Sparkles } from "lucide-react";
 import Link from "next/link";
-import { useUIStore } from "@/store/uiStore";
-import { SECONDARY_COLORS } from "@/lib/secondary-colors";
 
 interface SettingsClientProps {
   settings: Settings | null;
-  profile: Profile | null;
   coachingProfile: {
     accountabilityStyle: AccountabilityStyle;
     preferredTone: PreferredTone;
     difficultyPreference: DifficultyPreference;
   } | null;
+  notificationPreferences: NotificationPreferences | null;
 }
 
-export function SettingsClient({ settings, profile, coachingProfile }: SettingsClientProps) {
-  const [profileState, profileAction, profilePending] = useActionState(updateProfileAction, {
+export function SettingsClient({ settings, coachingProfile, notificationPreferences }: SettingsClientProps) {
+  const [settingsState, settingsAction, settingsPending] = useActionState(updateSettingsAction, {
     success: false,
   });
 
-  const [settingsState, settingsAction, settingsPending] = useActionState(updateSettingsAction, {
+  const [notifState, notifAction, notifPending] = useActionState(updateNotificationPreferencesAction, {
     success: false,
   });
 
@@ -44,27 +42,27 @@ export function SettingsClient({ settings, profile, coachingProfile }: SettingsC
   });
 
   useEffect(() => {
-    if (profileState.success) toast.success("Profile updated");
-    else if (profileState.error) toast.error(profileState.error);
-  }, [profileState]);
-
-  useEffect(() => {
     if (settingsState.success) toast.success("Settings updated");
     else if (settingsState.error) toast.error(settingsState.error);
   }, [settingsState]);
+
+  useEffect(() => {
+    if (notifState.success) toast.success("Notification preferences updated");
+    else if (notifState.error) toast.error(notifState.error);
+  }, [notifState]);
 
   useEffect(() => {
     if (coachingState.success) toast.success("Coaching preferences updated");
     else if (coachingState.error) toast.error(coachingState.error);
   }, [coachingState]);
 
-  const handleToggle = useCallback(
-    (key: "emailNotifications" | "pushNotifications" | "habitReminders" | "goalReminders", value: boolean) => {
+  const handleHabitRemindersToggle = useCallback(
+    (value: boolean) => {
       const formData = new FormData();
-      formData.set(key, String(value));
-      settingsAction(formData);
+      formData.set("habitRemindersEnabled", String(value));
+      notifAction(formData);
     },
-    [settingsAction]
+    [notifAction]
   );
 
   const handleCoachingChange = useCallback(
@@ -83,7 +81,7 @@ export function SettingsClient({ settings, profile, coachingProfile }: SettingsC
     [coachingAction, coachingProfile]
   );
 
-  if (!profile || !settings) {
+  if (!settings) {
     return (
       <div className="h-full flex items-center justify-center">
         <p className="text-sm text-muted-foreground">Failed to load settings.</p>
@@ -97,52 +95,8 @@ export function SettingsClient({ settings, profile, coachingProfile }: SettingsC
         <div className="mx-auto w-full max-w-2xl px-4 py-6 md:py-8">
           <header className="mb-4">
             <h1 className="text-2xl font-bold tracking-tight">Settings</h1>
-            <p className="text-sm text-muted-foreground">Manage your account and preferences.</p>
+            <p className="text-sm text-muted-foreground">Manage your preferences.</p>
           </header>
-
-          {/* Account */}
-          <form action={profileAction}>
-            <Card className="mb-4">
-              <CardHeader>
-                <CardTitle>Account</CardTitle>
-              </CardHeader>
-              <CardContent className="grid gap-4">
-                <div className="grid gap-1">
-                  <label htmlFor="username" className="text-sm font-medium">Username</label>
-                  <input type="hidden" name="username" value={profile.username} />
-                  <input
-                    id="username"
-                    defaultValue={profile.username ?? ""}
-                    readOnly
-                    className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background text-muted-foreground"
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <label htmlFor="email" className="text-sm font-medium">Email</label>
-                  <input
-                    id="email"
-                    defaultValue={profile.email ?? ""}
-                    readOnly
-                    className="flex h-10 w-full rounded-md border border-input bg-muted px-3 py-2 text-sm ring-offset-background text-muted-foreground"
-                  />
-                </div>
-                <div className="grid gap-1">
-                  <label htmlFor="fullName" className="text-sm font-medium">Full Name</label>
-                  <input
-                    id="fullName"
-                    name="fullName"
-                    defaultValue={profile.fullName ?? ""}
-                    className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
-                  />
-                </div>
-              </CardContent>
-              <CardFooter className="justify-end">
-                <Button type="submit" disabled={profilePending}>
-                  {profilePending ? "Saving..." : "Save changes"}
-                </Button>
-              </CardFooter>
-            </Card>
-          </form>
 
           {/* Appearance */}
           <AppearanceSection />
@@ -160,58 +114,54 @@ export function SettingsClient({ settings, profile, coachingProfile }: SettingsC
             </CardContent>
           </Card>
 
-          {/* Preferences */}
+          {/* Notification Preferences */}
           <Card className="mb-4">
             <CardHeader>
-              <CardTitle>Preferences</CardTitle>
+              <CardTitle>Notification Preferences</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-6">
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium">Email Notifications</span>
-                  <p className="text-xs text-muted-foreground">Receive email updates about your activity</p>
+                  <span className="text-sm font-medium">In-app notifications</span>
+                  <p className="text-xs text-muted-foreground">Receive notifications in the app</p>
                 </div>
-                <Switch
-                  checked={settings.emailNotifications ?? false}
-                  onCheckedChange={(v) => handleToggle("emailNotifications", v)}
-                  disabled={settingsPending}
-                />
+                <Switch checked disabled />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium">Push Notifications</span>
-                  <p className="text-xs text-muted-foreground">Receive push notifications in your browser</p>
-                </div>
-                <Switch
-                  checked={settings.pushNotifications ?? false}
-                  onCheckedChange={(v) => handleToggle("pushNotifications", v)}
-                  disabled={settingsPending}
-                />
-              </div>
-              <Separator />
-              <div className="flex items-center justify-between">
-                <div>
-                  <span className="text-sm font-medium">Habit Reminders</span>
+                  <span className="text-sm font-medium">Habit reminders</span>
                   <p className="text-xs text-muted-foreground">Get reminded to complete your daily habits</p>
                 </div>
                 <Switch
-                  checked={settings.habitReminders ?? false}
-                  onCheckedChange={(v) => handleToggle("habitReminders", v)}
-                  disabled={settingsPending}
+                  checked={notificationPreferences?.habitRemindersEnabled ?? true}
+                  onCheckedChange={handleHabitRemindersToggle}
+                  disabled={notifPending}
                 />
               </div>
               <Separator />
               <div className="flex items-center justify-between">
                 <div>
-                  <span className="text-sm font-medium">Goal Reminders</span>
-                  <p className="text-xs text-muted-foreground">Get reminded about your goal deadlines</p>
+                  <span className="text-sm font-medium">Email notifications</span>
+                  <p className="text-xs text-muted-foreground">Coming soon</p>
                 </div>
-                <Switch
-                  checked={settings.goalReminders ?? false}
-                  onCheckedChange={(v) => handleToggle("goalReminders", v)}
-                  disabled={settingsPending}
-                />
+                <Switch checked={false} disabled />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium">Browser push</span>
+                  <p className="text-xs text-muted-foreground">Coming soon</p>
+                </div>
+                <Switch checked={false} disabled />
+              </div>
+              <Separator />
+              <div className="flex items-center justify-between">
+                <div>
+                  <span className="text-sm font-medium">Goal deadline reminders</span>
+                  <p className="text-xs text-muted-foreground">Coming soon</p>
+                </div>
+                <Switch checked={false} disabled />
               </div>
             </CardContent>
           </Card>
@@ -371,8 +321,6 @@ function BillingSection() {
 function AppearanceSection() {
   const { theme, setTheme, systemTheme } = useTheme();
   const [mounted, setMounted] = useState(false);
-  const secondaryColor = useUIStore((s) => s.secondaryColor);
-  const setSecondaryColor = useUIStore((s) => s.setSecondaryColor);
 
   useEffect(() => {
     const id = requestAnimationFrame(() => setMounted(true));
@@ -381,9 +329,6 @@ function AppearanceSection() {
 
   const isThemeActive = (value: string): boolean =>
     mounted && (theme === value || (!theme && value === "system"));
-
-  const isColorActive = (name: string): boolean =>
-    mounted && secondaryColor === name.toLowerCase();
 
   return (
     <Card className="mb-4">
@@ -414,26 +359,6 @@ function AppearanceSection() {
                 : `Current theme: ${theme}`
               : "Detecting current theme..."}
           </p>
-        </div>
-        <Separator />
-        <div>
-          <span className="text-sm font-medium">Secondary Color</span>
-          <p className="text-xs text-muted-foreground mb-3">
-            Choose the accent color for secondary elements.
-          </p>
-          <div className="flex flex-wrap gap-3">
-            {SECONDARY_COLORS.map((color) => (
-              <button
-                key={color.name}
-                onClick={() => setSecondaryColor(color.name.toLowerCase())}
-                className={`w-10 h-10 rounded-full border-2 transition-transform hover:scale-105 ${
-                  isColorActive(color.name) ? "ring-2 ring-primary ring-offset-2" : ""
-                }`}
-                style={{ backgroundColor: color.value }}
-                title={color.name}
-              />
-            ))}
-          </div>
         </div>
       </CardContent>
     </Card>
