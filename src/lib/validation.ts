@@ -33,7 +33,10 @@ export const LoginRequestSchema = z.object({
 });
 
 export const RegisterRequestSchema = z.object({
-  username: z.string().min(3, 'Username must be at least 3 characters').max(30, 'Username too long'),
+  username: z.string()
+    .min(3, 'Username must be at least 3 characters')
+    .max(30, 'Username too long')
+    .regex(/^[a-z][a-z0-9_-]*$/, 'Username must be lowercase, start with a letter, and only contain letters, numbers, underscores, or hyphens'),
   email: z.string().email('Invalid email address'),
   password: z.string()
     .min(8, 'Password must be at least 8 characters')
@@ -388,10 +391,17 @@ export const MessageResponseSchema = ApiResponseSchema(MessageSchema);
 
 export const SettingsSchema = z.object({
   id: z.string(),
-  theme: z.enum(['light', 'dark', 'system']),
+  // go-zero serializes unset optional enum fields as "" — coerce to the DB default.
+  theme: z.preprocess(
+    (v) => (v === '' ? 'system' : v),
+    z.enum(['light', 'dark', 'system']),
+  ),
   language: z.string(),
   timezone: z.string(),
-  accountabilityStyle: z.enum(['gentle', 'balanced', 'strict']),
+  accountabilityStyle: z.preprocess(
+    (v) => (v === '' ? 'balanced' : v),
+    z.enum(['gentle', 'balanced', 'strict']),
+  ),
   checkInTime: z.string(),
   onboardingCompleted: z.boolean(),
   userId: z.string(),
@@ -556,9 +566,19 @@ export const SuggestionSourceSchema = z.enum(['check_in', 'weekly_review', 'assi
 export const CoachingProfileSchema = z.object({
   id: z.string(),
   userId: z.string(),
-  accountabilityStyle: AccountabilityStyleSchema,
-  preferredTone: PreferredToneSchema,
-  difficultyPreference: DifficultyPreferenceSchema,
+  // go-zero serializes unset optional enum fields as "" — coerce to the DB default.
+  accountabilityStyle: z.preprocess(
+    (v) => (v === '' ? 'balanced' : v),
+    AccountabilityStyleSchema,
+  ),
+  preferredTone: z.preprocess(
+    (v) => (v === '' ? 'supportive' : v),
+    PreferredToneSchema,
+  ),
+  difficultyPreference: z.preprocess(
+    (v) => (v === '' ? 'adaptive' : v),
+    DifficultyPreferenceSchema,
+  ),
   primaryMotivation: z.string().optional(),
   commonBlockers: z.array(z.string()),
   coachingNotes: z.record(z.unknown()),
@@ -740,7 +760,9 @@ export const UserSubscriptionSchema = z.object({
   planCode: z.enum(['free', 'pro']),
   planName: z.string(),
   status: z.enum(['free', 'trialing', 'active', 'past_due', 'canceled', 'expired']),
-  billingInterval: z.enum(['monthly', 'annual']).optional(),
+  // Backend sends "" for unset optional fields (go-zero JSON marshaling);
+  // accept empty string and treat it as absent via .transform.
+  billingInterval: z.union([z.enum(['monthly', 'annual']), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v)),
   currentPeriodStart: z.string().optional(),
   currentPeriodEnd: z.string().optional(),
   trialEnd: z.string().optional(),

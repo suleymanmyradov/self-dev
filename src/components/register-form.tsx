@@ -109,8 +109,11 @@ export function RegisterForm() {
             type="text"
             placeholder="johndoe"
             value={username}
-            onChange={(e) => setUsername(e.target.value)}
+            onChange={(e) => setUsername(e.target.value.toLowerCase())}
             disabled={isPending}
+            autoCapitalize="none"
+            autoCorrect="off"
+            spellCheck={false}
             aria-invalid={!!fieldErrors.username}
             aria-describedby={fieldErrors.username ? 'username-error' : undefined}
           />

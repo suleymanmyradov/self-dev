@@ -6,9 +6,12 @@ import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
-import { Camera, Pencil, MapPin, Tag } from "lucide-react";
+import { Camera, Pencil, MapPin, Tag, Sparkles } from "lucide-react";
+import Link from "next/link";
 import type { Profile } from "@/api";
 import { updateProfileAction } from "@/lib/actions/settings";
+import { PlanBadge } from "@/components/billing/plan-badge";
+import { useBillingOverview } from "@/hooks";
 
 interface ProfileClientProps {
   profile: Profile;
@@ -22,6 +25,8 @@ export function ProfileClient({ profile }: ProfileClientProps) {
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? "");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const { data: billing } = useBillingOverview();
+  const isPro = billing?.subscription?.planCode === "pro";
 
   // Close the editor once a successful submission lands. Done as a render-time
   // state adjustment (React's "storing info from previous renders" pattern)
@@ -137,10 +142,19 @@ export function ProfileClient({ profile }: ProfileClientProps) {
                 </div>
               ) : (
                 <div className="text-center">
-                  <h2 className="text-xl font-bold tracking-tight">
+                  <h2 className="text-xl font-bold tracking-tight flex items-center justify-center gap-2">
                     {profile.fullName || profile.username}
+                    <PlanBadge />
                   </h2>
                   <p className="text-sm text-muted-foreground">@{profile.username}</p>
+                  {!isPro && !isEditing && (
+                    <Link href="/pricing" className="inline-block mt-3">
+                      <Button size="sm" variant="energy" className="gap-1.5">
+                        <Sparkles className="h-3.5 w-3.5" />
+                        Upgrade to Pro
+                      </Button>
+                    </Link>
+                  )}
                 </div>
               )}
 

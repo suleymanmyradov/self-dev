@@ -3,7 +3,7 @@
 import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { useQueryClient } from '@tanstack/react-query';
-import { MessageCircle, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
+import { MessageCircle, Mic, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import {
     AssistantRuntimeProvider,
     useExternalStoreRuntime,
@@ -15,6 +15,7 @@ import { Thread } from '@/components/ai-conversation/thread';
 import { ThreadList } from '@/components/ai-conversation/thread-list';
 import { TooltipIconButton } from '@/components/ai-conversation/tooltip-icon-button';
 import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
+import { VoiceMode } from '@/components/ai-coach/voice-mode';
 import {
     useBillingOverview,
     useConversations,
@@ -95,6 +96,7 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     const [messages, setMessages] = useState<CoachingMessage[]>([]);
     const [isRunning, setIsRunning] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isVoiceMode, setIsVoiceMode] = useState(false);
     const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(
         conversationId,
     );
@@ -418,10 +420,50 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
 
                     {/* Main chat area */}
                     <main className="card-elevated relative min-w-0 flex-1 overflow-hidden rounded-xl">
+                        {/* Voice mode toggle — floats over the thread top-right. */}
+                        <div className="absolute right-3 top-3 z-10">
+                            <TooltipIconButton
+                                tooltip="Voice mode"
+                                onClick={() => setIsVoiceMode(true)}
+                                variant="ghost"
+                                size="icon"
+                                className="size-9 rounded-full bg-background/70 backdrop-blur hover:bg-muted"
+                                aria-label="Open voice mode"
+                            >
+                                <Mic className="size-4" />
+                            </TooltipIconButton>
+                        </div>
                         <Thread />
                     </main>
                 </div>
             </div>
+
+            {/* Full-screen live voice chat overlay. */}
+            {isVoiceMode && (
+                <VoiceMode
+                    conversationId={currentConversationId}
+                    onConversationCreated={id => {
+                        setCurrentConversationId(id);
+                        // Reload messages from the backend so the text thread
+                        // reflects the voice conversation when voice mode closes.
+                        void (async () => {
+                            try {
+                                const resp = await getMessages(id);
+                                const loaded: CoachingMessage[] = resp.data.map(m => ({
+                                    id: m.id,
+                                    role: m.role,
+                                    content: m.content,
+                                    status: 'complete' as const,
+                                }));
+                                setMessages(loaded);
+                            } catch {
+                                // Non-fatal — the sidebar will still refresh.
+                            }
+                        })();
+                    }}
+                    onClose={() => setIsVoiceMode(false)}
+                />
+            )}
         </AssistantRuntimeProvider>
     );
 };

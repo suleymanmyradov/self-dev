@@ -6,6 +6,7 @@ import {
     ComposerAddAttachment,
     ComposerAttachments,
 } from '@/components/ai-conversation/attachment';
+import { DictateButton } from '@/components/ai-conversation/dictate-button';
 import { TooltipIconButton } from '@/components/ai-conversation/tooltip-icon-button';
 import { Button } from '@/components/ui/button';
 import { ThreadWelcomeSuggestions } from './thread-welcome';
@@ -49,7 +50,10 @@ export const Composer: FC = () => {
 const ComposerAction: FC = () => {
     return (
         <div className="aui-composer-action-wrapper relative mx-1 mt-2 mb-2 flex items-center justify-between">
-            <ComposerAddAttachment />
+            <div className="flex items-center gap-1">
+                <ComposerAddAttachment />
+                <DictateButton />
+            </div>
 
             <ThreadPrimitive.If running={false}>
                 <ComposerPrimitive.Send asChild>

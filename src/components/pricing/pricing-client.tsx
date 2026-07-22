@@ -3,12 +3,13 @@
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { Check, Sparkles, Zap } from "lucide-react";
+import { Check, Sparkles, Zap, Loader2 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useBillingOverview, useTrackUpgradeEvent, useCreateCheckoutSession } from "@/hooks";
 import { useBillingUIStore } from "@/store/billing-ui";
 import { PlanBadge } from "@/components/billing/plan-badge";
 import { FakeDoorFeedbackDialog } from "@/components/billing/fake-door-feedback-dialog";
+import { toast } from "@/components/ui/sonner";
 import type { BillingOverviewResponse, Plan } from "@/api";
 import { useSearchParamEnum } from "@/lib/url-state";
 import { useShallow } from "zustand/react/shallow";
@@ -92,14 +93,23 @@ export function PricingClient({ billingInitialData }: { billingInitialData?: Bil
                 "checkout.link.co",
               ];
               if (allowedHosts.includes(parsed.hostname)) {
+                toast.success("Redirecting to secure Stripe checkout...");
                 window.location.href = parsed.toString();
               } else {
                 console.error("[Pricing] Blocked unexpected redirect:", parsed.hostname);
+                toast.error("Unexpected checkout URL. Please contact support.");
               }
             } catch {
               console.error("[Pricing] Invalid checkout URL");
+              toast.error("Received an invalid checkout URL. Please try again.");
             }
+          } else {
+            toast.error("Checkout session could not be created. Please try again.");
           }
+        },
+        onError: (err) => {
+          console.error("[Pricing] Checkout session creation failed:", err);
+          toast.error("Could not start checkout. Please try again in a moment.");
         },
       }
     );
@@ -274,14 +284,23 @@ export function PricingClient({ billingInitialData }: { billingInitialData?: Bil
                     <Button
                       variant="energy"
                       className="w-full"
+                      disabled={checkout.isPending}
                       onClick={() => {
                         const proPlan = billing?.plans?.find(
                           (p) => p.code === "pro"
                         );
                         if (proPlan) handleUpgrade(proPlan);
+                        else toast.error("Pro plan is not available right now. Please refresh the page.");
                       }}
                     >
-                      Upgrade to Pro
+                      {checkout.isPending ? (
+                        <>
+                          <Loader2 className="size-4 animate-spin" />
+                          Opening checkout...
+                        </>
+                      ) : (
+                        "Upgrade to Pro"
+                      )}
                     </Button>
                   )}
                 </CardFooter>
