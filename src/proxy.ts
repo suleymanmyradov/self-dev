@@ -33,7 +33,7 @@ const AUTH_ROUTES = ['/login', '/register'];
 
 // API routes that should bypass auth check (handled by their own logic).
 // The former /api/chat route was removed: onboarding habit generation now goes
-// through the authenticated backend gateway at /api/v1/onboarding/generate-habits.
+// through the authenticated backend gateway at /api/v1/personalization/onboarding-habits.
 const PUBLIC_API_ROUTES: string[] = [];
 
 type TokenStatus = 'valid' | 'expired' | 'invalid';

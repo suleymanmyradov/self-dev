@@ -1,0 +1,15 @@
+{
+  "data": {
+    "id": "0192be94-abcd-1234-5678-0987654321b3",
+    "title": "Meditate daily for 30 days",
+    "description": "Build a consistent mindfulness practice.",
+    "category": "mindfulness",
+    "dueDate": "2025-08-22T00:00:00Z",
+    "progress": 0,
+    "completed": false,
+    "relatedHabitIds": ["0192be94-1234-5678-9aaa-0987654321a2"],
+    "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+    "createdAt": "2025-07-22T18:45:00Z",
+    "updatedAt": "2025-07-22T18:45:00Z"
+  }
+}

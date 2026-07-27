@@ -291,9 +291,12 @@ export async function logoutAction(): Promise<void> {
   try {
     const cookieStore = await cookies();
     const token = cookieStore.get(AUTH_COOKIE_NAME)?.value;
+    const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value;
     if (token) {
       // Revoke server-side; serverPost attaches the cookie token as a Bearer header.
-      await serverPost('/auth/logout');
+      // The refresh token is sent in the body for defense-in-depth revocation.
+      // Session-level revocation happens regardless via the access token's session ID.
+      await serverPost('/auth/logout', refreshToken ? { refreshToken } : undefined);
     }
   } catch {
     // API call may fail if token is already expired — that's fine

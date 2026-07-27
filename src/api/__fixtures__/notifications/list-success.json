@@ -1,0 +1,37 @@
+{
+  "data": [
+    {
+      "id": "0192be94-2222-3333-4444-0987654321c1",
+      "title": "Time to check in on Read 20 pages",
+      "message": "You haven't checked in on 'Read 20 pages' today. Keep the streak going!",
+      "type": "habit_reminder",
+      "read": false,
+      "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+      "createdAt": "2025-07-22T19:00:00Z"
+    },
+    {
+      "id": "0192be94-2222-3333-4444-0987654321c2",
+      "title": "Weekly review ready",
+      "message": "Your weekly review is ready to review. See your progress and plan next week.",
+      "type": "weekly_review",
+      "read": false,
+      "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+      "createdAt": "2025-07-21T08:00:00Z"
+    },
+    {
+      "id": "0192be94-2222-3333-4444-0987654321c3",
+      "title": "Goal deadline approaching",
+      "message": "Your goal 'Run a 5K' is due in 7 days.",
+      "type": "goal_deadline",
+      "read": true,
+      "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+      "createdAt": "2025-07-20T08:00:00Z"
+    }
+  ],
+  "page": {
+    "total": 3,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+}

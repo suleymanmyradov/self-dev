@@ -1,0 +1,19 @@
+{
+  "accessToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTkxZmE4Ny02ZWQxLTcwMjItOTk5OS0wMTIzNDU2Nzg5YWUiLCJzaWQiOiIwMTkyYmU5NC0xMjM0LTU2NzgtOWFhYS0wOTg3NjU0MzIxMCIsInVzciI6ImZpeHR1cmVfdXNlciIsInJscyI6WyJ1c2VyIl0sImlzcyI6Imdyb3d0aC1hdXRoIiwiYXVkIjpbImdyb3d0aC1hcGkiXSwidHlwIjoiYWNjZXNzIiwiaWF0IjoxNzUzMTY0ODAwLCJleHAiOjE3NTMxNjg0MDB9.fake-signature-for-fixture",
+  "refreshToken": "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiIwMTkxZmE4Ny02ZWQxLTcwMjItOTk5OS0wMTIzNDU2Nzg5YWUiLCJzaWQiOiIwMTkyYmU5NC0xMjM0LTU2NzgtOWFhYS0wOTg3NjU0MzIxMCIsInVzciI6ImZpeHR1cmVfdXNlciIsInJscyI6WyJ1c2VyIl0sImlzcyI6Imdyb3d0aC1hdXRoIiwiYXVkIjpbImdyb3d0aC1hcGkiXSwidHlwIjoicmVmcmVzaCIsImlhdCI6MTc1MzE2NDgwMCwiZXhwIjoxNzUzNzY5NjAwfQ.fake-signature-for-fixture",
+  "expiresIn": 3600,
+  "user": {
+    "id": "0191fa87-6ed1-7022-9999-0123456789ae",
+    "fullName": "Fixture User",
+    "username": "fixture_user",
+    "email": "fixture@example.com",
+    "bio": "",
+    "location": "",
+    "website": "",
+    "interests": [],
+    "avatarUrl": "",
+    "createdAt": "2025-01-15T10:30:00Z",
+    "updatedAt": "2025-01-15T10:30:00Z",
+    "emailVerified": true
+  }
+}

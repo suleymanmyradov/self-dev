@@ -1,0 +1,6 @@
+event: thinking
+data: {"message":"Reflecting on your week..."}
+
+event: error
+data: {"message":"coaching stream: context deadline exceeded"}
+

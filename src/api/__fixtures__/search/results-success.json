@@ -1,0 +1,33 @@
+{
+  "data": [
+    {
+      "id": "0192be94-5555-6666-7777-0987654321e1",
+      "type": "article",
+      "title": "How to build habits that stick",
+      "description": "A science-based guide to habit formation and consistency.",
+      "score": 0.92,
+      "highlight": "How to build <em>habits</em> that stick"
+    },
+    {
+      "id": "0192be94-1234-5678-9aaa-0987654321a1",
+      "type": "habit",
+      "title": "Read 20 pages",
+      "description": "Daily reading habit for knowledge growth.",
+      "score": 0.71,
+      "highlight": "Read 20 <em>pages</em>"
+    },
+    {
+      "id": "0192be94-abcd-1234-5678-0987654321b1",
+      "type": "goal",
+      "title": "Read 12 books this year",
+      "description": "One book per month, any genre.",
+      "score": 0.68
+    }
+  ],
+  "page": {
+    "total": 3,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+}

@@ -1,0 +1,36 @@
+{
+  "data": [
+    {
+      "id": "0192be94-abcd-1234-5678-0987654321b1",
+      "title": "Run a 5K",
+      "description": "Train to run a 5K by October.",
+      "category": "fitness",
+      "dueDate": "2025-10-15T00:00:00Z",
+      "progress": 35,
+      "completed": false,
+      "relatedHabitIds": ["0192be94-1234-5678-9aaa-0987654321a1"],
+      "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+      "createdAt": "2025-07-01T09:00:00Z",
+      "updatedAt": "2025-07-22T18:00:00Z"
+    },
+    {
+      "id": "0192be94-abcd-1234-5678-0987654321b2",
+      "title": "Read 12 books this year",
+      "description": "One book per month, any genre.",
+      "category": "learning",
+      "dueDate": "",
+      "progress": 50,
+      "completed": false,
+      "relatedHabitIds": null,
+      "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+      "createdAt": "2025-01-05T10:00:00Z",
+      "updatedAt": "2025-07-20T12:00:00Z"
+    }
+  ],
+  "page": {
+    "total": 2,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+}

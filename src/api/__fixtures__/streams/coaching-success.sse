@@ -1,0 +1,18 @@
+event: thinking
+data: {"message":"Reflecting on your week..."}
+
+event: thinking
+data: {"message":"Looking at your check-in patterns..."}
+
+event: delta
+data: {"text":"You've been consistent with reading "}
+
+event: delta
+data: {"text":"this week — five days in a row."}
+
+event: delta
+data: {"text":" That streak is worth protecting."}
+
+event: complete
+data: {"fullResponse":"You've been consistent with reading this week — five days in a row. That streak is worth protecting."}
+

@@ -1,0 +1,34 @@
+{
+  "data": [
+    {
+      "id": "0192be94-1234-5678-9aaa-0987654321a1",
+      "name": "Read 20 pages",
+      "description": "Daily reading habit for knowledge growth.",
+      "streak": 5,
+      "completed": true,
+      "category": "learning",
+      "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+      "recentHistory": [true, true, false, true, true],
+      "createdAt": "2025-06-01T08:00:00Z",
+      "updatedAt": "2025-07-22T18:00:00Z"
+    },
+    {
+      "id": "0192be94-1234-5678-9aaa-0987654321a2",
+      "name": "Morning meditation",
+      "description": "10 minutes of mindfulness after waking up.",
+      "streak": 12,
+      "completed": false,
+      "category": "mindfulness",
+      "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+      "recentHistory": [true, true, true, true, false],
+      "createdAt": "2025-05-15T07:00:00Z",
+      "updatedAt": "2025-07-22T18:00:00Z"
+    }
+  ],
+  "page": {
+    "total": 2,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+}

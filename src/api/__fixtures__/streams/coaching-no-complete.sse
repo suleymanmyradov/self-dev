@@ -1,0 +1,9 @@
+event: thinking
+data: {"message":"Reflecting on your week..."}
+
+event: delta
+data: {"text":"You've been consistent with reading "}
+
+event: delta
+data: {"text":"this week — five days in a row."}
+

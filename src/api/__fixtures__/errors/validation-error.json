@@ -1,0 +1,5 @@
+{
+  "status": 400,
+  "code": "VALIDATION_ERROR",
+  "message": "field 'email' is required"
+}

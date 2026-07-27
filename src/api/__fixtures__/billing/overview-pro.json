@@ -1,0 +1,65 @@
+{
+  "plans": [
+    {
+      "id": "0191fa87-0000-7000-8000-000000000001",
+      "code": "free",
+      "name": "Free",
+      "description": "The starter plan for building the habit habit.",
+      "priceMonthlyCents": 0,
+      "priceAnnualCents": 0,
+      "activeGoalLimit": 3,
+      "activeHabitLimit": 3,
+      "weeklyReviewHistoryLimit": 0,
+      "planAdjustmentLimit": 0,
+      "personalizedAiEnabled": false,
+      "isActive": true
+    },
+    {
+      "id": "0191fa87-0000-7000-8000-000000000002",
+      "code": "pro",
+      "name": "Pro",
+      "description": "Unlimited goals, habits, personalized AI coaching, and weekly reviews.",
+      "priceMonthlyCents": 999,
+      "priceAnnualCents": 9990,
+      "activeGoalLimit": 999,
+      "activeHabitLimit": 999,
+      "weeklyReviewHistoryLimit": 52,
+      "planAdjustmentLimit": 10,
+      "personalizedAiEnabled": true,
+      "isActive": true
+    }
+  ],
+  "subscription": {
+    "id": "0192be94-9999-aaaa-bbbb-0987654321d2",
+    "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+    "planId": "0191fa87-0000-7000-8000-000000000002",
+    "planCode": "pro",
+    "planName": "Pro",
+    "status": "active",
+    "billingInterval": "monthly",
+    "currentPeriodStart": "2025-07-22T00:00:00Z",
+    "currentPeriodEnd": "2025-08-22T00:00:00Z",
+    "trialEnd": "",
+    "cancelAtPeriodEnd": false,
+    "stripeCustomerId": "cus_fixture",
+    "stripeSubscriptionId": "sub_fixture"
+  },
+  "entitlements": {
+    "planCode": "pro",
+    "status": "active",
+    "activeGoalLimit": 999,
+    "activeHabitLimit": 999,
+    "weeklyReviewHistoryLimit": 52,
+    "planAdjustmentLimit": 10,
+    "personalizedAiEnabled": true,
+    "canCreateGoal": true,
+    "canCreateHabit": true,
+    "canViewWeeklyReviewHistory": true,
+    "canUsePersonalizedAi": true,
+    "canCreatePlanAdjustment": true,
+    "currentActiveGoals": 2,
+    "currentActiveHabits": 2,
+    "currentPendingAdjustments": 1
+  },
+  "billingMode": "stripe_test"
+}

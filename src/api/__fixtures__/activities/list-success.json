@@ -1,0 +1,27 @@
+{
+  "data": [
+    {
+      "id": "0192be94-1234-5678-9aaa-09876543210a",
+      "type": "habit_completed",
+      "title": "Completed: Read 20 pages",
+      "description": "You checked in on 'Read 20 pages' for day 5.",
+      "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+      "createdAt": "2025-07-22T18:00:00Z"
+    },
+    {
+      "id": "0192be94-1234-5678-9aaa-09876543210b",
+      "type": "goal_created",
+      "title": "New goal: Run a 5K",
+      "description": "You created a new goal 'Run a 5K by October'.",
+      "metadata": "goal_id=0192be94-abcd-1234-5678-09876543210c",
+      "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+      "createdAt": "2025-07-22T09:15:00Z"
+    }
+  ],
+  "page": {
+    "total": 2,
+    "page": 1,
+    "limit": 20,
+    "totalPages": 1
+  }
+}

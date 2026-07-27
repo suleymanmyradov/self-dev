@@ -1,0 +1,14 @@
+{
+  "data": {
+    "id": "0192be94-1234-5678-9aaa-0987654321a3",
+    "name": "Evening walk",
+    "description": "20 minute walk after dinner.",
+    "streak": 0,
+    "completed": false,
+    "category": "health",
+    "userId": "0191fa87-6ed1-7022-9999-0123456789ae",
+    "recentHistory": null,
+    "createdAt": "2025-07-22T18:30:00Z",
+    "updatedAt": "2025-07-22T18:30:00Z"
+  }
+}

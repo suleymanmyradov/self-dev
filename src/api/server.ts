@@ -78,7 +78,7 @@ export async function listGoalsServer(params: PageParams = { page: 1, limit: 20 
 }
 
 export async function listActivitiesServer(params: PageParams = { page: 1, limit: 50 }): Promise<ActivityResponse> {
-  const data = await serverGet<unknown>('/activities', params);
+  const data = await serverGet<unknown>('/activity', params);
   return ActivityResponseSchema.parse(data);
 }
 

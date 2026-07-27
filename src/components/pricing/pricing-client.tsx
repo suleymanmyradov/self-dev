@@ -1,5 +1,7 @@
 "use client";
 
+import { useEffect } from "react";
+import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { Card, CardContent, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
@@ -56,6 +58,27 @@ export function PricingClient({ billingInitialData }: { billingInitialData?: Bil
   const { data: billing } = useBillingOverview(billingInitialData);
   const trackEvent = useTrackUpgradeEvent();
   const checkout = useCreateCheckoutSession();
+
+  // Show a toast when returning from Stripe checkout via SuccessURL/CancelURL.
+  // Backend sets these URLs to /pricing?checkout=success and ?checkout=canceled.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const pathname = usePathname();
+  useEffect(() => {
+    const checkoutResult = searchParams.get("checkout");
+    if (checkoutResult === "success") {
+      toast.success("Payment successful! Your Pro plan is now active.");
+    } else if (checkoutResult === "canceled") {
+      toast.info("Checkout was canceled. You can try again anytime.");
+    } else {
+      return;
+    }
+    // Clean up the param so the toast doesn't reappear on refresh.
+    const params = new URLSearchParams(searchParams.toString());
+    params.delete("checkout");
+    const query = params.toString();
+    router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
+  }, [searchParams, router, pathname]);
 
   const currentPlanCode = billing?.subscription?.planCode ?? "free";
   const isPro = currentPlanCode === "pro";

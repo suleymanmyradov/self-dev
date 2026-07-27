@@ -34,7 +34,7 @@ const ENDPOINTS = {
   PLAN_ADJUSTMENT_SUGGESTIONS: '/personalization/plan-adjustments',
   PERSONALIZED_COACHING: '/personalization/coaching',
   COACHING_STREAM: '/personalization/coaching-stream',
-  ONBOARDING_HABITS: '/onboarding/generate-habits',
+  ONBOARDING_HABITS: '/personalization/onboarding-habits',
 };
 
 export interface UpsertCoachingProfileRequest {

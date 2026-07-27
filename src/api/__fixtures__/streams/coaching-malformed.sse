@@ -1,0 +1,15 @@
+: keep-alive
+
+event: thinking
+data: {"message":"Reflecting on your week..."}
+
+event: delta
+data: {"text":"You have been consistent with reading 
+data:  this week."}
+
+event: delta
+data: {"text":"That streak is worth protecting."}
+
+event: complete
+data: {"fullResponse":"You have been consistent with reading this week. That streak is worth protecting."}
+
