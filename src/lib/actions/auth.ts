@@ -5,16 +5,53 @@ import { redirect } from 'next/navigation';
 import {
   LoginRequestSchema,
   RegisterRequestSchema,
+  AuthResponseSchema,
+  RegisterResponseSchema,
   ForgotPasswordRequestSchema,
   ResetPasswordRequestSchema,
   ResendVerificationRequestSchema,
+  VerifyEmailRequestSchema,
 } from '@/lib/validation';
-import { login, register, verifyEmail, resendVerification, googleLogin, forgotPassword, resetPassword } from '@/api/auth';
 import { serverPost } from '@/lib/server-api';
-import type { LoginRequest, RegisterRequest, Profile } from '@/api/types';
+import { gatewayUrl } from '@/lib/config';
+import type { LoginRequest, RegisterRequest, Profile, AuthResponse, RegisterResponse } from '@/api/types';
 
 const AUTH_COOKIE_NAME = 'auth-token';
 const REFRESH_COOKIE_NAME = 'refresh-token';
+
+/**
+ * Make a POST request to a public gateway endpoint from a server action.
+ * Unlike serverPost (which attaches the auth cookie and redirects on 401),
+ * this is for unauthenticated auth endpoints (login, register, etc.) — no
+ * cookie is attached, and errors are returned to the caller instead of
+ * triggering a redirect.
+ */
+async function publicPost<T>(
+  path: string,
+  body: unknown,
+): Promise<T> {
+  const url = gatewayUrl(path);
+  console.log('[publicPost] fetching:', url, 'body:', JSON.stringify(body));
+  const res = await fetch(url, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(body),
+  });
+
+  console.log('[publicPost] response status:', res.status, 'url:', res.url);
+  const data = await res.json().catch(() => null);
+  console.log('[publicPost] response data:', JSON.stringify(data));
+
+  if (!res.ok) {
+    const message =
+      (data as { message?: string; error?: string } | null)?.message ||
+      (data as { error?: string } | null)?.error ||
+      'Request failed. Please try again.';
+    throw new Error(message);
+  }
+
+  return data as T;
+}
 
 async function setAuthCookies(accessToken: string, refreshToken: string) {
   const cookieStore = await cookies();
@@ -76,16 +113,20 @@ export async function loginAction(
       return { success: false, fieldErrors };
     }
 
-    const response = await login(validated.data);
+    const response = await publicPost<AuthResponse>(
+      '/auth/login',
+      validated.data,
+    );
+    const parsed = AuthResponseSchema.parse(response);
 
     // Set HttpOnly cookies
-    await setAuthCookies(response.accessToken, response.refreshToken);
+    await setAuthCookies(parsed.accessToken, parsed.refreshToken);
 
     return {
       success: true,
-      user: response.user,
-      accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
+      user: parsed.user,
+      accessToken: parsed.accessToken,
+      refreshToken: parsed.refreshToken,
     };
   } catch (error) {
     const message =
@@ -119,7 +160,10 @@ export async function registerAction(
 
     // With email verification enabled, register does NOT return tokens. The
     // backend sends a verification email; the user must verify before logging in.
-    const response = await register(validated.data);
+    const response = await publicPost<RegisterResponse>(
+      '/auth/register',
+      validated.data,
+    );
 
     return {
       success: true,
@@ -143,14 +187,23 @@ export async function verifyEmailAction(token: string): Promise<AuthActionState>
       return { success: false, error: 'Verification token is required.' };
     }
 
-    const response = await verifyEmail({ token });
-    await setAuthCookies(response.accessToken, response.refreshToken);
+    const validated = VerifyEmailRequestSchema.safeParse({ token });
+    if (!validated.success) {
+      return { success: false, error: 'Invalid verification token.' };
+    }
+
+    const response = await publicPost<AuthResponse>(
+      '/auth/verify-email',
+      validated.data,
+    );
+    const parsed = AuthResponseSchema.parse(response);
+    await setAuthCookies(parsed.accessToken, parsed.refreshToken);
 
     return {
       success: true,
-      user: response.user,
-      accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
+      user: parsed.user,
+      accessToken: parsed.accessToken,
+      refreshToken: parsed.refreshToken,
     };
   } catch (error) {
     const message =
@@ -174,7 +227,7 @@ export async function resendVerificationAction(
       return { success: false, error: 'Please enter a valid email address.' };
     }
 
-    await resendVerification(validated.data);
+    await publicPost('/auth/resend-verification', validated.data);
     return {
       success: true,
       message: 'If the email is registered and unverified, a new verification link has been sent.',
@@ -197,14 +250,18 @@ export async function googleLoginAction(authorizationCode: string): Promise<Auth
       return { success: false, error: 'Missing Google authorization code.' };
     }
 
-    const response = await googleLogin({ authorizationCode });
-    await setAuthCookies(response.accessToken, response.refreshToken);
+    const response = await publicPost<AuthResponse>(
+      '/auth/google',
+      { authorizationCode },
+    );
+    const parsed = AuthResponseSchema.parse(response);
+    await setAuthCookies(parsed.accessToken, parsed.refreshToken);
 
     return {
       success: true,
-      user: response.user,
-      accessToken: response.accessToken,
-      refreshToken: response.refreshToken,
+      user: parsed.user,
+      accessToken: parsed.accessToken,
+      refreshToken: parsed.refreshToken,
     };
   } catch (error) {
     const message =
@@ -238,7 +295,7 @@ export async function forgotPasswordAction(
       return { success: false, fieldErrors };
     }
 
-    await forgotPassword(validated.data);
+    await publicPost('/auth/forgot-password', validated.data);
     // Always report success to avoid leaking which emails are registered.
     return {
       success: true,
@@ -278,7 +335,7 @@ export async function resetPasswordAction(
       return { success: false, fieldErrors };
     }
 
-    await resetPassword(validated.data);
+    await publicPost('/auth/reset-password', validated.data);
     return { success: true };
   } catch (error) {
     const message =

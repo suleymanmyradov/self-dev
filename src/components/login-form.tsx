@@ -1,6 +1,6 @@
 'use client';
 
-import { useActionState, useEffect, startTransition } from 'react';
+import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -44,21 +44,22 @@ export function LoginForm() {
   }, [state, setAuth, reset, setError, setFieldErrors, router]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
     setError(null);
     setFieldErrors({});
 
+    // Prevent the server-action submission only when client-side validation
+    // fails. When validation passes, let the form's action={dispatch} handle
+    // the submission so the server action fires even before hydration (progressive
+    // enhancement) — without action={dispatch}, a pre-hydration submit falls
+    // back to a native GET that puts credentials in the URL and never logs in.
     const validated = validate();
-    if (!validated) return;
-
-    const formData = new FormData(e.currentTarget);
-    startTransition(() => {
-      dispatch(formData);
-    });
+    if (!validated) {
+      e.preventDefault();
+    }
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+    <form action={dispatch} onSubmit={handleSubmit} className="flex flex-col gap-5">
       {/* Header */}
       <div className="space-y-1.5">
         <h1 className="font-display text-2xl">Welcome back.</h1>

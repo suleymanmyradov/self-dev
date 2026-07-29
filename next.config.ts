@@ -4,6 +4,10 @@ const nextConfig: NextConfig = {
     // Enables the "use cache" directive, cacheTag, and cacheLife functions.
     // Pages are dynamic by default; only explicitly cached scopes are prerendered.
     cacheComponents: true,
+    // Allow the dev server (HMR WebSocket, dev-only assets) to be reached from
+    // LAN IPs so testing from other devices / VMs on the local network works.
+    // Production is unaffected.
+    allowedDevOrigins: ['192.168.77.40', '192.168.77.*'],
     images: {
         remotePatterns: [
             {

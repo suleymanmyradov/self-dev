@@ -43,7 +43,7 @@ export function MoreMenu() {
           it.type === "separator" ? (
             <DropdownMenuSeparator key={`sep-${idx}`} />
           ) : (
-            <DropdownMenuItem key={it.href} asChild>
+            <DropdownMenuItem key={it.label} asChild>
               <Link href={it.href} className="rounded-lg px-2 py-2">{it.label}</Link>
             </DropdownMenuItem>
           )

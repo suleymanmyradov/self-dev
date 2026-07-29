@@ -4,6 +4,26 @@ import { Button } from '@/components/ui/button';
 import { config } from '@/lib/config';
 
 /**
+ * Generate a random opaque string suitable for the OAuth `state` parameter.
+ * Uses `crypto.randomUUID()` in secure contexts (HTTPS / localhost) and falls
+ * back to a `getRandomValues`-based generator otherwise, so the button works
+ * even when the app is served from a non-secure origin (e.g. a LAN IP over
+ * HTTP, where `crypto.randomUUID` is unavailable and would throw — silently
+ * breaking the click handler).
+ */
+function generateState(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  const bytes = new Uint8Array(16);
+  crypto.getRandomValues(bytes);
+  bytes[6] = (bytes[6] & 0x0f) | 0x40;
+  bytes[8] = (bytes[8] & 0x3f) | 0x80;
+  const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0'));
+  return `${hex.slice(0, 4).join('')}-${hex.slice(4, 6).join('')}-${hex.slice(6, 8).join('')}-${hex.slice(8, 10).join('')}-${hex.slice(10, 16).join('')}`;
+}
+
+/**
  * "Continue with Google" button. Redirects the browser to Google's consent
  * screen; Google redirects back to /auth/callback/google?code=... which
  * exchanges the code for app tokens server-side.
@@ -24,7 +44,7 @@ export function GoogleButton({ label = 'Continue with Google' }: { label?: strin
       scope: 'openid email profile',
       // state is an opaque value Google echoes back; we validate presence on
       // the callback. A random value mitigates CSRF / replay.
-      state: crypto.randomUUID(),
+      state: generateState(),
       prompt: 'select_account',
     });
     window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);
