@@ -41,6 +41,21 @@ const nextConfig: NextConfig = {
     // No /api rewrite: browser traffic goes through the same-origin BFF route
     // (src/app/api/v1/[...path]) which attaches the token cookie; SSR calls the
     // gateway directly. A transparent rewrite would bypass that token handling.
+    async redirects() {
+        return [
+            { source: '/habits', destination: '/plan', permanent: false },
+            { source: '/goals', destination: '/plan', permanent: false },
+            { source: '/weekly-review', destination: '/progress', permanent: false },
+            { source: '/activity', destination: '/progress', permanent: false },
+            { source: '/explore', destination: '/library', permanent: false },
+            { source: '/saved', destination: '/library', permanent: false },
+            { source: '/search', destination: '/library', permanent: false },
+            { source: '/profile', destination: '/me', permanent: false },
+            { source: '/settings', destination: '/me', permanent: false },
+            { source: '/pricing', destination: '/me', permanent: false },
+            { source: '/ai-coach/:path*', destination: '/coach/:path*', permanent: false },
+        ];
+    },
     async headers() {
         return [
             {

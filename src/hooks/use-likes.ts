@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { likeArticle } from '@/api/articles';
 import type { ArticlesResponse, ArticleResponse } from '@/api';
+import { toast } from 'sonner';
 
 export function useLikeArticle() {
   const queryClient = useQueryClient();
@@ -55,6 +56,7 @@ export function useLikeArticle() {
       if (context?.previousArticle) {
         queryClient.setQueryData(['article', articleId], context.previousArticle);
       }
+      toast.error('Failed to update like. Please try again.');
     },
   });
 }

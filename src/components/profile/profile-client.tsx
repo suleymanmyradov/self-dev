@@ -1,49 +1,112 @@
 "use client";
 
-import { useActionState, useEffect, useRef, useState } from "react";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
-import { Camera, Pencil, MapPin, Tag, Sparkles } from "lucide-react";
-import Link from "next/link";
-import type { Profile } from "@/api";
-import { updateProfileAction } from "@/lib/actions/settings";
-import { PlanBadge } from "@/components/billing/plan-badge";
+import type {
+  AccountabilityStyle,
+  PreferredTone,
+  DifficultyPreference,
+} from "@/api";
+import {
+  updateProfileAction,
+  updateSettingsAction,
+  updateNotificationPreferencesAction,
+  updateCoachingPreferencesAction,
+} from "@/lib/actions/settings";
 import { useBillingOverview } from "@/hooks";
+import { cn } from "@/lib/utils";
+import { ProfileClientProps, SectionId, NAV_ITEMS } from "@/components/profile/types";
+import { ProfileSection } from "@/components/profile/profile-section";
+import { CoachingSection } from "@/components/profile/coaching-section";
+import { RemindersSection } from "@/components/profile/reminders-section";
+import { NotificationsSection } from "@/components/profile/notifications-section";
+import { AppearanceSection } from "@/components/profile/appearance-section";
+import { PlanSection } from "@/components/profile/plan-section";
+import { DataSection } from "@/components/profile/data-section";
 
-interface ProfileClientProps {
-  profile: Profile;
-}
+export function ProfileClient({
+  profile,
+  settings,
+  coachingProfile,
+  notificationPreferences,
+  billingInitialData,
+}: ProfileClientProps) {
+  const [activeSection, setActiveSection] = useState<SectionId>("profile");
 
-export function ProfileClient({ profile }: ProfileClientProps) {
-  const [state, action, isPending] = useActionState(updateProfileAction, {
+  // Profile form state
+  const [profileState, profileAction, profilePending] = useActionState(updateProfileAction, {
     success: false,
   });
-  const [isEditing, setIsEditing] = useState(false);
   const [avatarUrl, setAvatarUrl] = useState(profile.avatarUrl ?? "");
   const [uploading, setUploading] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const { data: billing } = useBillingOverview();
+
+  // Settings state
+  const [settingsState] = useActionState(updateSettingsAction, {
+    success: false,
+  });
+  const [notifState, notifAction, notifPending] = useActionState(updateNotificationPreferencesAction, {
+    success: false,
+  });
+  const [coachingState, coachingAction, coachingPending] = useActionState(updateCoachingPreferencesAction, {
+    success: false,
+  });
+
+  // Local toggle states for reminders (streak warnings is UI-only, default OFF)
+  const [streakWarnings, setStreakWarnings] = useState(false);
+  const [sundayReview, setSundayReview] = useState(false);
+
+  // Billing
+  const { data: billing } = useBillingOverview(billingInitialData);
   const isPro = billing?.subscription?.planCode === "pro";
 
-  // Close the editor once a successful submission lands. Done as a render-time
-  // state adjustment (React's "storing info from previous renders" pattern)
-  // rather than setState-in-effect.
-  const [prevSuccess, setPrevSuccess] = useState(state.success);
-  if (state.success !== prevSuccess) {
-    setPrevSuccess(state.success);
-    if (state.success) setIsEditing(false);
-  }
+  // Toast effects
+  useEffect(() => {
+    if (profileState.success) toast.success("Profile updated successfully");
+    else if (profileState.error) toast.error(profileState.error);
+  }, [profileState]);
 
   useEffect(() => {
-    if (state.success) {
-      toast.success("Profile updated successfully");
-    } else if (state.error) {
-      toast.error(state.error);
-    }
-  }, [state]);
+    if (settingsState.success) toast.success("Settings updated");
+    else if (settingsState.error) toast.error(settingsState.error);
+  }, [settingsState]);
+
+  useEffect(() => {
+    if (notifState.success) toast.success("Notification preferences updated");
+    else if (notifState.error) toast.error(notifState.error);
+  }, [notifState]);
+
+  useEffect(() => {
+    if (coachingState.success) toast.success("Coaching preferences updated");
+    else if (coachingState.error) toast.error(coachingState.error);
+  }, [coachingState]);
+
+  // Handlers
+  const handleHabitRemindersToggle = useCallback(
+    (value: boolean) => {
+      const formData = new FormData();
+      formData.set("habitRemindersEnabled", String(value));
+      notifAction(formData);
+    },
+    [notifAction]
+  );
+
+  const handleCoachingChange = useCallback(
+    (style: AccountabilityStyle) => {
+      const current = coachingProfile ?? {
+        accountabilityStyle: "balanced" as AccountabilityStyle,
+        preferredTone: "supportive" as PreferredTone,
+        difficultyPreference: "adaptive" as DifficultyPreference,
+      };
+      const formData = new FormData();
+      formData.set("accountabilityStyle", style);
+      formData.set("preferredTone", current.preferredTone);
+      formData.set("difficultyPreference", current.difficultyPreference);
+      coachingAction(formData);
+    },
+    [coachingAction, coachingProfile]
+  );
 
   const initials = profile.fullName
     ? profile.fullName
@@ -58,23 +121,16 @@ export function ProfileClient({ profile }: ProfileClientProps) {
   async function handleFileChange(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
-
     setUploading(true);
     try {
       const formData = new FormData();
       formData.append("file", file);
       formData.append("folder", "avatars");
-
-      const res = await fetch("/api/v1/files/upload", {
-        method: "POST",
-        body: formData,
-      });
-
+      const res = await fetch("/api/v1/files/upload", { method: "POST", body: formData });
       if (!res.ok) {
         const err = await res.json().catch(() => ({ message: "Upload failed" }));
         throw new Error(err.message || "Upload failed");
       }
-
       const data = (await res.json()) as { url: string };
       setAvatarUrl(data.url);
       toast.success("Photo selected. Save your profile to apply the change.");
@@ -86,202 +142,101 @@ export function ProfileClient({ profile }: ProfileClientProps) {
   }
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="flex h-full">
+      {/* ─── Section nav sidebar ─────────────────────────────────────────── */}
+      <aside className="w-[212px] shrink-0 border-r border-border bg-card flex flex-col">
+        <div className="px-4 py-5 border-b border-border">
+          <div className="flex items-center gap-2.5">
+            <Avatar className="h-[38px] w-[38px] rounded-full bg-secondary">
+              <AvatarImage src={avatarUrl || undefined} alt={profile.fullName || "Avatar"} />
+              <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
+                {initials}
+              </AvatarFallback>
+            </Avatar>
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">{profile.fullName || profile.username}</p>
+              <p className="text-xs text-muted-foreground">
+                {isPro ? "Pro" : "Free"}
+              </p>
+            </div>
+          </div>
+        </div>
+
+        <nav className="flex-1 px-2 py-3 space-y-0.5">
+          {NAV_ITEMS.map((item) => (
+            <button
+              key={item.id}
+              type="button"
+              onClick={() => setActiveSection(item.id)}
+              className={cn(
+                "w-full text-left rounded-lg px-3 py-2 text-sm transition-colors",
+                activeSection === item.id
+                  ? "bg-secondary text-secondary-foreground font-medium"
+                  : "text-muted-foreground hover:text-foreground hover:bg-muted/50"
+              )}
+            >
+              {item.label}
+            </button>
+          ))}
+        </nav>
+      </aside>
+
+      {/* ─── Main content ────────────────────────────────────────────────── */}
       <div className="flex-1 overflow-y-auto no-scrollbar">
-        <div className="mx-auto w-full max-w-xl px-4 py-8 md:py-12">
-          <form action={action} className="space-y-8">
-            {/* Hero */}
-            <div className="flex flex-col items-center gap-4">
-              <div className="relative">
-                <Avatar className="h-28 w-28 ring-4 ring-background shadow-xl">
-                  <AvatarImage
-                    src={avatarUrl || undefined}
-                    alt={profile.fullName || "Avatar"}
-                  />
-                  <AvatarFallback className="text-2xl">{initials}</AvatarFallback>
-                </Avatar>
-                <input
-                  ref={fileInputRef}
-                  id="avatarFile"
-                  name="avatarFile"
-                  type="file"
-                  accept="image/*"
-                  className="hidden"
-                  onChange={handleFileChange}
-                />
-              </div>
+        <div className="mx-auto w-full max-w-2xl px-6 py-8 md:py-10">
+          {activeSection === "profile" && (
+            <ProfileSection
+              profile={profile}
+              avatarUrl={avatarUrl}
+              initials={initials}
+              fileInputRef={fileInputRef}
+              onFileChange={handleFileChange}
+              uploading={uploading}
+              profileAction={profileAction}
+              profilePending={profilePending}
+              profileError={profileState.error}
+              settings={settings}
+            />
+          )}
 
-              {isEditing ? (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  disabled={uploading}
-                  onClick={() => fileInputRef.current?.click()}
-                  className="gap-1.5"
-                >
-                  <Camera className="h-3.5 w-3.5" />
-                  {uploading ? "Uploading..." : "Change Photo"}
-                </Button>
-              ) : null}
-              <input type="hidden" name="avatarUrl" value={avatarUrl} />
+          {activeSection === "coaching" && (
+            <CoachingSection
+              coachingProfile={coachingProfile}
+              coachingPending={coachingPending}
+              onCoachingChange={handleCoachingChange}
+            />
+          )}
 
-              {isEditing ? (
-                <div className="w-full max-w-xs space-y-2">
-                  <Input
-                    name="fullName"
-                    placeholder="Your name"
-                    defaultValue={profile.fullName ?? ""}
-                    required
-                    minLength={2}
-                    className="text-center font-semibold"
-                  />
-                  <p className="text-center text-sm text-muted-foreground">
-                    @{profile.username}
-                  </p>
-                </div>
-              ) : (
-                <div className="text-center">
-                  <h2 className="text-xl font-bold tracking-tight flex items-center justify-center gap-2">
-                    {profile.fullName || profile.username}
-                    <PlanBadge />
-                  </h2>
-                  <p className="text-sm text-muted-foreground">@{profile.username}</p>
-                  {!isPro && !isEditing && (
-                    <Link href="/pricing" className="inline-block mt-3">
-                      <Button size="sm" variant="energy" className="gap-1.5">
-                        <Sparkles className="h-3.5 w-3.5" />
-                        Upgrade to Pro
-                      </Button>
-                    </Link>
-                  )}
-                </div>
-              )}
+          {activeSection === "reminders" && (
+            <RemindersSection
+              notificationPreferences={notificationPreferences}
+              notifPending={notifPending}
+              onHabitRemindersToggle={handleHabitRemindersToggle}
+              streakWarnings={streakWarnings}
+              onStreakWarningsChange={setStreakWarnings}
+              sundayReview={sundayReview}
+              onSundayReviewChange={setSundayReview}
+              settings={settings}
+            />
+          )}
 
-              {isEditing ? (
-                <Textarea
-                  name="bio"
-                  placeholder="Tell us about yourself"
-                  rows={3}
-                  defaultValue={profile.bio ?? ""}
-                  className="w-full max-w-md resize-none"
-                />
-              ) : profile.bio ? (
-                <p className="text-sm text-foreground text-center max-w-md leading-relaxed">
-                  {profile.bio}
-                </p>
-              ) : null}
-            </div>
+          {activeSection === "notifications" && (
+            <NotificationsSection
+              notificationPreferences={notificationPreferences}
+              notifPending={notifPending}
+              onHabitRemindersToggle={handleHabitRemindersToggle}
+            />
+          )}
 
-            {/* Details */}
-            <div className="rounded-2xl border border-border/60 bg-background shadow-sm overflow-hidden divide-y divide-border/50">
-              {/* Username */}
-              <div className="flex items-center gap-4 px-5 py-4">
-                <span className="w-24 shrink-0 text-sm font-medium text-muted-foreground">
-                  Username
-                </span>
-                {isEditing ? (
-                  <Input
-                    name="username"
-                    defaultValue={profile.username ?? ""}
-                    readOnly
-                    className="bg-muted"
-                  />
-                ) : (
-                  <span className="text-sm text-foreground">@{profile.username}</span>
-                )}
-              </div>
+          {activeSection === "appearance" && (
+            <AppearanceSection />
+          )}
 
-              {/* Location */}
-              <div className="flex items-center gap-4 px-5 py-4">
-                <div className="flex items-center gap-2 w-24 shrink-0 text-sm font-medium text-muted-foreground">
-                  <MapPin className="h-4 w-4" />
-                  Location
-                </div>
-                {isEditing ? (
-                  <Input
-                    name="location"
-                    placeholder="City, Country"
-                    defaultValue={profile.location ?? ""}
-                  />
-                ) : (
-                  <span className="text-sm text-foreground">
-                    {profile.location || (
-                      <span className="text-muted-foreground">Not set</span>
-                    )}
-                  </span>
-                )}
-              </div>
+          {activeSection === "plan" && (
+            <PlanSection billingInitialData={billingInitialData} />
+          )}
 
-              {/* Interests */}
-              <div className="flex items-center gap-4 px-5 py-4">
-                <div className="flex items-center gap-2 w-24 shrink-0 text-sm font-medium text-muted-foreground">
-                  <Tag className="h-4 w-4" />
-                  Interests
-                </div>
-                {isEditing ? (
-                  <Input
-                    name="interests"
-                    placeholder="e.g. fitness, reading, coding"
-                    defaultValue={(profile.interests ?? []).join(", ")}
-                  />
-                ) : (
-                  <span className="text-sm text-foreground">
-                    {(profile.interests ?? []).length > 0 ? (
-                      <span className="inline-flex flex-wrap gap-1.5">
-                        {(profile.interests ?? []).map((i) => (
-                          <span
-                            key={i}
-                            className="inline-flex items-center rounded-md bg-muted px-2 py-0.5 text-xs font-medium"
-                          >
-                            {i}
-                          </span>
-                        ))}
-                      </span>
-                    ) : (
-                      <span className="text-muted-foreground">Not set</span>
-                    )}
-                  </span>
-                )}
-              </div>
-            </div>
-
-            {state.error && (
-              <p className="text-sm text-destructive text-center">{state.error}</p>
-            )}
-
-            {/* Actions */}
-            <div className="flex justify-center gap-3">
-              {isEditing ? (
-                <>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    disabled={isPending}
-                    onClick={() => {
-                      setIsEditing(false);
-                      setAvatarUrl(profile.avatarUrl ?? "");
-                    }}
-                  >
-                    Cancel
-                  </Button>
-                  <Button type="submit" disabled={isPending}>
-                    {isPending ? "Saving..." : "Save Profile"}
-                  </Button>
-                </>
-              ) : (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() => setIsEditing(true)}
-                  className="gap-1.5"
-                >
-                  <Pencil className="h-3.5 w-3.5" />
-                  Edit Profile
-                </Button>
-              )}
-            </div>
-          </form>
+          {activeSection === "data" && <DataSection />}
         </div>
       </div>
     </div>

@@ -1,7 +1,7 @@
 import type React from 'react';
 import { Suspense } from 'react';
 import type { Metadata } from 'next';
-import { Fraunces, JetBrains_Mono, Plus_Jakarta_Sans } from 'next/font/google';
+import { IBM_Plex_Mono, Instrument_Sans, Newsreader } from 'next/font/google';
 import './globals.css';
 
 import { LayoutFrame } from '@/components/layout/layout-frame';
@@ -14,16 +14,17 @@ import { BottomTabBar } from '@/components/shared/bottom-tab-bar';
 import { Toaster } from '@/components/ui/sonner';
 import { WebVitals } from '@/app/web-vitals';
 
-const jakarta = Plus_Jakarta_Sans({
+const sans = Instrument_Sans({
     subsets: ['latin'],
     variable: '--font-body',
 });
-const fraunces = Fraunces({
+const serif = Newsreader({
     subsets: ['latin'],
     variable: '--font-display-face',
 });
-const jetbrains = JetBrains_Mono({
+const mono = IBM_Plex_Mono({
     subsets: ['latin'],
+    weight: ['400', '500'],
     variable: '--font-mono-face',
 });
 
@@ -36,7 +37,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
     return (
         <html lang="en" suppressHydrationWarning data-scroll-behavior="smooth">
             <body
-                className={`${jakarta.variable} ${fraunces.variable} ${jetbrains.variable} font-sans`}
+                className={`${sans.variable} ${serif.variable} ${mono.variable} font-sans`}
                 suppressHydrationWarning
             >
                 <ThemeProvider
@@ -46,7 +47,9 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                     disableTransitionOnChange
                 >
                     <QueryProvider>
-                        <StoreHydrator />
+                        <Suspense fallback={null}>
+                            <StoreHydrator />
+                        </Suspense>
                         <ViewportWatcher />
                         <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
                             <MobileTopBar />

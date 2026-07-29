@@ -1,21 +1,17 @@
 'use client';
 
-import { Component, useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useQueryClient } from '@tanstack/react-query';
-import { MessageCircle, Mic, PanelLeftClose, PanelLeftOpen, Sparkles } from 'lucide-react';
 import {
     AssistantRuntimeProvider,
     useExternalStoreRuntime,
-    type AppendMessage,
     type ExternalStoreThreadListAdapter,
-    type ThreadMessageLike,
 } from '@assistant-ui/react';
 import { Thread } from '@/components/ai-conversation/thread';
-import { ThreadList } from '@/components/ai-conversation/thread-list';
-import { TooltipIconButton } from '@/components/ai-conversation/tooltip-icon-button';
-import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
 import { VoiceMode } from '@/components/ai-coach/voice-mode';
+import { ConversationSidebar } from '@/components/ai-coach/conversation-sidebar';
+import { ConversationHeader } from '@/components/ai-coach/conversation-header';
+import { useConversationMessages } from '@/components/ai-coach/use-conversation-messages';
 import {
     useBillingOverview,
     useConversations,
@@ -23,84 +19,13 @@ import {
     useUnarchiveConversation,
     useDeleteConversation,
 } from '@/hooks';
-import { streamPersonalizedCoaching } from '@/api/personalization';
-import { startConversation, getMessages } from '@/api/conversations';
-
-interface CoachingMessage {
-    id: string;
-    role: 'user' | 'assistant';
-    content: string;
-    status: 'complete' | 'running';
-}
-
-let messageCounter = 0;
-function generateId() {
-    return `msg-${++messageCounter}`;
-}
-
-function extractText(message: AppendMessage): string {
-    if (typeof message.content === 'string') return message.content;
-    if (Array.isArray(message.content)) {
-        return message.content
-            .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-            .map(p => p.text)
-            .join('');
-    }
-    return '';
-}
-
-/**
- * Lightweight error boundary so a failure in the thread list sidebar (e.g. a
- * fetch error thrown during render) doesn't take down the whole chat area.
- */
-class ThreadListErrorBoundary extends Component<
-    { children: React.ReactNode },
-    { hasError: boolean }
-> {
-    state = { hasError: false };
-
-    static getDerivedStateFromError() {
-        return { hasError: true };
-    }
-
-    componentDidCatch(error: unknown) {
-        console.error('ThreadList error:', error);
-    }
-
-    render() {
-        if (this.state.hasError) {
-            return (
-                <p className="px-2 py-3 text-xs text-muted-foreground">
-                    Couldn&apos;t load conversations.
-                </p>
-            );
-        }
-        return this.props.children;
-    }
-}
-
-/** Skeleton shown while the conversation list is loading. */
-function ThreadListSkeleton() {
-    return (
-        <div className="flex flex-col gap-2">
-            <div className="h-10 rounded-lg bg-muted/70 animate-pulse" />
-            <div className="h-10 rounded-lg bg-muted/60 animate-pulse" />
-            <div className="h-10 rounded-lg bg-muted/50 animate-pulse" />
-        </div>
-    );
-}
+import { getMessages } from '@/api/conversations';
 
 export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     const router = useRouter();
-    const queryClient = useQueryClient();
-    const [messages, setMessages] = useState<CoachingMessage[]>([]);
-    const [isRunning, setIsRunning] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isVoiceMode, setIsVoiceMode] = useState(false);
-    const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(
-        conversationId,
-    );
-    const abortRef = useRef<AbortController | null>(null);
+    const [searchQuery, setSearchQuery] = useState('');
     const { data: billing } = useBillingOverview();
     const isPro = billing?.subscription?.planCode === 'pro';
 
@@ -114,186 +39,40 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     const unarchiveMutation = useUnarchiveConversation();
     const deleteMutation = useDeleteConversation();
 
-    // Load conversation history when a conversationId is provided
-    useEffect(() => {
-        if (!conversationId) return;
+    const {
+        messages,
+        setMessages,
+        isRunning,
+        currentConversationId,
+        setCurrentConversationId,
+        convertMessage,
+        onNew,
+        onCancel,
+    } = useConversationMessages(conversationId);
 
-        let cancelled = false;
-        (async () => {
-            try {
-                const resp = await getMessages(conversationId);
-                if (cancelled) return;
-                const loaded: CoachingMessage[] = resp.data.map(m => ({
-                    id: m.id,
-                    role: m.role,
-                    content: m.content,
-                    status: 'complete',
-                }));
-                setMessages(loaded);
-                setCurrentConversationId(conversationId);
-            } catch (err) {
-                console.error('Failed to load conversation:', err);
-            }
-        })();
-
-        return () => {
-            cancelled = true;
-        };
-    }, [conversationId]);
-
-    const convertMessage = useCallback((msg: CoachingMessage): ThreadMessageLike => {
-        const base = {
-            role: msg.role,
-            content: msg.content,
-            id: msg.id,
-        } satisfies Omit<ThreadMessageLike, 'status'>;
-
-        if (msg.role !== 'assistant') return base;
-
-        return {
-            ...base,
-            status:
-                msg.status === 'running'
-                    ? { type: 'running' }
-                    : { type: 'complete', reason: 'stop' },
-        };
-    }, []);
-
-    const onNew = useCallback(
-        async (message: AppendMessage) => {
-            const userText = extractText(message);
-            const userMsg: CoachingMessage = {
-                id: generateId(),
-                role: 'user',
-                content: userText,
-                status: 'complete',
-            };
-            const assistantId = generateId();
-            const assistantMsg: CoachingMessage = {
-                id: assistantId,
-                role: 'assistant',
-                content: '',
-                status: 'running',
-            };
-
-            setMessages(prev => [...prev, userMsg, assistantMsg]);
-            setIsRunning(true);
-
-            // If we don't have a conversation yet, create one before opening the stream.
-            let convId = currentConversationId;
-            let createdConversationId: string | undefined;
-            if (!convId) {
-                try {
-                    const resp = await startConversation({
-                        type: 'coach',
-                        title: userText,
-                    });
-                    convId = resp.data.id;
-                    createdConversationId = convId;
-                    setCurrentConversationId(convId);
-                    // Refresh the sidebar thread list so the new conversation appears.
-                    void queryClient.invalidateQueries({ queryKey: ['conversations'] });
-                } catch (err) {
-                    console.error('Failed to create conversation:', err);
-                    // Continue without persistence — the stream will still work.
-                }
-            }
-
-            abortRef.current = streamPersonalizedCoaching(
-                {
-                    userMessage: userText,
-                    conversationId: convId,
-                },
-                {
-                    onDelta: text => {
-                        setMessages(prev =>
-                            prev.map(m =>
-                                m.id === assistantId ? { ...m, content: m.content + text } : m,
-                            ),
-                        );
-                    },
-                    onComplete: fullResponse => {
-                        setMessages(prev =>
-                            prev.map(m =>
-                                m.id === assistantId
-                                    ? { ...m, content: fullResponse, status: 'complete' as const }
-                                    : m,
-                            ),
-                        );
-                        setIsRunning(false);
-                        abortRef.current = null;
-                        // Refresh the sidebar so the conversation moves to the top
-                        // (updated_at changes when the assistant message is persisted).
-                        void queryClient.invalidateQueries({ queryKey: ['conversations'] });
-                        if (createdConversationId) {
-                            // Update the URL silently so it reflects the conversation without
-                            // triggering a Next.js route change (which would remount this
-                            // component and lose the streamed messages). A refresh will land
-                            // on the correct conversation page and load messages from backend.
-                            window.history.replaceState(
-                                null,
-                                '',
-                                `/ai-coach/${createdConversationId}`,
-                            );
-                        }
-                    },
-                    onError: errorMessage => {
-                        setMessages(prev =>
-                            prev.map(m =>
-                                m.id === assistantId
-                                    ? {
-                                          ...m,
-                                          content:
-                                              m.content ||
-                                              `Sorry, I encountered an error: ${errorMessage}`,
-                                          status: 'complete' as const,
-                                      }
-                                    : m,
-                            ),
-                        );
-                        setIsRunning(false);
-                        abortRef.current = null;
-                        void queryClient.invalidateQueries({ queryKey: ['conversations'] });
-                        if (createdConversationId) {
-                            window.history.replaceState(
-                                null,
-                                '',
-                                `/ai-coach/${createdConversationId}`,
-                            );
-                        }
-                    },
-                },
-            );
-        },
-        [currentConversationId, queryClient],
-    );
-
-    const onCancel = useCallback(async () => {
-        abortRef.current?.abort();
-        abortRef.current = null;
-        setIsRunning(false);
-        setMessages(prev =>
-            prev.map(m => (m.status === 'running' ? { ...m, status: 'complete' as const } : m)),
+    // Filter conversations by search query
+    const filteredConversations = useMemo(() => {
+        const all = conversations ?? [];
+        const q = searchQuery.trim().toLowerCase();
+        if (!q) return all;
+        return all.filter(
+            c =>
+                c.title?.toLowerCase().includes(q) ||
+                c.lastMessage?.toLowerCase().includes(q),
         );
-    }, []);
+    }, [conversations, searchQuery]);
 
-    // Abort any in-flight stream when the component unmounts (e.g. navigating
-    // away mid-stream). Without this, stream callbacks keep firing setMessages
-    // / setIsRunning on an unmounted component, which races with assistant-ui's
-    // internal fiber cleanup and surfaces as "Tried to unmount a fiber that is
-    // already unmounted".
-    useEffect(() => {
-        return () => {
-            abortRef.current?.abort();
-            abortRef.current = null;
-        };
-    }, []);
+    // Find the active conversation for the header bar
+    const activeConversation = useMemo(() => {
+        if (!currentConversationId) return undefined;
+        return conversations?.find(c => c.id === currentConversationId);
+    }, [conversations, currentConversationId]);
 
     // Build the thread list adapter so the sidebar shows real conversations,
     // "New Chat" works, and clicking a chat navigates to it.
     const threadListAdapter = useMemo<ExternalStoreThreadListAdapter>(() => {
-        const active = conversations?.filter(c => !c.archived) ?? [];
-        const archived = conversations?.filter(c => c.archived) ?? [];
+        const active = filteredConversations.filter(c => !c.archived);
+        const archived = filteredConversations.filter(c => c.archived);
         return {
             threadId: currentConversationId,
             isLoading: conversationsLoading,
@@ -308,10 +87,10 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                 status: 'archived' as const,
             })),
             onSwitchToNewThread: () => {
-                router.push('/ai-coach');
+                router.push('/coach');
             },
             onSwitchToThread: (threadId: string) => {
-                router.push(`/ai-coach/${threadId}`);
+                router.push(`/coach/${threadId}`);
             },
             onArchive: (threadId: string) => {
                 archiveMutation.mutate(threadId);
@@ -321,14 +100,14 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
             },
             onDelete: (threadId: string) => {
                 deleteMutation.mutate(threadId);
-                // If we're deleting the currently open conversation, go to /ai-coach.
+                // If we're deleting the currently open conversation, go to /coach.
                 if (threadId === currentConversationId) {
-                    router.push('/ai-coach');
+                    router.push('/coach');
                 }
             },
         };
     }, [
-        conversations,
+        filteredConversations,
         conversationsLoading,
         currentConversationId,
         router,
@@ -337,7 +116,7 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
         deleteMutation,
     ]);
 
-    const runtime = useExternalStoreRuntime<CoachingMessage>({
+    const runtime = useExternalStoreRuntime({
         messages,
         isRunning,
         convertMessage,
@@ -348,94 +127,29 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
 
     return (
         <AssistantRuntimeProvider runtime={runtime}>
-            <div className="relative flex h-full flex-col overflow-hidden text-foreground">
-                {/* Ambient calming background */}
-                <div className="pointer-events-none absolute inset-0 overflow-hidden">
-                    <div className="absolute -top-20 left-1/4 h-80 w-80 rounded-full bg-ambient-calm opacity-25 blur-3xl" />
-                    <div className="absolute bottom-20 -right-20 h-64 w-64 rounded-full bg-ambient-growth opacity-20 blur-3xl" />
-                </div>
+            <div className="relative flex h-full overflow-hidden bg-background text-foreground">
+                {/* Sidebar — 276px, white bg, border-right */}
+                <ConversationSidebar
+                    conversations={filteredConversations}
+                    isLoading={conversationsLoading}
+                    searchQuery={searchQuery}
+                    onSearchChange={setSearchQuery}
+                    isSidebarOpen={isSidebarOpen}
+                    onToggleSidebar={setIsSidebarOpen}
+                    isPro={isPro}
+                />
 
-                <div className="relative flex min-h-0 flex-1 gap-4 p-4 md:p-6">
-                    {/* Sidebar — collapsed state: thin strip with reopen button */}
-                    {isSidebarOpen ? (
-                        <aside className="card-elevated hidden w-[280px] shrink-0 overflow-hidden rounded-xl md:flex md:flex-col">
-                            <div className="border-b border-border/60 p-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="flex size-10 items-center justify-center rounded-xl bg-calm-soft text-calm">
-                                        <Sparkles className="size-5" />
-                                    </div>
-                                    <div className="min-w-0 flex-1">
-                                        <h2 className="font-display text-xl font-bold tracking-tight">
-                                            AI Coach
-                                        </h2>
-                                        <p className="mt-0.5 text-sm text-muted-foreground">
-                                            Accountability sessions
-                                        </p>
-                                    </div>
-                                    <TooltipIconButton
-                                        tooltip="Hide sessions"
-                                        onClick={() => setIsSidebarOpen(false)}
-                                        className="text-muted-foreground hover:text-foreground"
-                                    >
-                                        <PanelLeftClose className="size-4" />
-                                    </TooltipIconButton>
-                                </div>
-                            </div>
+                {/* Main chat area */}
+                <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+                    {/* Header bar */}
+                    <ConversationHeader
+                        title={activeConversation?.title}
+                        onVoiceMode={() => setIsVoiceMode(true)}
+                    />
 
-                            <div className="styled-scrollbar min-h-0 flex-1 overflow-y-auto p-3">
-                                <div className="mb-2 flex items-center gap-2 px-2 text-[11px] font-medium uppercase tracking-[0.16em] text-muted-foreground">
-                                    <MessageCircle className="size-3" />
-                                    Sessions
-                                </div>
-                                <ThreadListErrorBoundary>
-                                    {conversationsLoading ? <ThreadListSkeleton /> : <ThreadList />}
-                                </ThreadListErrorBoundary>
-                            </div>
-
-                            {/* Upgrade prompt pinned to the bottom of the sidebar */}
-                            {!isPro && (
-                                <div className="border-t border-border/60 p-3">
-                                    <UpgradePrompt
-                                        surface="assistant_personalization"
-                                        trigger="personalized_ai"
-                                        title="Deeper coaching memory"
-                                        description="Upgrade to Pro for personalized AI coaching that remembers your patterns."
-                                        compact
-                                        isPro={isPro}
-                                    />
-                                </div>
-                            )}
-                        </aside>
-                    ) : (
-                        <div className="hidden shrink-0 md:flex md:items-start md:pt-4">
-                            <TooltipIconButton
-                                tooltip="Show sessions"
-                                onClick={() => setIsSidebarOpen(true)}
-                                className="text-muted-foreground hover:text-foreground"
-                            >
-                                <PanelLeftOpen className="size-5" />
-                            </TooltipIconButton>
-                        </div>
-                    )}
-
-                    {/* Main chat area */}
-                    <main className="card-elevated relative min-w-0 flex-1 overflow-hidden rounded-xl">
-                        {/* Voice mode toggle — floats over the thread top-right. */}
-                        <div className="absolute right-3 top-3 z-10">
-                            <TooltipIconButton
-                                tooltip="Voice mode"
-                                onClick={() => setIsVoiceMode(true)}
-                                variant="ghost"
-                                size="icon"
-                                className="size-9 rounded-full bg-background/70 backdrop-blur hover:bg-muted"
-                                aria-label="Open voice mode"
-                            >
-                                <Mic className="size-4" />
-                            </TooltipIconButton>
-                        </div>
-                        <Thread />
-                    </main>
-                </div>
+                    {/* Conversation thread */}
+                    <Thread />
+                </main>
             </div>
 
             {/* Full-screen live voice chat overlay. */}
@@ -449,7 +163,7 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                         void (async () => {
                             try {
                                 const resp = await getMessages(id);
-                                const loaded: CoachingMessage[] = resp.data.map(m => ({
+                                const loaded = resp.data.map(m => ({
                                     id: m.id,
                                     role: m.role,
                                     content: m.content,

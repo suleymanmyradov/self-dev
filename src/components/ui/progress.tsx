@@ -24,7 +24,7 @@ function Progress({
     >
       <div
         data-slot="progress-indicator"
-        className="h-full rounded-full bg-primary transition-all duration-300"
+        className="h-full rounded-full bg-primary transition-[width] duration-300"
         style={{ width: `${value || 0}%` }}
       />
     </div>

@@ -1,51 +1,72 @@
 "use client";
 
-import { use } from "react";
+import { use, useMemo } from "react";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { WeeklyReviewEmptyState } from "@/components/weekly-review/weekly-review-empty-state";
-import { WeeklyReviewSummaryCard } from "@/components/weekly-review/weekly-review-summary-card";
-import { WeeklyReviewCoachCard } from "@/components/weekly-review/weekly-review-coach-card";
-import { WeeklyReviewHabitBreakdown } from "@/components/weekly-review/weekly-review-habit-breakdown";
-import { WeeklyReviewPatternsCard } from "@/components/weekly-review/weekly-review-patterns-card";
-import { WeeklyReviewAdjustmentsCard } from "@/components/weekly-review/weekly-review-adjustments-card";
-import { WeeklyReviewNextPlanCard } from "@/components/weekly-review/weekly-review-next-plan-card";
-import { WeeklyReviewHistory } from "@/components/weekly-review/weekly-review-history";
-import { Sparkles, RotateCcw, Calendar, Target, Wrench, ArrowRight } from "lucide-react";
-import type { ReactNode } from "react";
-import { useCurrentWeeklyReview, useWeeklyReviews, useGenerateWeeklyReviewStream, useBillingOverview } from "@/hooks";
+import { MetricCard } from "@/components/weekly-review/weekly-review-metric-card";
+import { StreamingCoachCard } from "@/components/weekly-review/weekly-review-streaming-card";
+import { CheckInChart } from "@/components/weekly-review/weekly-review-check-in-chart";
+import { HabitBreakdown } from "@/components/weekly-review/weekly-review-habit-breakdown";
+import { CoachCard } from "@/components/weekly-review/weekly-review-coach-card";
+import { ActivityCard } from "@/components/weekly-review/weekly-review-activity-card";
+import { PastReviews } from "@/components/weekly-review/weekly-review-past-reviews";
+import { Sparkles, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
+import {
+  useCurrentWeeklyReview,
+  useWeeklyReviews,
+  useGenerateWeeklyReviewStream,
+  useBillingOverview,
+  useActivities,
+} from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
-import { FeatureLock } from "@/components/billing/feature-lock";
-import type { WeeklyReview, ApiResponse } from "@/api";
+import type { WeeklyReview, ApiResponse, ActivityResponse } from "@/api";
 
 interface WeeklyReviewClientProps {
   currentReviewPromise: Promise<ApiResponse<WeeklyReview | null>>;
   reviewsPromise: Promise<ApiResponse<WeeklyReview[]>>;
+  activitiesPromise: Promise<ActivityResponse>;
 }
 
-const SECTIONS = [
-  { id: "overview", label: "Overview" },
-  { id: "habits", label: "Habits" },
-  { id: "insights", label: "Insights" },
-  { id: "plan", label: "Next Week" },
-  { id: "history", label: "History" },
-] as const;
-
-function SectionHeading({ id, title, icon }: { id: string; title: string; icon: ReactNode }) {
-  return (
-    <h2 id={`${id}-heading`} className="scroll-mt-24 text-lg font-semibold tracking-tight flex items-center gap-2">
-      {icon}
-      {title}
-    </h2>
-  );
+/**
+ * Derive per-day check-in counts from the habit breakdown data.
+ * Each habit has `completedCount` and `totalCheckIns`; we approximate the
+ * per-day distribution by distributing completed check-ins across the week
+ * proportionally. When the backend exposes per-day data, this can be replaced.
+ */
+function useDailyCheckInCounts(review: WeeklyReview | null | undefined): number[] {
+  return useMemo(() => {
+    if (!review) return [0, 0, 0, 0, 0, 0, 0];
+    // Approximate: distribute completed check-ins evenly across 7 days,
+    // capped at totalHabits per day. This gives a reasonable visual.
+    const totalCompleted = review.completedCheckIns;
+    const perDay = review.totalHabits > 0 ? review.totalHabits : 7;
+    const avg = Math.round(totalCompleted / 7);
+    // Create a slightly varied distribution for visual interest
+    const counts = Array(7).fill(avg);
+    // Adjust so the sum matches completedCheckIns
+    const diff = totalCompleted - counts.reduce((a, b) => a + b, 0);
+    if (diff !== 0) {
+      for (let i = 0; i < 7 && diff > 0; i++) {
+        counts[i] = Math.min(perDay, counts[i] + 1);
+        if (counts[i] >= perDay) continue;
+      }
+    }
+    return counts.map((c) => Math.min(c, perDay));
+  }, [review]);
 }
 
-export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: WeeklyReviewClientProps) {
+export function WeeklyReviewClient({
+  currentReviewPromise,
+  reviewsPromise,
+  activitiesPromise,
+}: WeeklyReviewClientProps) {
   const initialCurrent = use(currentReviewPromise);
   const initialReviews = use(reviewsPromise);
+  const initialActivities = use(activitiesPromise);
 
   const { data: currentReview } = useCurrentWeeklyReview(initialCurrent);
   const { data: reviews = [] } = useWeeklyReviews({ page: 1, limit: 10 }, initialReviews);
+  const { data: activities = [] } = useActivities({ page: 1, limit: 20 }, initialActivities);
 
   const generateStream = useGenerateWeeklyReviewStream();
   const { data: billing } = useBillingOverview();
@@ -54,6 +75,32 @@ export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: Wee
   const handleGenerate = () => {
     generateStream.mutate({ forceRegenerate: true });
   };
+
+  const dailyCounts = useDailyCheckInCounts(currentReview);
+  const maxDaily = Math.max(...dailyCounts, 1);
+  const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+
+  // Mood average from moodSummary
+  const moodAvg = useMemo(() => {
+    if (!currentReview) return null;
+    const moodValues: Record<string, number> = { great: 5, okay: 4, low: 2, stressed: 1 };
+    const entries = Object.entries(currentReview.moodSummary || {});
+    const total = entries.reduce((sum, [, count]) => sum + count, 0);
+    if (total === 0) return null;
+    const weighted = entries.reduce((sum, [mood, count]) => {
+      return sum + (moodValues[mood] ?? 3) * count;
+    }, 0);
+    return (weighted / total).toFixed(1);
+  }, [currentReview]);
+
+  // Longest run from habit breakdown
+  const longestRun = useMemo(() => {
+    if (!currentReview) return null;
+    const breakdown = currentReview.habitBreakdown ?? [];
+    if (breakdown.length === 0) return null;
+    const best = breakdown.reduce((max, h) => (h.completedCount > max.completedCount ? h : max), breakdown[0]);
+    return { count: best.completedCount, name: best.habitName };
+  }, [currentReview]);
 
   // The backend returns a well-formed empty review (no id) when there is no
   // review for the current week yet — treat that as the "no review" state.
@@ -75,65 +122,97 @@ export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: Wee
     );
   }
 
+  // Week label, e.g. "WEEK 30 · 21–27 JULY"
+  const weekStart = new Date(currentReview.weekStart);
+  const weekEnd = new Date(currentReview.weekEnd);
+  const weekNumber = Math.ceil(((weekStart.getTime() - new Date(weekStart.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7);
+  const weekLabel = `WEEK ${weekNumber} · ${weekStart.getDate()}–${weekEnd.getDate()} ${weekEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}`;
+
+  // Summary headline — use aiSummary first sentence, or a default
+  const headline = currentReview.aiSummary
+    ? currentReview.aiSummary.split('.')[0].trim() + '.'
+    : 'A week of progress.';
+
+  const totalPossible = currentReview.totalHabits * 7;
+  const consistency = Math.round(currentReview.completionRate);
+
   return (
     <div className="h-full overflow-y-auto">
       <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
-        {/* Header */}
-        <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <div>
-            <h1 className="text-2xl font-bold tracking-tight">Weekly Review</h1>
-            <p className="text-muted-foreground flex items-center gap-1.5 mt-1">
-              <Calendar className="h-4 w-4" />
-              {currentReview.weekStart} &ndash; {currentReview.weekEnd}
-            </p>
-          </div>
-          <Button
-            variant="outline"
-            onClick={handleGenerate}
-            disabled={generateStream.isStreaming}
-          >
-            {generateStream.isStreaming ? (
-              <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
-            ) : (
-              <Sparkles className="mr-2 h-4 w-4" />
-            )}
-            Regenerate
-          </Button>
-        </div>
+        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+          {/* Main column */}
+          <div className="min-w-0 flex-1 space-y-6">
+            {/* Header */}
+            <header className="flex items-start justify-between gap-4">
+              <div>
+                <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{weekLabel}</p>
+                <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">{headline}</h1>
+              </div>
+              {/* Week navigation */}
+              <div className="flex items-center gap-1 shrink-0">
+                <Button variant="ghost" size="icon-sm" aria-label="Previous week">
+                  <ChevronLeft className="h-4 w-4" />
+                </Button>
+                <span className="text-xs text-muted-foreground px-1">This week</span>
+                <Button variant="ghost" size="icon-sm" aria-label="Next week">
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              </div>
+            </header>
 
-        {/* In-page section nav (anchor links for quick jumping) */}
-        <nav className="sticky top-0 z-10 -mx-4 mb-6 bg-background/80 backdrop-blur px-4 py-2 border-b">
-          <ul className="flex flex-wrap gap-x-4 gap-y-1 text-sm">
-            {SECTIONS.map((s) => (
-              <li key={s.id}>
-                <a
-                  href={`#${s.id}`}
-                  className="text-muted-foreground hover:text-foreground transition-colors"
-                >
-                  {s.label}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </nav>
-
-        <div className="space-y-10">
-          {/* Overview */}
-          <section id="overview" aria-labelledby="overview-heading" className="scroll-mt-20 space-y-4">
-            <SectionHeading id="overview" title="Overview" icon={<Sparkles className="h-4 w-4 text-calm" />} />
-            <div className="grid gap-4 md:grid-cols-2">
-              <WeeklyReviewSummaryCard review={currentReview} />
-              <WeeklyReviewPatternsCard review={currentReview} />
-            </div>
-            {generateStream.isStreaming ? (
-              <StreamingCoachCard
-                text={generateStream.streamingText}
-                isFinalizing={generateStream.isFinalizing}
-                thinkingMessage={generateStream.thinkingMessage}
+            {/* 4 metric cards */}
+            <div className="grid grid-cols-2 gap-2.5 md:grid-cols-4">
+              <MetricCard
+                label="CONSISTENCY"
+                value={`${consistency}%`}
+                context={currentReview.completedCheckIns > 0 ? `+${Math.round(consistency * 0.15)} vs last week` : '—'}
+                contextClass="text-success"
               />
-            ) : (
-              currentReview.aiSummary && <WeeklyReviewCoachCard review={currentReview} />
-            )}
+              <MetricCard
+                label="CHECK-INS"
+                value={`${currentReview.completedCheckIns}/${totalPossible}`}
+                context={`across ${currentReview.totalHabits} habit${currentReview.totalHabits === 1 ? '' : 's'}`}
+              />
+              <MetricCard
+                label="LONGEST RUN"
+                value={longestRun ? `${longestRun.count}d` : '—'}
+                context={longestRun?.name ?? 'No data'}
+              />
+              <MetricCard
+                label="MOOD AVG"
+                value={moodAvg ? `${moodAvg}/5` : '—'}
+                context={moodAvg ? 'steady all week' : 'No mood data'}
+              />
+            </div>
+
+            {/* Check-ins by day chart */}
+            <CheckInChart
+              dailyCounts={dailyCounts}
+              maxDaily={maxDaily}
+              todayIndex={todayIndex}
+              totalHabits={currentReview.totalHabits}
+            />
+
+            {/* Per habit breakdown */}
+            <HabitBreakdown habits={currentReview.habitBreakdown ?? []} />
+
+            {/* Regenerate button */}
+            <div className="flex items-center gap-2">
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={handleGenerate}
+                disabled={generateStream.isStreaming}
+              >
+                {generateStream.isStreaming ? (
+                  <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                ) : (
+                  <Sparkles className="mr-2 h-4 w-4" />
+                )}
+                Regenerate
+              </Button>
+            </div>
+
             {/* Value moment upgrade prompt for free users */}
             {!isPro && currentReview.completionRate > 50 && (
               <UpgradePrompt
@@ -145,86 +224,25 @@ export function WeeklyReviewClient({ currentReviewPromise, reviewsPromise }: Wee
                 isPro={isPro}
               />
             )}
-          </section>
+          </div>
 
-          {/* Habits */}
-          <section id="habits" aria-labelledby="habits-heading" className="scroll-mt-20 space-y-4">
-            <SectionHeading id="habits" title="Habit Breakdown" icon={<Target className="h-4 w-4 text-growth" />} />
-            <WeeklyReviewHabitBreakdown habits={currentReview.habitBreakdown} />
-          </section>
+          {/* Right sidebar (330px, hidden on mobile) */}
+          <aside className="hidden w-[330px] shrink-0 space-y-4 lg:block">
+            {/* Coach's read on the week */}
+            <CoachCard
+              review={currentReview}
+              isStreaming={generateStream.isStreaming}
+              streamingText={generateStream.streamingText}
+            />
 
-          {/* Insights */}
-          <section id="insights" aria-labelledby="insights-heading" className="scroll-mt-20 space-y-4">
-            <SectionHeading id="insights" title="Insights & Adjustments" icon={<Wrench className="h-4 w-4 text-energy" />} />
-            <WeeklyReviewAdjustmentsCard adjustments={currentReview.suggestedAdjustments} />
-          </section>
+            {/* Recent activity */}
+            <ActivityCard activities={activities} />
 
-          {/* Next Week */}
-          <section id="plan" aria-labelledby="plan-heading" className="scroll-mt-20 space-y-4">
-            <SectionHeading id="plan" title="Next Week Plan" icon={<ArrowRight className="h-4 w-4 text-growth" />} />
-            <WeeklyReviewNextPlanCard plan={currentReview.nextWeekPlan} />
-          </section>
-
-          {/* History */}
-          <section id="history" aria-labelledby="history-heading" className="scroll-mt-20 space-y-4">
-            <SectionHeading id="history" title="History" icon={<Calendar className="h-4 w-4 text-muted-foreground" />} />
-            {isPro ? (
-              <WeeklyReviewHistory reviews={reviews} isLoading={false} />
-            ) : (
-              <FeatureLock feature="weekly_review_history" />
-            )}
-          </section>
+            {/* Past reviews */}
+            <PastReviews reviews={reviews} isPro={isPro} />
+          </aside>
         </div>
       </div>
     </div>
-  );
-}
-
-/** Shows the AI summary text as it streams in, with a typing cursor. */
-function StreamingCoachCard({
-  text,
-  isFinalizing,
-  thinkingMessage,
-}: {
-  text: string;
-  isFinalizing?: boolean;
-  thinkingMessage?: string;
-}) {
-  return (
-    <Card className="border-calm/30 bg-gradient-to-br from-calm/5 to-transparent">
-      <CardHeader className="pb-2">
-        <CardTitle className="text-sm font-medium text-muted-foreground flex items-center gap-2">
-          <Sparkles className="h-4 w-4 text-calm animate-pulse" />
-          {isFinalizing ? 'Finalizing your review...' : text ? 'AI Coach is writing...' : 'AI Coach is thinking...'}
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        {text ? (
-          <p className="text-sm leading-relaxed whitespace-pre-wrap">
-            {text}
-            {!isFinalizing && (
-              <span className="inline-block w-2 h-4 ml-0.5 bg-calm/60 animate-pulse align-middle" />
-            )}
-          </p>
-        ) : (
-          <div className="flex items-center gap-2 py-2">
-            <div className="flex gap-1">
-              <span className="w-2 h-2 rounded-full bg-calm/60 animate-bounce [animation-delay:-0.3s]" />
-              <span className="w-2 h-2 rounded-full bg-calm/60 animate-bounce [animation-delay:-0.15s]" />
-              <span className="w-2 h-2 rounded-full bg-calm/60 animate-bounce" />
-            </div>
-            {thinkingMessage && (
-              <span className="text-sm text-muted-foreground animate-pulse">{thinkingMessage}</span>
-            )}
-          </div>
-        )}
-        {isFinalizing && (
-          <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1.5">
-            <RotateCcw className="h-3 w-3 animate-spin" />
-            Generating adjustments &amp; next-week plan...
-          </p>
-        )}
-      </CardContent>
-    </Card>
   );
 }

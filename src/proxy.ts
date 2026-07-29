@@ -12,19 +12,14 @@ const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'growth-api';
 
 // Routes that require authentication
 const PROTECTED_ROUTES = [
-  '/habits',
-  '/goals',
-  '/activity',
-  '/profile',
-  '/settings',
-  '/saved',
+  '/plan',
+  '/progress',
+  '/coach',
+  '/library',
+  '/me',
   '/report',
-  '/weekly-review',
-  '/ai-coach',
   '/onboarding',
-  '/explore',
-  '/community',
-  '/search',
+  // Article pages are user-specific (isLiked/isSaved come from authed fetches)
   '/article',
 ];
 
@@ -132,7 +127,7 @@ export async function proxy(request: NextRequest) {
 
           // Redirect authenticated users away from auth pages
           if (AUTH_ROUTES.some((r) => pathname === r)) {
-            return NextResponse.redirect(new URL('/habits', request.url));
+            return NextResponse.redirect(new URL('/plan', request.url));
           }
 
           // Mutate the request so server components receive the fresh token,
@@ -152,7 +147,7 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (authenticated && AUTH_ROUTES.some((route) => pathname === route)) {
-    return NextResponse.redirect(new URL('/habits', request.url));
+    return NextResponse.redirect(new URL('/plan', request.url));
   }
 
   // Redirect unauthenticated users away from protected pages

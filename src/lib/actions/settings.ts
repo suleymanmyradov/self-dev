@@ -46,8 +46,7 @@ export async function updateProfileAction(
     }
 
     await serverPut('/profile', validated.data);
-    revalidatePath('/profile');
-    revalidatePath('/settings');
+    revalidatePath('/me');
     return { success: true };
   } catch (error) {
     const message =
@@ -94,7 +93,7 @@ export async function updateSettingsAction(
     }
 
     await serverPut('/settings', validated.data);
-    revalidatePath('/settings');
+    revalidatePath('/me');
     return { success: true };
   } catch (error) {
     const message =
@@ -131,7 +130,7 @@ export async function updateNotificationPreferencesAction(
     }
 
     await serverPut('/notification-preferences', validated.data);
-    revalidatePath('/settings');
+    revalidatePath('/me');
     return { success: true };
   } catch (error) {
     const message =
@@ -160,7 +159,7 @@ export async function updateCoachingPreferencesAction(
     }
 
     await serverPut('/personalization/coaching-profile/preferences', validated.data);
-    revalidatePath('/settings');
+    revalidatePath('/me');
     return { success: true };
   } catch (error) {
     const message =

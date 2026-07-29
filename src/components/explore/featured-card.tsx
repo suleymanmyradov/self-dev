@@ -1,47 +1,77 @@
 import Link from 'next/link';
+import Image from 'next/image';
 import { Card } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { Sparkles, ArrowRight, Clock } from 'lucide-react';
-import { getCategoryBadgeClass } from '@/lib/category-styles';
+import { ArrowRight, Bookmark } from 'lucide-react';
 import type { Article } from '@/api';
 
 interface FeaturedCardProps {
   article: Article;
+  isSaved?: boolean;
+  onToggleSave?: () => void;
 }
 
-export function FeaturedCard({ article }: FeaturedCardProps) {
+export function FeaturedCard({ article, isSaved, onToggleSave }: FeaturedCardProps) {
   return (
-    <Card className="overflow-hidden border-growth/20 bg-growth-soft/20">
-      <div className="flex flex-col md:flex-row">
-        <div className="flex-1 p-5">
-          <div className="flex items-center gap-2 mb-3">
-            <Sparkles className="h-4 w-4 text-growth" />
-            <span className="text-xs font-medium text-growth uppercase tracking-wide">Featured</span>
-          </div>
-          <h3 className="text-lg font-semibold">{article.title}</h3>
-          {article.excerpt && (
-            <p className="mt-2 text-sm text-muted-foreground leading-relaxed">
-              {article.excerpt}
-            </p>
-          )}
-          <div className="mt-3 flex items-center gap-3">
-            {article.category && (
-              <Badge className={getCategoryBadgeClass(article.category.slug)}>
-                {article.category.name}
-              </Badge>
-            )}
-            <span className="flex items-center gap-1 text-xs text-muted-foreground">
-              <Clock className="h-3 w-3" /> {article.readTime} min read
-            </span>
-          </div>
-          <Button asChild size="sm" variant="growth" className="mt-4">
+    <Card className="flex flex-col overflow-hidden rounded-xl border-border md:flex-row">
+      {article.imageUrl ? (
+        <div className="relative h-48 w-full shrink-0 overflow-hidden bg-muted md:h-auto md:w-[300px]">
+          <Link href={`/article/${article.id}`} className="block size-full">
+            <Image
+              src={article.imageUrl}
+              alt={article.title}
+              fill
+              sizes="(max-width: 768px) 100vw, 300px"
+              className="object-cover"
+            />
+          </Link>
+        </div>
+      ) : (
+        <div className="h-48 w-full shrink-0 bg-secondary md:h-auto md:w-[300px]" />
+      )}
+
+      {/* Right: content */}
+      <div className="flex flex-1 flex-col p-6">
+        {/* Mono label header */}
+        <div className="mb-3 font-mono text-[10px] tracking-wider text-muted-foreground uppercase">
+          EDITOR&apos;S PICK
+          {article.category && <> · {article.category.name.toUpperCase()}</>}
+          {' · '}
+          <span className="tabular-nums">{article.readTime} MIN</span>
+        </div>
+
+        {/* Serif title */}
+        <h3 className="font-display text-2xl font-normal leading-tight tracking-tight text-foreground">
+          {article.title}
+        </h3>
+
+        {/* Description */}
+        {article.excerpt && (
+          <p className="mt-2 text-sm leading-relaxed text-muted-foreground">
+            {article.excerpt}
+          </p>
+        )}
+
+        {/* Action buttons */}
+        <div className="mt-5 flex items-center gap-3">
+          <Button asChild size="sm" variant="default" className="h-8 gap-1.5 rounded-lg text-xs">
             <Link href={`/article/${article.id}`}>
-              Read Article <ArrowRight className="ml-2 h-4 w-4" />
+              Read <ArrowRight className="size-3.5" />
             </Link>
           </Button>
+          <Button
+            type="button"
+            size="sm"
+            variant="outline"
+            className="h-8 gap-1.5 rounded-lg text-xs"
+            onClick={onToggleSave}
+            aria-label={isSaved ? 'Unsave article' : 'Save article'}
+            aria-pressed={isSaved}
+          >
+            <Bookmark className={isSaved ? 'size-3.5 fill-current' : 'size-3.5'} />
+            {isSaved ? 'Saved' : 'Save for tonight'}
+          </Button>
         </div>
-        <div className="hidden md:block w-48 bg-gradient-to-br from-growth/20 to-growth-soft/30" />
       </div>
     </Card>
   );

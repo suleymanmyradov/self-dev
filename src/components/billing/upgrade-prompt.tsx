@@ -1,9 +1,8 @@
 "use client";
 
 import { memo, useEffect, useRef, useCallback } from "react";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { X, Sparkles } from "lucide-react";
+import { X } from "lucide-react";
 import { useTrackUpgradeEvent } from "@/hooks";
 import { cn } from "@/lib/utils";
 import type { UpgradeTrigger, UpgradeSurface } from "@/api";
@@ -20,16 +19,16 @@ interface UpgradePromptProps {
 
 const TRIGGER_MESSAGES: Record<UpgradeTrigger, { title: string; description: string }> = {
   goal_limit: {
-    title: "Unlock unlimited goals",
-    description: "You&apos;ve reached the Free plan goal limit. Upgrade to Pro to track as many goals as you need.",
+    title: "That's your third goal.",
+    description: "Free includes 3 active goals. Archive one, or upgrade to Pro for unlimited goals.",
   },
   habit_limit: {
-    title: "Unlock unlimited habits",
-    description: "You&apos;ve reached the Free plan habit limit. Upgrade to Pro to build more daily habits.",
+    title: "That's your fifth habit.",
+    description: "Free includes 5 active habits. Upgrade to Pro for unlimited habits.",
   },
   weekly_history: {
     title: "Unlock your full history",
-    description: "You&apos;ve built enough consistency to benefit from a fuller weekly history. Pro unlocks all past reviews.",
+    description: "You've built enough consistency to benefit from a fuller weekly history. Pro unlocks all past reviews.",
   },
   personalized_ai: {
     title: "Unlock deeper coaching memory",
@@ -37,7 +36,7 @@ const TRIGGER_MESSAGES: Record<UpgradeTrigger, { title: string; description: str
   },
   plan_adjustments: {
     title: "Unlock advanced plan adjustments",
-    description: "You&apos;ve used your pending suggestion limit. Pro gives you unlimited plan adjustments.",
+    description: "You've used your pending suggestion limit. Pro gives you unlimited plan adjustments.",
   },
 };
 
@@ -76,7 +75,7 @@ export const UpgradePrompt = memo(function UpgradePrompt({
       trigger,
       planCode: "pro",
     });
-    window.location.href = "/pricing";
+    window.location.href = "/me";
   }, [trackEvent, surface, trigger]);
 
   const handleDismiss = useCallback(() => {
@@ -88,14 +87,13 @@ export const UpgradePrompt = memo(function UpgradePrompt({
 
   if (compact) {
     return (
-      <div className="flex items-center justify-between gap-3 rounded-lg border border-energy/20 bg-energy/5 p-3">
+      <div className="flex items-center justify-between gap-3 rounded-lg border border-dashed border-border bg-card p-3">
         <div className="flex items-center gap-2 min-w-0">
-          <Sparkles className="h-4 w-4 text-energy shrink-0" />
-          <span className="text-sm truncate">{title}</span>
+          <span className="text-sm truncate font-medium">{title}</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
-          <Button size="sm" variant="energy" onClick={handleClick}>
-            Upgrade
+          <Button size="sm" onClick={handleClick}>
+            See Pro
           </Button>
           {onDismiss && (
             <button
@@ -112,39 +110,40 @@ export const UpgradePrompt = memo(function UpgradePrompt({
     );
   }
 
+  // In-context limit prompt: dashed border card
   return (
-    <Card className={cn("border-energy/20 bg-gradient-to-br from-energy/5 to-transparent")}>
-      <CardContent className="pt-4 pb-4">
-        <div className="flex items-start justify-between gap-2">
-          <div className="flex items-start gap-3">
-            <div className="mt-0.5 rounded-full bg-energy/15 p-1.5">
-              <Sparkles className="h-4 w-4 text-energy" />
-            </div>
-            <div>
-              <h3 className="text-sm font-semibold">{title}</h3>
-              <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
-            </div>
-          </div>
-          {onDismiss && (
-            <button
-              type="button"
-              onClick={handleDismiss}
-              aria-label="Dismiss upgrade prompt"
-              className="text-muted-foreground hover:text-foreground shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 rounded-md"
-            >
-              <X className="h-4 w-4" />
-            </button>
-          )}
+    <div className={cn("rounded-xl border border-dashed border-border bg-card p-5")}>
+      <div className="flex items-start justify-between gap-2">
+        <div>
+          <h3 className="text-sm font-semibold">{title}</h3>
+          <p className="text-sm text-muted-foreground mt-0.5">{description}</p>
         </div>
-        <div className="mt-3 flex items-center gap-2">
-          <Button size="sm" variant="energy" onClick={handleClick}>
-            Upgrade to Pro
+        {onDismiss && (
+          <button
+            type="button"
+            onClick={handleDismiss}
+            aria-label="Dismiss upgrade prompt"
+            className="text-muted-foreground hover:text-foreground shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring/50 focus-visible:ring-offset-2 rounded-md"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        )}
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <Button size="sm" onClick={handleClick}>
+          See Pro
+        </Button>
+        {trigger === "goal_limit" && (
+          <Button size="sm" variant="ghost" onClick={handleDismiss}>
+            Archive a goal
           </Button>
-          <span className="text-xs text-muted-foreground">
-            Cancel anytime
-          </span>
-        </div>
-      </CardContent>
-    </Card>
+        )}
+        {trigger === "habit_limit" && (
+          <Button size="sm" variant="ghost" onClick={handleDismiss}>
+            Archive a habit
+          </Button>
+        )}
+      </div>
+    </div>
   );
 });

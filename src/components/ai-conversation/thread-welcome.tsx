@@ -12,13 +12,13 @@ export const ThreadWelcome: FC = () => {
                     <div className="aui-thread-welcome-message flex size-full flex-col justify-center px-2 py-10 md:px-8">
                         <m.div
                             {...fadeInUp}
-                            className="aui-thread-welcome-eyebrow mb-3 w-fit rounded-full bg-calm-soft px-3 py-1.5 text-xs font-medium text-calm"
+                            className="aui-thread-welcome-eyebrow mb-3 w-fit rounded-full bg-secondary px-3 py-1.5 text-xs font-medium text-muted-foreground"
                         >
                             Personalized coaching
                         </m.div>
                         <m.div
                             {...withDelay(fadeInUp, 0.05)}
-                            className="aui-thread-welcome-message-motion-1 font-display text-3xl font-bold leading-tight tracking-tight text-foreground md:text-4xl"
+                            className="aui-thread-welcome-message-motion-1 font-display text-3xl font-normal leading-tight tracking-tight text-foreground md:text-4xl"
                         >
                             Build habits that feel sustainable.
                         </m.div>
@@ -38,35 +38,27 @@ export const ThreadWelcome: FC = () => {
 
 const SUGGESTED_ACTIONS = [
     {
-        title: 'I have a goal in mind',
-        label: 'help me turn it into a habit plan',
-        action: 'I have a goal I want to work on. Help me turn it into a concrete daily habit plan.',
+        title: 'Plan my Thursday',
+        action: 'Help me plan my Thursday — what habits should I prioritize and when should I do them?',
     },
     {
-        title: 'I keep falling off track',
-        label: 'help me understand why and reset',
-        action: 'I keep starting habits but falling off after a few days. Help me figure out why and build a recovery plan.',
+        title: 'Why do I quit at week three?',
+        action: 'I keep quitting my habits at around week three. Help me understand why and what I can do about it.',
     },
     {
         title: 'Review my week',
-        label: 'what went well and what to adjust',
-        action: "Let's do a quick weekly review. I want to look at what I completed, what I missed, and adjust my plan.",
-    },
-    {
-        title: 'I need accountability',
-        label: 'check in on my current goals',
-        action: 'Can you check in on my current goals and habits? I want to stay accountable.',
+        action: "Let's review my week. What went well, what slipped, and what should I adjust for next week?",
     },
 ] as const;
 
 export const ThreadWelcomeSuggestions: FC = () => {
     return (
-        <div className="aui-thread-welcome-suggestions grid w-full gap-3 @md:grid-cols-2">
+        <div className="aui-thread-welcome-suggestions flex w-full flex-wrap gap-2">
             {SUGGESTED_ACTIONS.map((suggestedAction, index) => (
                 <m.div
                     {...withDelay(fadeInUpLarge, 0.05 * index)}
                     key={`suggested-action-${suggestedAction.title}-${index}`}
-                    className="aui-thread-welcome-suggestion-display [&:nth-child(n+3)]:hidden @md:[&:nth-child(n+3)]:block"
+                    className="aui-thread-welcome-suggestion-display"
                 >
                     <ThreadPrimitive.Suggestion
                         prompt={suggestedAction.action}
@@ -75,16 +67,11 @@ export const ThreadWelcomeSuggestions: FC = () => {
                         asChild
                     >
                         <Button
-                            variant="ghost"
-                            className="aui-thread-welcome-suggestion hover-lift h-auto w-full flex-1 flex-wrap items-start justify-start gap-1 rounded-xl border border-border/60 bg-card px-5 py-4 text-left text-sm shadow-sm transition-all hover:border-calm/35 hover:bg-calm-soft/20 @md:flex-col"
+                            variant="outline"
+                            className="aui-thread-welcome-suggestion h-8 rounded-full border-border bg-background px-4 text-xs font-normal text-foreground transition-[color,border-color,background-color] hover:bg-secondary hover:text-foreground"
                             aria-label={suggestedAction.action}
                         >
-                            <span className="aui-thread-welcome-suggestion-text-1 font-semibold text-foreground">
-                                {suggestedAction.title}
-                            </span>
-                            <span className="aui-thread-welcome-suggestion-text-2 text-muted-foreground">
-                                {suggestedAction.label}
-                            </span>
+                            {suggestedAction.title}
                         </Button>
                     </ThreadPrimitive.Suggestion>
                 </m.div>

@@ -88,9 +88,10 @@ export function useSaveItem() {
       if (context?.previousArticle) {
         queryClient.setQueryData(['article', data.itemId], context.previousArticle);
       }
+      toast.error('Failed to save item. Please try again.');
     },
     onSettled: () => {
-      // Only invalidate the saved-items list so the /saved page stays fresh.
+      // Only invalidate the saved-items list so the saved-items list stays fresh.
       // We intentionally DO NOT invalidate ['articles'] — the optimistic update
       // already flipped isSaved, and invalidating would trigger a refetch that
       // causes the home page loading spinner to flash (isFetching == isLoading).
@@ -174,9 +175,10 @@ export function useRemoveSavedItem() {
       if (context?.articleId && context?.previousArticle) {
         queryClient.setQueryData(['article', context.articleId], context.previousArticle);
       }
+      toast.error('Failed to remove item. Please try again.');
     },
     onSettled: () => {
-      // Only invalidate the saved-items list so the /saved page stays fresh.
+      // Only invalidate the saved-items list so the saved-items list stays fresh.
       // We intentionally DO NOT invalidate ['articles'] — the optimistic update
       // already flipped isSaved, and invalidating would trigger a refetch that
       // causes the home page loading spinner to flash (isFetching == isLoading).

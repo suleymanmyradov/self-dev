@@ -32,11 +32,10 @@ export function LoginForm() {
 
   useEffect(() => {
     if (state.success && state.user) {
-      // Tokens were set as httpOnly cookies by the server action; we only track the user here.
       setAuth(state.user);
       toast.success('Logged in successfully');
       reset();
-      router.push('/habits');
+      router.push('/plan');
     } else if (state.error) {
       setError(state.error);
     } else if (state.fieldErrors) {
@@ -59,21 +58,25 @@ export function LoginForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Welcome back</h1>
-        <p className="text-balance text-sm text-muted-foreground">
-          Enter your details below to sign in to your account
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="space-y-1.5">
+        <h1 className="font-display text-2xl">Welcome back.</h1>
+        <p className="text-sm text-muted-foreground">
+          Six habits are waiting for you.
         </p>
       </div>
-      <div className="grid gap-6">
+
+      <div className="grid gap-5">
         {error && (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
-        <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
+
+        {/* Email */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="email" className="text-sm font-medium">Email</Label>
           <Input
             id="email"
             name="email"
@@ -91,14 +94,16 @@ export function LoginForm() {
             </p>
           )}
         </div>
-        <div className="grid gap-2">
+
+        {/* Password */}
+        <div className="grid gap-1.5">
           <div className="flex items-center justify-between">
-            <Label htmlFor="password">Password</Label>
+            <Label htmlFor="password" className="text-sm font-medium">Password</Label>
             <Link
               href="/forgot-password"
-              className="text-xs text-muted-foreground underline underline-offset-4 hover:text-primary"
+              className="text-xs text-success hover:underline underline-offset-4"
             >
-              Forgot password?
+              Forgot?
             </Link>
           </div>
           <Input
@@ -109,6 +114,7 @@ export function LoginForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isPending}
+            className="font-mono"
             aria-invalid={!!fieldErrors.password}
             aria-describedby={fieldErrors.password ? 'password-error' : undefined}
           />
@@ -118,23 +124,28 @@ export function LoginForm() {
             </p>
           )}
         </div>
+
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Signing in...' : 'Sign In'}
+          {isPending ? 'Signing in...' : 'Sign in'}
         </Button>
+
+        {/* OR divider */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">or</span>
+            <span className="bg-card px-2 text-muted-foreground font-mono tracking-wider">OR</span>
           </div>
         </div>
+
         <GoogleButton />
       </div>
+
       <div className="text-center text-sm text-muted-foreground">
-        Don&apos;t have an account?{' '}
-        <Link href="/register" className="underline underline-offset-4 hover:text-primary">
-          Sign up
+        New here?{' '}
+        <Link href="/register" className="text-success hover:underline underline-offset-4">
+          Create an account
         </Link>
       </div>
     </form>

@@ -28,16 +28,16 @@ export type CheckInModalProps = {
 };
 
 const MOOD_OPTIONS: { value: CheckInMood; label: string; icon: LucideIcon; color: string }[] = [
-  { value: 'great', label: 'Great', icon: Smile, color: 'bg-growth/10 text-growth hover:bg-growth/20' },
-  { value: 'okay', label: 'Okay', icon: Meh, color: 'bg-calm/10 text-calm hover:bg-calm/20' },
-  { value: 'low', label: 'Low', icon: Frown, color: 'bg-energy/10 text-energy hover:bg-energy/20' },
+  { value: 'great', label: 'Great', icon: Smile, color: 'bg-success/10 text-success hover:bg-success/20' },
+  { value: 'okay', label: 'Okay', icon: Meh, color: 'bg-accent/10 text-accent hover:bg-accent/20' },
+  { value: 'low', label: 'Low', icon: Frown, color: 'bg-primary/10 text-primary hover:bg-primary/20' },
   { value: 'stressed', label: 'Stressed', icon: AlertTriangle, color: 'bg-destructive/10 text-destructive hover:bg-destructive/20' },
 ];
 
 const ENERGY_OPTIONS: { value: CheckInEnergy; label: string; icon: LucideIcon; color: string }[] = [
-  { value: 'high', label: 'High', icon: Zap, color: 'bg-growth/10 text-growth hover:bg-growth/20' },
-  { value: 'medium', label: 'Medium', icon: Battery, color: 'bg-calm/10 text-calm hover:bg-calm/20' },
-  { value: 'low', label: 'Low', icon: BatteryLow, color: 'bg-energy/10 text-energy hover:bg-energy/20' },
+  { value: 'high', label: 'High', icon: Zap, color: 'bg-success/10 text-success hover:bg-success/20' },
+  { value: 'medium', label: 'Medium', icon: Battery, color: 'bg-accent/10 text-accent hover:bg-accent/20' },
+  { value: 'low', label: 'Low', icon: BatteryLow, color: 'bg-primary/10 text-primary hover:bg-primary/20' },
 ];
 
 const BLOCKER_OPTIONS: { value: CheckInBlocker; label: string }[] = [
@@ -96,16 +96,16 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
               <Button
                 variant="outline"
                 size="lg"
-                className="h-20 flex flex-col gap-2 border-2 hover:border-growth hover:bg-growth/5 transition-all"
+                className="h-20 flex flex-col gap-2 border-2 hover:border-success hover:bg-success/5 transition-[border-color,background-color]"
                 onClick={() => updateField('status', 'completed')}
               >
-                <Check className="h-6 w-6 text-growth" aria-hidden="true" />
+                <Check className="h-6 w-6 text-success" aria-hidden="true" />
                 <span className="font-semibold"><span className="sr-only">I did it</span><span aria-hidden="true"> ✅</span></span>
               </Button>
               <Button
                 variant="outline"
                 size="lg"
-                className="h-20 flex flex-col gap-2 border-2 hover:border-destructive hover:bg-destructive/5 transition-all"
+                className="h-20 flex flex-col gap-2 border-2 hover:border-destructive hover:bg-destructive/5 transition-[border-color,background-color]"
                 onClick={() => updateField('status', 'missed')}
               >
                 <X className="h-6 w-6 text-destructive" aria-hidden="true" />
@@ -174,7 +174,7 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
                 Back
               </Button>
               <Button
-                variant="growth"
+                variant="success"
                 onClick={handleSubmit}
                 disabled={!canSubmit || isSubmitting}
                 className="flex-1"
@@ -230,7 +230,7 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
                 Back
               </Button>
               <Button
-                variant="growth"
+                variant="success"
                 onClick={handleSubmit}
                 disabled={!canSubmit || isSubmitting}
                 className="flex-1"

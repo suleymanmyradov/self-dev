@@ -124,7 +124,7 @@ function MessagesList() {
       {conversations.map((c) => (
         <Link
           key={c.id}
-          href={`/ai-coach/${c.id}`}
+          href={`/coach/${c.id}`}
           className="block rounded-md p-3 text-sm hover:bg-accent"
         >
           <div className="font-medium">{c.title}</div>
@@ -237,7 +237,7 @@ function NotificationsList() {
             return (
               <Link
                 key={n.id}
-                href="/weekly-review"
+                href="/progress"
                 onClick={() => {
                   handleMarkRead(n.id, n.read)
                   closeLeftPanel()

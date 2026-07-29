@@ -1,43 +1,39 @@
-"use client";
-
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
-import { Target } from "lucide-react";
-import type { WeeklyReviewHabitBreakdown } from "@/api";
+import type { WeeklyReview } from "@/api";
 
-export function WeeklyReviewHabitBreakdown({ habits }: { habits: WeeklyReviewHabitBreakdown[] }) {
-  if (!habits.length) {
-    return (
-      <Card>
-        <CardContent className="py-8 text-center text-sm text-muted-foreground">
-          No habit data for this week.
-        </CardContent>
-      </Card>
-    );
-  }
-
+/** Per-habit completion breakdown with progress bars. */
+export function HabitBreakdown({
+  habits,
+}: {
+  habits: NonNullable<WeeklyReview['habitBreakdown']>;
+}) {
   return (
-    <div className="space-y-3">
-      {habits.map((h) => (
-        <Card key={h.habitId}>
-          <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium flex items-center gap-2">
-              <Target className="h-4 w-4 text-growth" />
-              {h.habitName}
-              {h.category && (
-                <span className="ml-auto text-xs text-muted-foreground">{h.category}</span>
-              )}
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-2">
-            <div className="flex items-center justify-between text-xs text-muted-foreground">
-              <span>{h.completedCount} done / {h.missedCount} missed</span>
-              <span>{Math.round(h.completionRate)}%</span>
+    <Card>
+      <CardHeader className="pb-2">
+        <CardTitle className="text-sm font-medium">Per habit</CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-3">
+        {habits.length === 0 ? (
+          <p className="py-6 text-center text-sm text-muted-foreground">No habit data for this week.</p>
+        ) : (
+          habits.map((h) => (
+            <div key={h.habitId} className="flex items-center gap-3">
+              <span className="shrink-0 truncate text-sm font-medium" style={{ width: 190 }}>
+                {h.habitName}
+              </span>
+              <div className="h-1.5 flex-1 overflow-hidden rounded-full bg-muted">
+                <div
+                  className="h-full rounded-full bg-success transition-[width] duration-300"
+                  style={{ width: `${Math.round(h.completionRate)}%` }}
+                />
+              </div>
+              <span className="font-mono text-xs tabular-nums shrink-0 text-right" style={{ width: 52 }}>
+                {h.completedCount}/{h.totalCheckIns}
+              </span>
             </div>
-            <Progress value={h.completionRate} className="h-1.5" />
-          </CardContent>
-        </Card>
-      ))}
-    </div>
+          ))
+        )}
+      </CardContent>
+    </Card>
   );
 }

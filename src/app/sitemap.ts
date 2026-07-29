@@ -3,7 +3,7 @@ import type { MetadataRoute } from 'next';
 import { listArticlesCached } from '@/api/server-cache';
 import { config } from '@/lib/config';
 
-const STATIC_ROUTES = ['/', '/login', '/register', '/pricing', '/explore'];
+const STATIC_ROUTES = ['/', '/login', '/register', '/me', '/library'];
 
 export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const baseUrl = config.appUrl.replace(/\/+$/, '');

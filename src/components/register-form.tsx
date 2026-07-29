@@ -36,13 +36,10 @@ export function RegisterForm() {
 
   useEffect(() => {
     if (state.success && state.requiresVerification) {
-      // Email verification flow: no tokens are issued yet. Send the user to a
-      // "check your email" page; they'll log in after verifying.
       toast.success('Account created. Check your email to verify your account.');
       reset();
       router.push('/check-email');
     } else if (state.success && state.user) {
-      // Fallback for non-verification flows (e.g. OAuth or future changes).
       setAuthUser(state.user);
       toast.success('Account created successfully');
       reset();
@@ -69,26 +66,30 @@ export function RegisterForm() {
   };
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col gap-6">
-      <div className="flex flex-col items-center gap-2 text-center">
-        <h1 className="text-2xl font-bold tracking-tight">Create an account</h1>
-        <p className="text-balance text-sm text-muted-foreground">
-          Enter your details below to get started
+    <form onSubmit={handleSubmit} className="flex flex-col gap-5">
+      {/* Header */}
+      <div className="space-y-1.5">
+        <h1 className="font-display text-2xl">Start with one habit.</h1>
+        <p className="text-sm text-muted-foreground">
+          Setup takes about two minutes.
         </p>
       </div>
-      <div className="grid gap-6">
+
+      <div className="grid gap-5">
         {error && (
-          <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
+          <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
             {error}
           </div>
         )}
-        <div className="grid gap-2">
-          <Label htmlFor="fullName">Full Name</Label>
+
+        {/* Name */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="fullName" className="text-sm font-medium">Name</Label>
           <Input
             id="fullName"
             name="fullName"
             type="text"
-            placeholder="John Doe"
+            placeholder="Your name"
             value={fullName}
             onChange={(e) => setFullName(e.target.value)}
             disabled={isPending}
@@ -101,8 +102,10 @@ export function RegisterForm() {
             </p>
           )}
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="username">Username</Label>
+
+        {/* Username */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="username" className="text-sm font-medium">Username</Label>
           <Input
             id="username"
             name="username"
@@ -123,8 +126,10 @@ export function RegisterForm() {
             </p>
           )}
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="email">Email</Label>
+
+        {/* Email */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="email" className="text-sm font-medium">Email</Label>
           <Input
             id="email"
             name="email"
@@ -142,8 +147,10 @@ export function RegisterForm() {
             </p>
           )}
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="password">Password</Label>
+
+        {/* Password */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="password" className="text-sm font-medium">Password</Label>
           <Input
             id="password"
             name="password"
@@ -152,6 +159,7 @@ export function RegisterForm() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             disabled={isPending}
+            className="font-mono"
             aria-invalid={!!fieldErrors.password}
             aria-describedby={fieldErrors.password ? 'password-error' : undefined}
           />
@@ -161,8 +169,10 @@ export function RegisterForm() {
             </p>
           )}
         </div>
-        <div className="grid gap-2">
-          <Label htmlFor="confirmPassword">Confirm Password</Label>
+
+        {/* Confirm Password */}
+        <div className="grid gap-1.5">
+          <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm password</Label>
           <Input
             id="confirmPassword"
             name="confirmPassword"
@@ -171,24 +181,35 @@ export function RegisterForm() {
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}
             disabled={isPending}
+            className="font-mono"
           />
         </div>
+
         <Button type="submit" className="w-full" disabled={isPending}>
-          {isPending ? 'Creating Account...' : 'Create Account'}
+          {isPending ? 'Creating account...' : 'Create account'}
         </Button>
+
+        {/* Terms text */}
+        <p className="text-xs text-muted-foreground text-center">
+          By creating an account, you agree to our Terms and Privacy Policy.
+        </p>
+
+        {/* OR divider */}
         <div className="relative">
           <div className="absolute inset-0 flex items-center">
-            <span className="w-full border-t" />
+            <span className="w-full border-t border-border" />
           </div>
           <div className="relative flex justify-center text-xs uppercase">
-            <span className="bg-card px-2 text-muted-foreground">or</span>
+            <span className="bg-card px-2 text-muted-foreground font-mono tracking-wider">OR</span>
           </div>
         </div>
-        <GoogleButton label="Sign up with Google" />
+
+        <GoogleButton label="Continue with Google" />
       </div>
+
       <div className="text-center text-sm text-muted-foreground">
         Already have an account?{' '}
-        <Link href="/login" className="underline underline-offset-4 hover:text-primary">
+        <Link href="/login" className="text-success hover:underline underline-offset-4">
           Sign in
         </Link>
       </div>

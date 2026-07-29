@@ -194,7 +194,7 @@ export function GoalFormDialog({
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
-          <Button variant={mode === "create" ? "energy" : "default"} onClick={handleSubmit}>
+          <Button variant={mode === "create" ? "success" : "default"} onClick={handleSubmit}>
             {mode === "create" ? "Create" : "Save"}
           </Button>
         </DialogFooter>

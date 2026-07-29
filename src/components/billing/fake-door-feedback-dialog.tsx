@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Sparkles, Mail } from "lucide-react";
+import { Mail } from "lucide-react";
 import { useTrackUpgradeEvent } from "@/hooks";
 
 const FEEDBACK_REASONS = [
@@ -48,7 +48,6 @@ export function FakeDoorFeedbackDialog({
 
   const handleClose = () => {
     onOpenChange(false);
-    // Reset local state when dialog fully closes
     setTimeout(() => {
       setStep("interest");
       setEmail("");
@@ -101,8 +100,7 @@ export function FakeDoorFeedbackDialog({
     <Dialog open={open} onOpenChange={handleClose}>
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
-          <DialogTitle className="flex items-center gap-2">
-            <Sparkles className="h-5 w-5 text-energy" />
+          <DialogTitle className="font-display text-xl">
             {step === "interest" ? "Growth Pro Early Access" : "Help us improve"}
           </DialogTitle>
           <DialogDescription>
@@ -114,7 +112,7 @@ export function FakeDoorFeedbackDialog({
 
         {step === "interest" && !submitted && (
           <div className="space-y-4">
-            <div className="rounded-lg bg-energy/5 border border-energy/20 p-4">
+            <div className="rounded-lg bg-secondary/50 border border-border p-4">
               <p className="text-sm">
                 Growth Pro is currently in early access. Join the waitlist and
                 we will reach out when it is ready for you.
@@ -134,7 +132,7 @@ export function FakeDoorFeedbackDialog({
               </div>
             </div>
             <div className="flex flex-col gap-2">
-              <Button variant="energy" onClick={handleEarlyAccess}>
+              <Button onClick={handleEarlyAccess}>
                 {isStripeMode ? "Upgrade to Pro" : "Join early access waitlist"}
               </Button>
               <Button
@@ -151,8 +149,8 @@ export function FakeDoorFeedbackDialog({
 
         {step === "interest" && submitted && (
           <div className="space-y-4 text-center py-4">
-            <div className="mx-auto w-12 h-12 rounded-full bg-growth/15 flex items-center justify-center">
-              <Sparkles className="h-6 w-6 text-growth" />
+            <div className="mx-auto w-12 h-12 rounded-full bg-success/15 flex items-center justify-center">
+              <span className="text-success text-xl">✓</span>
             </div>
             <p className="text-sm font-medium">You are on the list!</p>
             <p className="text-sm text-muted-foreground">
@@ -175,8 +173,8 @@ export function FakeDoorFeedbackDialog({
                     onClick={() => setSelectedReason(reason)}
                     className={`text-left text-sm rounded-lg border px-3 py-2 transition-colors ${
                       selectedReason === reason
-                        ? "border-energy bg-energy/5"
-                        : "border-border hover:border-border/80"
+                        ? "border-foreground bg-foreground/5"
+                        : "border-border hover:bg-muted/30"
                     }`}
                   >
                     {reason}
@@ -193,7 +191,6 @@ export function FakeDoorFeedbackDialog({
             )}
             <div className="flex gap-2">
               <Button
-                variant="energy"
                 onClick={handleDismissWithFeedback}
                 disabled={!selectedReason}
               >

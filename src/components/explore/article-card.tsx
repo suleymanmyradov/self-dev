@@ -1,12 +1,8 @@
 "use client";
 
 import Link from 'next/link';
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Button } from '@/components/ui/button';
-import { Clock, Calendar, Bookmark, BookmarkCheck } from 'lucide-react';
-import { getCategoryBadgeClass } from '@/lib/category-styles';
-import { formatRelativeTime } from '@/lib/time-format';
+import Image from 'next/image';
+import { Card } from '@/components/ui/card';
 import type { Article } from '@/api';
 
 interface ArticleCardProps {
@@ -16,47 +12,62 @@ interface ArticleCardProps {
 }
 
 export function ArticleCard({ article, isSaved, onToggleSave }: ArticleCardProps) {
-
   return (
-    <Card className="hover-lift transition-all duration-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">{article.title}</CardTitle>
-      </CardHeader>
-      <CardContent className="pb-3">
-        <p className="text-sm text-muted-foreground leading-relaxed">{article.excerpt}</p>
-      </CardContent>
-      <CardFooter className="flex items-center justify-between pt-0">
-        <div className="flex items-center gap-2">
-          {article.category && (
-            <Badge className={getCategoryBadgeClass(article.category.slug)}>
-              {article.category.name}
-            </Badge>
-          )}
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Calendar className="h-3 w-3" /> {formatRelativeTime(article.publishedAt)}
-          </span>
-          <span className="flex items-center gap-1 text-xs text-muted-foreground">
-            <Clock className="h-3 w-3" /> {article.readTime} min
-          </span>
+    <Card className="overflow-hidden rounded-xl border-border">
+      {article.imageUrl ? (
+        <div className="relative h-[132px] w-full overflow-hidden bg-muted">
+          <Link href={`/article/${article.id}`} className="block size-full">
+            <Image
+              src={article.imageUrl}
+              alt={article.title}
+              fill
+              sizes="(max-width: 768px) 100vw, 360px"
+              className="object-cover"
+            />
+          </Link>
         </div>
-        <div className="flex items-center gap-2">
-          <Button
-            size="icon"
-            variant="ghost"
+      ) : (
+        <div className="h-[132px] w-full bg-secondary" />
+      )}
+
+      <div className="p-4">
+        {/* Category + read time in mono */}
+        <div className="mb-2 font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
+          {article.category?.name ?? 'Article'}
+          {' · '}
+          <span className="tabular-nums">{article.readTime} MIN</span>
+        </div>
+
+        {/* Serif title */}
+        <h3 className="font-display text-lg font-normal leading-tight tracking-tight text-foreground">
+          <Link href={`/article/${article.id}`} className="transition-[color] hover:text-muted-foreground">
+            {article.title}
+          </Link>
+        </h3>
+
+        {/* Description */}
+        {article.excerpt && (
+          <p className="mt-1.5 line-clamp-2 text-xs leading-relaxed text-muted-foreground">
+            {article.excerpt}
+          </p>
+        )}
+
+        {/* Footer: like count + Save/Saved link */}
+        <div className="mt-3 flex items-center justify-between">
+          <span className="text-xs text-muted-foreground">
+            {article.likeCount !== undefined && (
+              <span className="font-mono tabular-nums">{article.likeCount} likes</span>
+            )}
+          </span>
+          <button
             onClick={onToggleSave}
+            className="text-xs text-success transition-[color] hover:text-success/80"
             aria-label={isSaved ? "Unsave article" : "Save article"}
           >
-            {isSaved ? (
-              <BookmarkCheck className="h-4 w-4 text-primary" />
-            ) : (
-              <Bookmark className="h-4 w-4" />
-            )}
-          </Button>
-          <Button asChild size="sm" variant="ghost">
-            <Link href={`/article/${article.id}`}>Read</Link>
-          </Button>
+            {isSaved ? 'Saved' : 'Save'}
+          </button>
         </div>
-      </CardFooter>
+      </div>
     </Card>
   );
 }

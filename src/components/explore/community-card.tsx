@@ -1,5 +1,4 @@
 import Link from 'next/link';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 
 interface CommunityCardProps {
@@ -11,29 +10,25 @@ interface CommunityCardProps {
 
 export function CommunityCard({ title, description, discordUrl, xUrl }: CommunityCardProps) {
   return (
-    <Card className="overflow-hidden">
-      <div className="bg-gradient-to-br from-calm-soft/50 to-growth-soft/30 p-6">
-        <CardHeader className="p-0 mb-4">
-          <CardTitle className="text-lg">{title}</CardTitle>
-        </CardHeader>
-        <CardContent className="p-0">
-          <p className="text-sm text-muted-foreground mb-4">
-            {description}
-          </p>
-          <div className="grid gap-3 sm:grid-cols-2">
-            <Button asChild size="default" variant="calm" className="justify-start">
-              <Link href={discordUrl} target="_blank" rel="noopener noreferrer">
-                Join Discord
-              </Link>
-            </Button>
-            <Button asChild size="default" variant="outline" className="justify-start">
-              <Link href={xUrl} target="_blank" rel="noopener noreferrer">
-                Follow on X
-              </Link>
-            </Button>
-          </div>
-        </CardContent>
+    <div className="rounded-xl border border-border bg-card p-5">
+      <h3 className="font-display text-lg font-normal leading-tight tracking-tight text-foreground">
+        {title}
+      </h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-muted-foreground">
+        {description}
+      </p>
+      <div className="mt-4 flex flex-col gap-2 sm:flex-row">
+        <Button asChild size="sm" className="h-8 rounded-lg text-xs">
+          <Link href={discordUrl} target="_blank" rel="noopener noreferrer">
+            Join Discord
+          </Link>
+        </Button>
+        <Button asChild size="sm" variant="outline" className="h-8 rounded-lg text-xs">
+          <Link href={xUrl} target="_blank" rel="noopener noreferrer">
+            Follow on X
+          </Link>
+        </Button>
       </div>
-    </Card>
+    </div>
   );
 }

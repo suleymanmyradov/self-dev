@@ -4,18 +4,15 @@ import { use, useState, useMemo, useEffect, useCallback } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import {
-  ArticleCard,
-  FeaturedCard,
-  HabitTemplateCard,
-  GoalTemplateCard,
-  CommunityCard,
-} from "@/components/explore";
 import { useSearchParamState } from "@/lib/url-state";
-import { useCreateHabit, useCreateGoal, useSavedItems, useSaveItem, useRemoveSavedItem } from "@/hooks";
+import { useCreateHabit, useCreateGoal, useSavedItems, useSavedItemsDetailed, useSaveItem, useRemoveSavedItem, useSearch } from "@/hooks";
 import { toast } from "@/components/ui/sonner";
-import type { ArticlesResponse, ExploreSettings, Article } from "@/api";
+import type { ArticlesResponse, ExploreSettings, Article, SavedItemDetailed, SearchResult } from "@/api";
 import type { HabitTemplate, GoalTemplate } from "@/types/explore";
+import { ExploreTab } from "./explore-tab";
+import { SavedTab } from "./saved-tab";
+import { TemplatesTab } from "./templates-tab";
+import { CommunityTab } from "./community-tab";
 
 interface ExploreClientProps {
   articlesPromise: Promise<ArticlesResponse>;
@@ -42,8 +39,9 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
   const createHabit = useCreateHabit().mutate;
   const createGoal = useCreateGoal().mutate;
 
-  const [tab, setTab] = useSearchParamState("tab", "articles");
+  const [tab, setTab] = useSearchParamState("tab", "explore");
   const [query, setQuery] = useSearchParamState("q");
+  const [category, setCategory] = useState<string>("All");
 
   const [inputValue, setInputValue] = useState(query);
   const debouncedInput = useDebounceValue(inputValue, 300);
@@ -55,19 +53,46 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
     }
   }, [debouncedInput, query, setQuery]);
 
+  const trimmedQuery = query.trim();
+  const isSearching = trimmedQuery.length > 0;
+
+  // Server-side cross-entity search (articles, goals, habits, conversations).
+  // Falls back to the local article list (with category filter) when no query.
+  const { data: searchResults, isFetching: isSearchFetching } = useSearch({
+    q: trimmedQuery,
+    page: 1,
+    limit: 30,
+  });
+
   const articles = useMemo(() => {
     const allArticles = articlesData.data ?? [];
-    const q = query.trim().toLowerCase();
-    if (!q) return allArticles;
-    return allArticles.filter((a) =>
-      [a.title, a.excerpt, a.category?.name].some((f) =>
-        f?.toLowerCase()?.includes(q),
-      ),
-    );
-  }, [query, articlesData]);
+    if (!isSearching) {
+      let filtered = allArticles;
+      if (category !== "All") {
+        filtered = filtered.filter((a) =>
+          a.category?.name?.toLowerCase() === category.toLowerCase(),
+        );
+      }
+      return filtered;
+    }
+    // Map article-type search results back to Article objects from the loaded
+    // list (so images/category/save state resolve). Results not in the loaded
+    // list are surfaced separately via nonArticleResults below.
+    const byId = new Map(allArticles.map((a) => [a.id, a]));
+    return (searchResults ?? [])
+      .filter((r) => r.type === 'article')
+      .map((r) => byId.get(r.id))
+      .filter((a): a is Article => !!a);
+  }, [isSearching, searchResults, articlesData, category]);
+
+  const nonArticleResults = useMemo<SearchResult[]>(
+    () => (isSearching ? (searchResults ?? []).filter((r) => r.type !== 'article') : []),
+    [isSearching, searchResults],
+  );
 
   // Saved items — fetched once at parent level, passed down to cards
   const { data: savedItems } = useSavedItems({ page: 1, limit: 100 });
+  const { data: savedItemsDetailed } = useSavedItemsDetailed({ page: 1, limit: 100 });
   const saveItem = useSaveItem();
   const removeSavedItem = useRemoveSavedItem();
 
@@ -80,6 +105,42 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
     });
     return map;
   }, [savedItems]);
+
+  const savedArticles = useMemo(() => {
+    return (savedItemsDetailed ?? [])
+      .filter((item): item is SavedItemDetailed & { article: Article } =>
+        item.itemType === 'article' && !!item.article,
+      )
+      .map(item => item.article);
+  }, [savedItemsDetailed]);
+
+  const savedHabits = useMemo(() => {
+    return (savedItemsDetailed ?? [])
+      .filter((item): item is SavedItemDetailed & { habit: NonNullable<typeof item.habit> } =>
+        item.itemType === 'habit' && !!item.habit,
+      )
+      .map(item => ({ habit: item.habit, savedItemId: item.id }));
+  }, [savedItemsDetailed]);
+
+  const savedGoals = useMemo(() => {
+    return (savedItemsDetailed ?? [])
+      .filter((item): item is SavedItemDetailed & { goal: NonNullable<typeof item.goal> } =>
+        item.itemType === 'goal' && !!item.goal,
+      )
+      .map(item => ({ goal: item.goal, savedItemId: item.id }));
+  }, [savedItemsDetailed]);
+
+  const handleRemoveSavedById = useCallback(
+    async (savedItemId: string) => {
+      try {
+        await removeSavedItem.mutateAsync(savedItemId);
+        toast.success('Removed from saved');
+      } catch {
+        toast.error('Failed to remove item');
+      }
+    },
+    [removeSavedItem],
+  );
 
   const getIsSaved = useCallback(
     (article: typeof articles[number]) => {
@@ -112,102 +173,88 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
     [savedArticleMap, saveItem, removeSavedItem]
   );
 
+  const savedCount = savedArticleMap.size;
+
   return (
     <div className="h-full flex flex-col relative">
-      {/* Ambient background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-20 left-1/4 h-80 w-80 rounded-full bg-ambient-calm opacity-25 blur-3xl" />
-        <div className="absolute bottom-20 -right-20 h-64 w-64 rounded-full bg-ambient-growth opacity-20 blur-3xl" />
-      </div>
-
       <div className="relative flex-1 overflow-y-auto no-scrollbar">
-        <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-8">
+        <div className="mx-auto w-full max-w-5xl px-6 py-8 md:py-10">
           {/* Header */}
-          <header className="mb-6">
-            <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">{settings.header.title}</h1>
-            <p className="mt-1 text-sm text-muted-foreground">{settings.header.subtitle}</p>
-          </header>
-
-          {/* Search */}
-          <div className="mb-6">
-            <div className="relative max-w-md">
-              <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+          <header className="mb-8 flex items-start justify-between gap-6">
+            <div className="min-w-0 flex-1">
+              <h1 className="font-display text-3xl font-normal tracking-tight text-foreground">Library</h1>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                Reading, habit templates, and the people doing the same work.
+              </p>
+            </div>
+            {/* Search field */}
+            <div className="relative hidden w-[300px] shrink-0 md:block">
+              <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search articles, habits, goals..."
+                placeholder="Search articles, templates, people"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
-                className="pl-10 bg-background/80 backdrop-blur"
+                className="h-9 rounded-lg border-border bg-card pl-9 pr-10 text-sm placeholder:text-muted-foreground"
               />
+              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+                /
+              </kbd>
             </div>
-          </div>
+          </header>
 
+          {/* Tabs (underline style) */}
           <Tabs value={tab} onValueChange={setTab} className="w-full">
-            <TabsList className="mb-6 flex-wrap h-auto">
-              {settings.tabs.map((tabValue) => (
-                <TabsTrigger key={tabValue} value={tabValue}>
-                  {tabValue.charAt(0).toUpperCase() + tabValue.slice(1)}
-                </TabsTrigger>
-              ))}
+            <TabsList className="mb-6 flex-wrap h-auto gap-6">
+              <TabsTrigger value="explore">Explore</TabsTrigger>
+              <TabsTrigger value="saved" className="gap-1.5">
+                Saved
+                <span className="font-mono text-xs tabular-nums text-muted-foreground">{savedCount}</span>
+              </TabsTrigger>
+              <TabsTrigger value="templates">Templates</TabsTrigger>
+              <TabsTrigger value="people">People</TabsTrigger>
             </TabsList>
 
-            {/* Articles */}
-            <TabsContent value="articles" className="space-y-6">
-              {featuredArticle && <FeaturedCard article={featuredArticle} />}
-              {articles.length === 0 ? (
-                <div className="flex flex-col items-center justify-center py-16 text-center">
-                  <Search className="h-12 w-12 text-muted-foreground mb-4 opacity-50" />
-                  <p className="text-sm text-muted-foreground">
-                    {query.trim() ? `No results for "${query.trim()}"` : "No articles available."}
-                  </p>
-                </div>
-              ) : (
-                <div className="grid gap-4 md:grid-cols-2">
-                  {articles.map((article) => (
-                    <ArticleCard
-                      key={article.id}
-                      article={article}
-                      isSaved={getIsSaved(article)}
-                      onToggleSave={() => handleToggleSave(article.id)}
-                    />
-                  ))}
-                </div>
-              )}
-            </TabsContent>
-
-            {/* Habits */}
-            <TabsContent value="habits">
-              <div className="grid gap-4 md:grid-cols-2">
-                {habitTemplates.map((habit) => (
-                  <HabitTemplateCard
-                    key={habit.name}
-                    template={habit}
-                    onAdd={(data) => createHabit(data)}
-                  />
-                ))}
-              </div>
-            </TabsContent>
-
-            {/* Goals */}
-            <TabsContent value="goals">
-              <div className="grid gap-4 md:grid-cols-2">
-                {goalTemplates.map((goal) => (
-                  <GoalTemplateCard
-                    key={goal.title}
-                    template={goal}
-                    onAdd={(data) => createGoal(data)}
-                  />
-                ))}
-              </div>
-            </TabsContent>
-
-            {/* Community */}
-            <TabsContent value="community">
-              <CommunityCard
-                title={settings.community.title}
-                description={settings.community.description}
-                discordUrl={settings.community.discordUrl}
-                xUrl={settings.community.xUrl}
+            {/* Explore tab */}
+            <TabsContent value="explore" className="space-y-6">
+              <ExploreTab
+                articles={articles}
+                featuredArticle={featuredArticle}
+                isSearching={isSearching}
+                isSearchFetching={isSearchFetching}
+                trimmedQuery={trimmedQuery}
+                category={category}
+                setCategory={setCategory}
+                nonArticleResults={nonArticleResults}
+                habitTemplates={habitTemplates}
+                getIsSaved={getIsSaved}
+                onToggleSave={handleToggleSave}
               />
+            </TabsContent>
+
+            {/* Saved tab */}
+            <TabsContent value="saved" className="space-y-6">
+              <SavedTab
+                savedArticles={savedArticles}
+                savedHabits={savedHabits}
+                savedGoals={savedGoals}
+                onToggleSave={handleToggleSave}
+                onRemoveSavedById={handleRemoveSavedById}
+              />
+            </TabsContent>
+
+            {/* Templates tab */}
+            <TabsContent value="templates" className="space-y-6">
+              <TemplatesTab
+                habitTemplates={habitTemplates}
+                goalTemplates={goalTemplates}
+                onCreateHabit={(data) => createHabit(data)}
+                onCreateGoal={(data) => createGoal(data)}
+              />
+            </TabsContent>
+
+            {/* People tab */}
+            <TabsContent value="people">
+              <CommunityTab settings={settings} />
             </TabsContent>
           </Tabs>
         </div>

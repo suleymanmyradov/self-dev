@@ -9,7 +9,7 @@ export default async function OnboardingPage() {
   const settings = await swallowNotFound(getSettingsServer(), null);
 
   if (settings?.data?.onboardingCompleted) {
-    redirect('/habits');
+    redirect('/plan');
   }
 
   return <OnboardingClient />;

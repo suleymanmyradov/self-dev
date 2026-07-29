@@ -3,9 +3,18 @@
 import { useState, useRef, useCallback, useEffect, type FC } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { Mic, X, Loader2, Volume2, Sparkles } from 'lucide-react';
-import { streamVoiceTurn } from '@/api/voice';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
+import { useAudioRecorder } from './use-audio-recorder';
+import {
+    useVoiceTurnStream,
+    setLastUserMessage,
+    appendAssistantDelta,
+    setAssistantComplete,
+    removeEmptyAssistant,
+    type TurnMessage,
+} from './use-voice-turn-stream';
+import { useAudioPlayback } from './use-audio-playback';
 
 interface VoiceModeProps {
     /** Current conversation ID, if any. Voice turns use/extend this conversation. */
@@ -23,11 +32,6 @@ type Phase =
     | 'thinking' // transcript received, coaching streaming
     | 'speaking' // playing TTS audio
     | 'error';
-
-interface TurnMessage {
-    role: 'user' | 'assistant';
-    text: string;
-}
 
 /**
  * Full-screen live voice chat mode (ChatGPT-style). The user taps the mic,
@@ -49,208 +53,91 @@ export const VoiceMode: FC<VoiceModeProps> = ({
     const [errorMsg, setErrorMsg] = useState('');
     const [currentConversationId, setCurrentConversationId] =
         useState(conversationId);
+    const streamedRef = useRef(false);
+    const prevIsPlaying = useRef(false);
 
-    const mediaRecorderRef = useRef<MediaRecorder | null>(null);
-    const chunksRef = useRef<Blob[]>([]);
-    const streamRef = useRef<MediaStream | null>(null);
-    const abortRef = useRef<AbortController | null>(null);
-    const audioElRef = useRef<HTMLAudioElement | null>(null);
+    const {
+        isRecording,
+        startRecording,
+        stopRecording,
+        audioBlob,
+        reset: resetRecording,
+        error: recorderError,
+    } = useAudioRecorder();
 
-    const stopTracks = useCallback(() => {
-        streamRef.current?.getTracks().forEach(t => t.stop());
-        streamRef.current = null;
-    }, []);
+    const { playAudioChunk, isPlaying } = useAudioPlayback();
 
-    // Cleanup on unmount.
-    useEffect(() => {
-        return () => {
-            stopTracks();
-            abortRef.current?.abort();
-        };
-    }, [stopTracks]);
-
-    // --- callbacks (declared in dependency order: playAudio → sendVoiceTurn
-    // → startRecording → stopRecording → handleMicClick) ---
-
-    const playAudio = useCallback(async (audioBase64: string, format: string) => {
-        setPhase('speaking');
-        try {
-            const mime = format === 'pcm' ? 'audio/pcm' : `audio/${format}`;
-            // base64 → Blob → object URL. Using a Blob avoids data: URI
-            // length limits and CSP restrictions on media-src.
-            const bytes = atob(audioBase64);
-            const buf = new Uint8Array(bytes.length);
-            for (let i = 0; i < bytes.length; i++) buf[i] = bytes.charCodeAt(i);
-            const blob = new Blob([buf], { type: mime });
-            const url = URL.createObjectURL(blob);
-            const el = audioElRef.current;
-            if (el) {
-                el.src = url;
-                el.onended = () => {
-                    URL.revokeObjectURL(url);
-                    setPhase('idle');
-                };
-                await el.play().catch(() => {
-                    URL.revokeObjectURL(url);
-                    setPhase('idle');
-                });
-            } else {
-                URL.revokeObjectURL(url);
-                setPhase('idle');
-            }
-        } catch {
+    const { streamTurn } = useVoiceTurnStream({
+        onTranscript: text => {
+            setMessages(prev => setLastUserMessage(prev, text));
+            setPhase('thinking');
+        },
+        onConversation: id => {
+            setCurrentConversationId(id);
+            onConversationCreated?.(id);
+            void queryClient.invalidateQueries({ queryKey: ['conversations'] });
+            // Update URL silently (mirrors the text flow).
+            window.history.replaceState(null, '', `/coach/${id}`);
+        },
+        onDelta: text => setMessages(prev => appendAssistantDelta(prev, text)),
+        onComplete: fullResponse =>
+            setMessages(prev => setAssistantComplete(prev, fullResponse)),
+        onAudio: (audioBase64, format) => {
+            setPhase('speaking');
+            void playAudioChunk(audioBase64, format);
+        },
+        onReady: () => {
+            streamedRef.current = false;
             setPhase('idle');
-        }
-    }, []);
+        },
+        onError: message => {
+            streamedRef.current = false;
+            setPhase('error');
+            setErrorMsg(message);
+            // Remove the trailing assistant placeholder if it's empty.
+            setMessages(removeEmptyAssistant);
+            setTimeout(() => setPhase('idle'), 2500);
+        },
+    });
 
-    const sendVoiceTurn = useCallback(
-        (audio: Blob) => {
+    // Recording state and recorder errors → phase.
+    useEffect(() => {
+        if (recorderError) {
+            // eslint-disable-next-line react-hooks/set-state-in-effect
+            setPhase('error');
+            setErrorMsg(recorderError);
+            return;
+        }
+        if (isRecording) setPhase('recording');
+    }, [isRecording, recorderError]);
+
+    // Audio blob ready → start streaming.
+    useEffect(() => {
+        if (audioBlob && !streamedRef.current) {
+            streamedRef.current = true;
             // Assistant message placeholder — filled in by deltas.
             setMessages(prev => [
                 ...prev,
                 { role: 'user', text: '…' },
                 { role: 'assistant', text: '' },
             ]);
-
-            abortRef.current = streamVoiceTurn(
-                audio,
-                {
-                    onTranscript: text => {
-                        setMessages(prev => {
-                            const next = [...prev];
-                            const lastUser = [...next]
-                                .reverse()
-                                .findIndex(m => m.role === 'user');
-                            if (lastUser >= 0) {
-                                next[next.length - 1 - lastUser] = {
-                                    role: 'user',
-                                    text,
-                                };
-                            }
-                            return next;
-                        });
-                        setPhase('thinking');
-                    },
-                    onConversation: id => {
-                        setCurrentConversationId(id);
-                        onConversationCreated?.(id);
-                        void queryClient.invalidateQueries({
-                            queryKey: ['conversations'],
-                        });
-                        // Update URL silently (mirrors the text flow).
-                        window.history.replaceState(null, '', `/ai-coach/${id}`);
-                    },
-                    onDelta: text => {
-                        setMessages(prev => {
-                            const next = [...prev];
-                            const last = next[next.length - 1];
-                            if (last && last.role === 'assistant') {
-                                next[next.length - 1] = {
-                                    ...last,
-                                    text: last.text + text,
-                                };
-                            }
-                            return next;
-                        });
-                    },
-                    onComplete: fullResponse => {
-                        setMessages(prev => {
-                            const next = [...prev];
-                            const last = next[next.length - 1];
-                            if (last && last.role === 'assistant') {
-                                next[next.length - 1] = {
-                                    role: 'assistant',
-                                    text: fullResponse,
-                                };
-                            }
-                            return next;
-                        });
-                    },
-                    onAudio: (audioBase64, format) => {
-                        void playAudio(audioBase64, format);
-                    },
-                    onReady: () => {
-                        setPhase('idle');
-                    },
-                    onError: message => {
-                        setPhase('error');
-                        setErrorMsg(message);
-                        // Remove the trailing assistant placeholder if it's empty.
-                        setMessages(prev => {
-                            const last = prev[prev.length - 1];
-                            if (last && last.role === 'assistant' && !last.text) {
-                                return prev.slice(0, -1);
-                            }
-                            return prev;
-                        });
-                        setTimeout(() => setPhase('idle'), 2500);
-                    },
-                },
-                { conversationId: currentConversationId },
-            );
-        },
-        [currentConversationId, onConversationCreated, queryClient, playAudio],
-    );
-
-    const startRecording = useCallback(async () => {
-        setErrorMsg('');
-        if (!navigator.mediaDevices?.getUserMedia) {
-            setPhase('error');
-            setErrorMsg('Microphone not supported in this browser');
-            return;
+            setPhase('transcribing');
+            streamTurn(audioBlob, currentConversationId);
+            resetRecording();
         }
-        try {
-            const stream = await navigator.mediaDevices.getUserMedia({
-                audio: true,
-            });
-            streamRef.current = stream;
-            const mimeType = pickMimeType();
-            const recorder = mimeType
-                ? new MediaRecorder(stream, { mimeType })
-                : new MediaRecorder(stream);
-            chunksRef.current = [];
-            recorder.ondataavailable = e => {
-                if (e.data.size > 0) chunksRef.current.push(e.data);
-            };
-            recorder.onstop = () => {
-                stopTracks();
-                const audio = new Blob(chunksRef.current, {
-                    type: recorder.mimeType || 'audio/webm',
-                });
-                chunksRef.current = [];
-                if (audio.size === 0) {
-                    setPhase('idle');
-                    return;
-                }
-                setPhase('transcribing');
-                sendVoiceTurn(audio);
-            };
-            recorder.start();
-            mediaRecorderRef.current = recorder;
-            setPhase('recording');
-        } catch (err) {
-            stopTracks();
-            setPhase('error');
-            setErrorMsg(
-                (err as Error).name === 'NotAllowedError'
-                    ? 'Microphone permission denied'
-                    : 'Could not start recording',
-            );
-        }
-    }, [stopTracks, sendVoiceTurn]);
+    }, [audioBlob, streamTurn, currentConversationId, resetRecording]);
 
-    const stopRecording = useCallback(() => {
-        const recorder = mediaRecorderRef.current;
-        if (recorder && recorder.state !== 'inactive') {
-            recorder.stop();
-        }
-        mediaRecorderRef.current = null;
-    }, []);
+    // Playback ended → idle.
+    useEffect(() => {
+        if (prevIsPlaying.current && !isPlaying) setPhase('idle');
+        prevIsPlaying.current = isPlaying;
+    }, [isPlaying]);
 
     const handleMicClick = useCallback(() => {
         if (phase === 'recording') {
             stopRecording();
         } else if (phase === 'idle' || phase === 'error') {
+            setErrorMsg('');
             void startRecording();
         }
         // During transcribing/thinking/speaking the mic is disabled.
@@ -274,13 +161,10 @@ export const VoiceMode: FC<VoiceModeProps> = ({
 
     return (
         <div className="fixed inset-0 z-50 flex flex-col items-center justify-between bg-background/95 p-6 backdrop-blur-md">
-            {/* Hidden audio element for TTS playback. */}
-            <audio ref={audioElRef} className="hidden" />
-
             {/* Header */}
             <div className="flex w-full max-w-2xl items-center justify-between">
                 <div className="flex items-center gap-2 text-muted-foreground">
-                    <Sparkles className="size-5 text-calm" />
+                    <Sparkles className="size-5 text-accent" />
                     <span className="font-display text-lg font-semibold">
                         Voice Coach
                     </span>
@@ -314,14 +198,16 @@ export const VoiceMode: FC<VoiceModeProps> = ({
                             key={i}
                             className={cn(
                                 'flex',
-                                m.role === 'user' ? 'justify-end' : 'justify-start',
+                                m.role === 'user'
+                                    ? 'justify-end'
+                                    : 'justify-start',
                             )}
                         >
                             <div
                                 className={cn(
                                     'max-w-[80%] rounded-2xl px-4 py-3 text-base leading-relaxed',
                                     m.role === 'user'
-                                        ? 'bg-calm-soft text-foreground'
+                                        ? 'bg-accent/10 text-foreground'
                                         : 'bg-muted/60 text-foreground',
                                 )}
                             >
@@ -344,14 +230,14 @@ export const VoiceMode: FC<VoiceModeProps> = ({
                     disabled={micDisabled}
                     aria-label={micLabel}
                     className={cn(
-                        'flex size-20 items-center justify-center rounded-full shadow-lg transition-all',
+                        'flex size-20 items-center justify-center rounded-full shadow-lg transition-[background-color,box-shadow,transform]',
                         phase === 'recording'
                             ? 'bg-destructive text-destructive-foreground scale-110 animate-pulse'
                             : phase === 'speaking'
-                              ? 'bg-calm text-calm-foreground'
+                              ? 'bg-accent text-accent-foreground'
                               : phase === 'error'
                                 ? 'bg-muted text-muted-foreground'
-                                : 'bg-calm text-calm-foreground hover:scale-105',
+                                : 'bg-accent text-accent-foreground hover:scale-105',
                         micDisabled && 'cursor-not-allowed opacity-60',
                     )}
                 >
@@ -368,17 +254,3 @@ export const VoiceMode: FC<VoiceModeProps> = ({
         </div>
     );
 };
-
-function pickMimeType(): string | undefined {
-    if (typeof MediaRecorder === 'undefined') return undefined;
-    const candidates = [
-        'audio/webm;codecs=opus',
-        'audio/webm',
-        'audio/ogg;codecs=opus',
-        'audio/mp4',
-    ];
-    for (const c of candidates) {
-        if (MediaRecorder.isTypeSupported?.(c)) return c;
-    }
-    return undefined;
-}

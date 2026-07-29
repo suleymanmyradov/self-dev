@@ -15,10 +15,10 @@ const items: Array<
   | { type: "item"; label: string; href: string }
   | { type: "separator" }
 > = [
-  { type: "item", label: "Settings", href: "/settings" },
-  { type: "item", label: "Saved", href: "/saved" },
+  { type: "item", label: "Settings", href: "/me" },
+  { type: "item", label: "Saved", href: "/library" },
   { type: "separator" },
-  { type: "item", label: "Pricing", href: "/pricing" },
+  { type: "item", label: "Pricing", href: "/me" },
   { type: "separator" },
   { type: "item", label: "Report a problem", href: "/report" },
   { type: "separator" },
@@ -30,7 +30,7 @@ export function MoreMenu() {
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
         <button
-          className="flex h-11 w-11 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground shadow-sm transition-all hover:-translate-y-0.5 hover:border-border hover:bg-muted/50 hover:text-foreground hover:shadow-md"
+          className="flex h-11 w-11 items-center justify-center rounded-lg border border-border/60 bg-background text-muted-foreground shadow-sm transition-[color,background-color,border-color,box-shadow] hover:border-border hover:bg-muted/50 hover:text-foreground"
           title="More"
         >
           <Menu className="h-[22px] w-[22px]" strokeWidth={1.7} />

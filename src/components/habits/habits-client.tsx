@@ -1,69 +1,81 @@
 "use client";
 
-import { use, useCallback, useState } from "react";
+import { use, useCallback, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
-import { Plus, RotateCcw, Target, TrendingUp } from "lucide-react";
+import { Plus } from "lucide-react";
 import { cn } from "@/lib/utils";
-import { HabitCard } from "@/components/habits/habit-card";
-import { CheckInBanner } from "@/components/check-in/check-in-banner";
-import type { Habit, HabitsResponse, CheckInsResponse } from "@/api";
+import { HabitRow } from "@/components/habits/habit-row";
+import { GoalCard } from "@/components/habits/goal-card";
+import { LimitUpgradePrompt } from "@/components/habits/limit-upgrade-prompt";
+import { useHabitsFilters } from "@/components/habits/use-habits-filters";
+import type { StatusFilter } from "@/components/habits/use-habits-filters";
+import type { Habit, HabitsResponse, Goal, GoalsResponse } from "@/api";
 import type { CheckInSubmitData } from "@/components/check-in/check-in-modal";
 import { useUIStore } from "@/store/uiStore";
 import { useBillingUIStore } from "@/store/billing-ui";
 import { useShallow } from "zustand/react/shallow";
 
 const HabitFormDialog = dynamic(() => import("@/components/habits/habit-form-dialog").then((mod) => mod.HabitFormDialog));
+const GoalFormDialog = dynamic(() => import("@/components/goals/goal-form-dialog").then((mod) => mod.GoalFormDialog));
 const CheckInModal = dynamic(() => import("@/components/check-in/check-in-modal").then((mod) => mod.CheckInModal));
 import {
   useHabits,
   useCreateHabit,
   useUpdateHabit,
   useDeleteHabit,
-  useResetTodayHabits,
-  useHabitFilters,
   useHabitForm,
   useHabitEditForm,
   useConfirmDelete,
-  useTodayCheckIns,
   useCreateCheckIn,
-  useCheckInAll,
   useEntitlements,
   useTrackUpgradeEvent,
   useBillingOverview,
   useCategories,
+  useGoals,
+  useCreateGoal,
+  useUpdateGoal,
+  useDeleteGoal,
+  useToggleGoal,
+  useUpdateGoalProgress,
 } from "@/hooks";
-import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 
 interface HabitsClientProps {
   habitsPromise: Promise<HabitsResponse>;
-  checkInsPromise: Promise<CheckInsResponse>;
+  goalsPromise: Promise<GoalsResponse>;
 }
 
-export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientProps) {
+export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps) {
   const habitsData = use(habitsPromise);
   const { data: habits = [] } = useHabits({ page: 1, limit: 100 }, habitsData);
-  const checkInsData = use(checkInsPromise);
-  const { data: todayCheckIns = [] } = useTodayCheckIns(checkInsData);
+  const goalsData = use(goalsPromise);
+  const { data: goals = [] } = useGoals(goalsData);
+  // todayCheckIns is used by the check-in modal context; the data is also
+  // available via the checkIns query key for invalidation.
   const { data: entitlements } = useEntitlements();
   const { data: billing } = useBillingOverview();
   const isPro = billing?.subscription?.planCode === "pro";
   const trackUpgradeEvent = useTrackUpgradeEvent();
 
   // Categories are fetched from the DB (source of truth) — not a hardcoded enum.
-  const { data: categories = [] } = useCategories('habit');
+  const { data: habitCategories = [] } = useCategories('habit');
+  const { data: goalCategories = [] } = useCategories('goal');
 
-  // Mutations
-  const createMutation = useCreateHabit();
-  const updateMutation = useUpdateHabit();
-  const deleteMutation = useDeleteHabit();
-  const resetMutation = useResetTodayHabits();
+  // Mutations — habits
+  const createHabitMutation = useCreateHabit();
+  const updateHabitMutation = useUpdateHabit();
+  const deleteHabitMutation = useDeleteHabit();
   const checkInMutation = useCreateCheckIn();
-  const checkInAllMutation = useCheckInAll();
+
+  // Mutations — goals
+  const createGoalMutation = useCreateGoal();
+  const updateGoalMutation = useUpdateGoal();
+  const deleteGoalMutation = useDeleteGoal();
+  const toggleGoalMutation = useToggleGoal();
+  const updateGoalProgressMutation = useUpdateGoalProgress();
 
   // Billing / upgrade UI from store
   const { upgradePromptOpen, upgradeSurface, upgradeTrigger, showUpgradePrompt, dismissUpgradePrompt } =
@@ -77,50 +89,63 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
       }))
     );
 
-  // Check-in modal state from UI store
-  const { checkInModalOpen, checkInHabitId, openCheckInModal, closeCheckInModal } = useUIStore(
+  // Check-in modal state from UI store (modal kept for retro check-ins from /progress)
+  const { checkInModalOpen, checkInHabitId, closeCheckInModal } = useUIStore(
     useShallow((s) => ({
       checkInModalOpen: s.checkInModalOpen,
       checkInHabitId: s.checkInHabitId,
-      openCheckInModal: s.openCheckInModal,
       closeCheckInModal: s.closeCheckInModal,
     }))
   );
   const checkInHabit = habits.find((h) => h.id === checkInHabitId);
 
-  // Filters
-  const { categoryFilter, setCategoryFilter, sortBy, setSortBy, visibleHabits, completionPct } =
-    useHabitFilters(habits);
+  const {
+    filterAndSort,
+    statusFilter,
+    setStatusFilter,
+    categoryFilter,
+    setCategoryFilter,
+    sortBy,
+    setSortBy,
+  } = useHabitsFilters(habits);
 
-  // Create form
+  // Create habit form
   const createForm = useHabitForm();
 
-  // Edit form
+  // Edit habit form
   const editForm = useHabitEditForm();
 
-  // Delete confirmation
-  const deleteConfirm = useConfirmDelete<string>();
-  const handleDelete = () => {
-    const id = deleteConfirm.startDeleting();
+  // Delete habit confirmation
+  const habitDeleteConfirm = useConfirmDelete<string>();
+  const handleHabitDelete = () => {
+    const id = habitDeleteConfirm.startDeleting();
     if (id) {
-      deleteMutation.mutate(id, {
-        onSettled: () => deleteConfirm.stopDeleting(id),
+      deleteHabitMutation.mutate(id, {
+        onSettled: () => habitDeleteConfirm.stopDeleting(id),
       });
     }
   };
 
-  // Reset confirmation — Reset destroys today's check-ins for every habit, so
-  // require an explicit confirmation dialog (same pattern as delete).
-  const [resetConfirmOpen, setResetConfirmOpen] = useState(false);
-  const handleResetConfirm = () => {
-    setResetConfirmOpen(false);
-    resetMutation.mutate();
+  // Goal create/edit state
+  const [goalCreateOpen, setGoalCreateOpen] = useState(false);
+  const [goalEditOpen, setGoalEditOpen] = useState(false);
+  const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
+
+  // Goal delete confirmation
+  const goalDeleteConfirm = useConfirmDelete<string>();
+  const handleGoalDelete = () => {
+    const id = goalDeleteConfirm.startDeleting();
+    if (id) {
+      deleteGoalMutation.mutate(id, {
+        onSettled: () => goalDeleteConfirm.stopDeleting(id),
+      });
+    }
   };
 
-  // Check-in handler
+  // Check-in handler — one-tap check-in, no modal
   const handleCheckIn = useCallback((habit: Habit) => {
-    openCheckInModal(habit.id);
-  }, [openCheckInModal]);
+    checkInMutation.mutate({ habitId: habit.id, status: 'completed' });
+  }, [checkInMutation]);
 
   const handleSubmitCheckIn = (data: CheckInSubmitData) => {
     checkInMutation.mutate(data, {
@@ -136,152 +161,275 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
     });
   };
 
+  // Goal handlers
+  const handleCreateGoal = useCallback(
+    (validated: { title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[] }) => {
+      if (entitlements && !entitlements.canCreateGoal) {
+        showUpgradePrompt("goal_create_limit", "goal_limit");
+        trackUpgradeEvent.mutate({
+          eventType: "prompt_viewed",
+          surface: "goal_create_limit",
+          trigger: "goal_limit",
+          planCode: "pro",
+        });
+        return;
+      }
+      createGoalMutation.mutate(validated, {
+        onSuccess: () => {
+          setGoalCreateOpen(false);
+        },
+        onError: (error: unknown) => {
+          const err = error as { data?: { code?: string } };
+          if (err?.data?.code === "plan_limit_reached") {
+            showUpgradePrompt("goal_create_limit", "goal_limit");
+          }
+        },
+      });
+    },
+    [entitlements, showUpgradePrompt, trackUpgradeEvent, createGoalMutation]
+  );
+
+  const openEditGoal = useCallback((goal: Goal) => {
+    setEditingGoal(goal);
+    setGoalEditOpen(true);
+  }, []);
+
+  const handleSaveEditGoal = useCallback(
+    (validated: { title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[] }) => {
+      if (!editingGoal) return;
+      updateGoalMutation.mutate(
+        { id: editingGoal.id, data: validated },
+        { onSuccess: () => setGoalEditOpen(false) }
+      );
+    },
+    [editingGoal, updateGoalMutation]
+  );
+
+  const handleProgressChange = useCallback(
+    (progress: number) => {
+      if (!editingGoal) return;
+      updateGoalProgressMutation.mutate({ id: editingGoal.id, progress });
+    },
+    [editingGoal, updateGoalProgressMutation]
+  );
+
+  const handleToggleGoal = useCallback((id: string) => {
+    toggleGoalMutation.mutate(id);
+  }, [toggleGoalMutation]);
+
+  // Group habits by their parent goal.
+  // Goals link to habits via `relatedHabitIds`; habits do not have a `goalId` field.
+  const { habitsByGoalId, unassignedHabits } = useMemo(() => {
+    const byGoal = new Map<string, Habit[]>();
+    const assignedIds = new Set<string>();
+
+    for (const goal of goals) {
+      const ids = goal.relatedHabitIds ?? [];
+      if (ids.length === 0) {
+        byGoal.set(goal.id, []);
+        continue;
+      }
+      const byId = new Map(habits.map((h) => [h.id, h]));
+      const linked = ids
+        .map((id) => byId.get(id))
+        .filter((h): h is Habit => h !== undefined);
+      byGoal.set(goal.id, linked);
+      linked.forEach((h) => assignedIds.add(h.id));
+    }
+
+    const unassigned = habits.filter((h) => !assignedIds.has(h.id));
+    return { habitsByGoalId: byGoal, unassignedHabits: unassigned };
+  }, [habits, goals]);
+
+  const visibleUnassigned = useMemo(() => filterAndSort(unassignedHabits), [filterAndSort, unassignedHabits]);
+
+  // Free plan limit
+  const goalLimit = entitlements?.activeGoalLimit ?? 3;
+  const goalsUsed = goals.length;
+  const atGoalLimit = !isPro && goalsUsed >= goalLimit;
+
+  const statusPills: { label: string; value: StatusFilter }[] = [
+    { label: 'All', value: 'all' },
+    { label: 'Active', value: 'active' },
+    { label: 'Paused', value: 'paused' },
+    { label: 'Archived', value: 'archived' },
+  ];
+
   return (
     <div className="h-full flex flex-col relative">
-      {/* Ambient background */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-20 -left-20 h-80 w-80 rounded-full bg-ambient-growth opacity-30 blur-3xl" />
-        <div className="absolute bottom-20 -right-20 h-64 w-64 rounded-full bg-ambient-calm opacity-20 blur-3xl" />
-      </div>
-
       <div className="relative flex-1 overflow-y-auto no-scrollbar">
         <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
           {/* Header */}
           <header className="mb-6">
-            <div className="flex items-center justify-between">
+            <div className="flex items-center justify-between gap-4">
               <div>
-                <h1 className="font-display text-2xl font-bold tracking-tight md:text-3xl">Habits</h1>
-                <p className="mt-1 text-sm text-muted-foreground">Build consistency one day at a time.</p>
+                <h1 className="font-display text-3xl font-bold tracking-tight">Plan</h1>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  Three goals, nine habits. A habit without a goal is just a chore.
+                </p>
               </div>
-              <div className="flex items-center gap-2">
-                <Button variant="outline" size="sm" onClick={() => setResetConfirmOpen(true)}>
-                  <RotateCcw className="mr-2 h-4 w-4" /> Reset
+              <div className="flex items-center gap-2 shrink-0">
+                <Button variant="outline" size="sm" onClick={() => createForm.setOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> New habit
                 </Button>
-                <Button size="sm" variant="growth" onClick={() => createForm.setOpen(true)}>
-                  <Plus className="mr-2 h-4 w-4" /> New Habit
+                <Button size="sm" onClick={() => setGoalCreateOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> New goal
                 </Button>
               </div>
             </div>
           </header>
 
-          {/* Check-In Banner */}
-          <CheckInBanner
-            habits={habits}
-            todayCheckIns={todayCheckIns}
-            isCheckingInAll={checkInAllMutation.isPending}
-            onCheckInAll={() => {
-              const checkedIds = new Set(todayCheckIns.map((ci) => ci.habitId));
-              const remaining = habits.filter((h) => !checkedIds.has(h.id));
-              if (remaining.length > 0) {
-                checkInAllMutation.mutate({ habitIds: remaining.map((h) => h.id) });
-              }
-            }}
-          />
-
-          {/* Progress Card */}
-          <div className="card-elevated mb-6 rounded-xl p-5">
-            <div className="flex items-center justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <Target className="h-4 w-4 text-growth" />
-                <span className="text-sm font-medium">Today&apos;s Progress</span>
-              </div>
-              <Badge className={cn(
-                "rounded-full",
-                completionPct === 100 ? "bg-growth text-growth-foreground" : "bg-secondary"
-              )}>
-                {completionPct}% complete
-              </Badge>
+          {/* Filter bar */}
+          <section className="mb-6 flex flex-wrap items-center gap-3 text-sm">
+            {/* Status pill chips */}
+            <div className="flex items-center gap-1.5">
+              {statusPills.map((pill) => (
+                <button
+                  key={pill.value}
+                  type="button"
+                  onClick={() => setStatusFilter(pill.value)}
+                  className={cn(
+                    "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
+                    statusFilter === pill.value
+                      ? "bg-foreground text-background"
+                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                  )}
+                >
+                  {pill.label}
+                </button>
+              ))}
             </div>
-            <Progress
-              value={completionPct}
-              className={cn("h-2 bg-muted", completionPct === 100 && "[&>div]:bg-growth")}
-            />
-            {completionPct === 100 && (
-              <div className="mt-3 flex items-center gap-2 text-sm text-growth">
-                <TrendingUp className="h-4 w-4" />
-                <span>All habits completed! Keep the momentum going.</span>
-              </div>
-            )}
-          </div>
 
-          {/* Filters */}
-          <section className="mb-4 flex items-center gap-3 text-sm">
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Filter:</span>
-              <select
-                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-                value={categoryFilter}
-                onChange={(e) => setCategoryFilter(e.target.value)}
-              >
-                <option value="all">All</option>
-                {categories.map((c) => (
-                  <option key={c.slug} value={c.slug} className="capitalize">{c.name}</option>
+            {/* Divider */}
+            <div className="h-5 w-px bg-border" />
+
+            {/* Category select */}
+            <Select value={categoryFilter} onValueChange={setCategoryFilter}>
+              <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 border-border text-xs">
+                    <span className="text-muted-foreground">Category:</span>
+                    <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">all</SelectItem>
+                {habitCategories.map((c) => (
+                  <SelectItem key={c.slug} value={c.slug} className="capitalize">{c.name}</SelectItem>
                 ))}
-              </select>
-            </div>
-            <div className="flex items-center gap-2">
-              <span className="text-muted-foreground">Sort:</span>
-              <select
-                className="rounded-lg border border-border bg-background px-3 py-1.5 text-sm focus:border-primary focus:outline-none"
-                value={sortBy}
-                onChange={(e) => {
-                  if (e.target.value === "streak" || e.target.value === "name") setSortBy(e.target.value);
-                }}
-              >
-                <option value="streak">Streak</option>
-                <option value="name">Name</option>
-              </select>
-            </div>
+              </SelectContent>
+            </Select>
+
+            {/* Sort select */}
+            <Select value={sortBy} onValueChange={(v) => { if (v === 'streak' || v === 'name') setSortBy(v); }}>
+              <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 border-border text-xs">
+                    <span className="text-muted-foreground">Sort:</span>
+                    <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="streak">streak</SelectItem>
+                <SelectItem value="name">name</SelectItem>
+              </SelectContent>
+            </Select>
           </section>
 
-          {/* Habits List */}
-          <section className="grid grid-cols-1 gap-4">
-            {visibleHabits.map((h) => (
-              <HabitCard
-                key={h.id}
-                habit={h}
-                deleting={deleteConfirm.isDeleting(h.id)}
-                onEdit={editForm.openEdit}
-                onDelete={deleteConfirm.confirmDelete}
-                onCheckIn={handleCheckIn}
-              />
-            ))}
+          {/* Goal cards with nested habits */}
+          <section className="space-y-4">
+            {goals.map((goal) => {
+              const goalHabits = habitsByGoalId.get(goal.id) ?? [];
+              const visibleGoalHabits = filterAndSort(goalHabits);
+
+              return (
+                <GoalCard
+                  key={goal.id}
+                  goal={goal}
+                  habits={goalHabits}
+                  visibleHabits={visibleGoalHabits}
+                  isCheckInPending={checkInMutation.isPending}
+                  onCheckIn={handleCheckIn}
+                  onEditHabit={editForm.openEdit}
+                  onDeleteHabit={habitDeleteConfirm.confirmDelete}
+                  onEditGoal={openEditGoal}
+                  onDeleteGoal={goalDeleteConfirm.confirmDelete}
+                  onToggleGoal={handleToggleGoal}
+                  onAddHabit={() => createForm.setOpen(true)}
+                />
+              );
+            })}
           </section>
 
-          {/* Habit limit upgrade prompt */}
-          {upgradePromptOpen && upgradeSurface === "habit_create_limit" && (
-            <div className="mt-4">
-              <UpgradePrompt
-                surface={upgradeSurface as "habit_create_limit"}
-                trigger={upgradeTrigger as "habit_limit"}
-                title="Unlock unlimited habits"
-                description="You've reached the Free plan habit limit. Upgrade to Pro to build more daily habits."
-                isPro={isPro}
-                onDismiss={dismissUpgradePrompt}
-              />
-            </div>
-          )}
-
-          {/* Empty State */}
-          {visibleHabits.length === 0 && (
-            <div className="flex flex-col items-center justify-center py-16 text-center">
-              <div className="mb-4 flex h-16 w-16 items-center justify-center rounded-full bg-secondary">
-                <Target className="h-8 w-8 text-muted-foreground" />
+          {/* Unassigned habits card */}
+          {visibleUnassigned.length > 0 && (
+            <section className="mt-4">
+              <div className="rounded-xl border border-border bg-card p-5">
+                <h2 className="font-display text-lg font-semibold">Habits without a goal</h2>
+                <p className="mt-1 text-sm text-muted-foreground">
+                  {visibleUnassigned.map((h) => h.name).join(' · ')}
+                  {visibleUnassigned.length > 0 && ' — '}
+                  {visibleUnassigned.length === 1
+                    ? 'one habit with no goal behind it.'
+                    : `${visibleUnassigned.length} habits with no goal behind them.`}
+                </p>
+                <div className="mt-4 divide-y divide-border border-t border-border">
+                  {visibleUnassigned.map((h) => (
+                    <HabitRow
+                      key={h.id}
+                      habit={h}
+                      onCheckIn={handleCheckIn}
+                      onEdit={editForm.openEdit}
+                      onDelete={habitDeleteConfirm.confirmDelete}
+                      isPending={checkInMutation.isPending}
+                    />
+                  ))}
+                </div>
+                <button
+                  type="button"
+                  className="mt-3 text-sm font-medium text-success transition-colors hover:text-success/80"
+                >
+                  Assign or archive
+                </button>
               </div>
-              <h3 className="text-lg font-semibold">No habits yet</h3>
+            </section>
+          )}
+
+          {/* Free plan limit card */}
+          {atGoalLimit && (
+            <section className="mt-4">
+              <div className="flex items-center justify-between rounded-xl border border-dashed border-border p-5">
+                <div>
+                  <p className="text-sm font-medium">Free plan · {goalsUsed} of {goalLimit} goals used</p>
+                  <p className="mt-0.5 text-xs text-muted-foreground">Upgrade to Pro for unlimited goals.</p>
+                </div>
+                <Button size="sm" variant="outline" onClick={() => showUpgradePrompt("goal_create_limit", "goal_limit")}>
+                  See Pro
+                </Button>
+              </div>
+            </section>
+          )}
+
+          {/* Empty state — no goals and no habits */}
+          {goals.length === 0 && habits.length === 0 && (
+            <div className="flex flex-col items-center justify-center py-16 text-center">
+              <h3 className="font-display text-lg font-semibold">Nothing planned yet</h3>
               <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                Create your first habit to start checking in daily and building consistency.
+                Create your first goal and add habits to it. A habit without a goal is just a chore.
               </p>
-              <Button
-                variant="growth"
-                size="sm"
-                className="mt-4"
-                onClick={() => createForm.setOpen(true)}
-              >
-                <Plus className="mr-2 h-4 w-4" /> Create Habit
-              </Button>
+              <div className="mt-4 flex items-center gap-2">
+                <Button variant="outline" size="sm" onClick={() => createForm.setOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> New habit
+                </Button>
+                <Button size="sm" onClick={() => setGoalCreateOpen(true)}>
+                  <Plus className="mr-2 h-4 w-4" /> New goal
+                </Button>
+              </div>
             </div>
           )}
+
+          {/* Habit / goal limit upgrade prompts */}
+          <LimitUpgradePrompt
+            open={upgradePromptOpen}
+            surface={upgradeSurface}
+            trigger={upgradeTrigger}
+            isPro={isPro}
+            onDismiss={dismissUpgradePrompt}
+          />
         </div>
       </div>
 
@@ -303,11 +451,7 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
             });
             return;
           }
-          // Pass the form dialog's validated data directly to the mutation.
-          // Do NOT round-trip through createForm.setForm + handleCreate —
-          // React state updates are async, so handleCreate would read stale
-          // state and lose the category the user selected.
-          createMutation.mutate(
+          createHabitMutation.mutate(
             {
               name: vals.name.trim(),
               description: vals.description.trim(),
@@ -324,7 +468,7 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
           );
           createForm.reset();
         }}
-        categories={categories}
+        categories={habitCategories}
       />
 
       {/* Edit Habit Dialog */}
@@ -334,10 +478,8 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
         onOpenChange={editForm.setOpen}
         initialValues={editForm.form}
         onSubmit={(vals) => {
-          // Pass the form dialog's validated data directly to the mutation
-          // (same reason as create — avoid stale state).
           if (editForm.editingId) {
-            updateMutation.mutate({
+            updateHabitMutation.mutate({
               id: editForm.editingId,
               data: {
                 name: vals.name.trim(),
@@ -348,11 +490,40 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
             editForm.reset();
           }
         }}
-        categories={categories}
+        categories={habitCategories}
       />
 
-      {/* Delete Confirmation */}
-      <Dialog open={deleteConfirm.open} onOpenChange={deleteConfirm.setOpen}>
+      {/* Create Goal Dialog */}
+      <GoalFormDialog
+        open={goalCreateOpen}
+        onOpenChange={setGoalCreateOpen}
+        mode="create"
+        categories={goalCategories}
+        habits={habits}
+        onSubmit={handleCreateGoal}
+      />
+
+      {/* Edit Goal Dialog */}
+      <GoalFormDialog
+        open={goalEditOpen}
+        onOpenChange={setGoalEditOpen}
+        mode="edit"
+        categories={goalCategories}
+        habits={habits}
+        initialValues={editingGoal ? {
+          title: editingGoal.title,
+          description: editingGoal.description,
+          category: editingGoal.category,
+          dueDate: editingGoal.dueDate,
+          progress: editingGoal.progress,
+          relatedHabitIds: editingGoal.relatedHabitIds ?? [],
+        } : undefined}
+        onProgressChange={handleProgressChange}
+        onSubmit={handleSaveEditGoal}
+      />
+
+      {/* Delete Habit Confirmation */}
+      <Dialog open={habitDeleteConfirm.open} onOpenChange={habitDeleteConfirm.setOpen}>
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete habit</DialogTitle>
@@ -361,8 +532,24 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
             Are you sure you want to delete this habit? This action cannot be undone.
           </p>
           <DialogFooter>
-            <Button variant="outline" onClick={() => deleteConfirm.setOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => habitDeleteConfirm.setOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleHabitDelete}>Delete</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Goal Confirmation */}
+      <Dialog open={goalDeleteConfirm.open} onOpenChange={goalDeleteConfirm.setOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Delete goal</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            Are you sure you want to delete this goal? This action cannot be undone.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => goalDeleteConfirm.setOpen(false)}>Cancel</Button>
+            <Button variant="destructive" onClick={handleGoalDelete}>Delete</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -375,24 +562,6 @@ export function HabitsClient({ habitsPromise, checkInsPromise }: HabitsClientPro
         onSubmit={handleSubmitCheckIn}
         isSubmitting={checkInMutation.isPending}
       />
-
-      {/* Reset Confirmation */}
-      <Dialog open={resetConfirmOpen} onOpenChange={setResetConfirmOpen}>
-        <DialogContent className="sm:max-w-md">
-          <DialogHeader>
-            <DialogTitle>Reset today&apos;s habits</DialogTitle>
-          </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            This will remove today&apos;s check-ins for all habits. This action cannot be undone.
-          </p>
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setResetConfirmOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleResetConfirm} disabled={resetMutation.isPending}>
-              Reset
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

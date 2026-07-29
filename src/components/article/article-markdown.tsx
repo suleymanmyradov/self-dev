@@ -2,7 +2,7 @@
 
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { memo, useState } from "react";
+import { memo, useState, useEffect } from "react";
 import { CheckIcon, CopyIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -39,9 +39,9 @@ function CodeBlock({
   const code = typeof children === "string" ? children : extractText(children);
 
   return (
-    <div className="my-5 overflow-hidden rounded-lg border border-border/60">
-      <div className="flex items-center justify-between bg-muted-foreground/15 px-4 py-2 text-sm font-semibold text-foreground dark:bg-muted-foreground/20">
-        <span className="lowercase text-xs">{language ?? "code"}</span>
+    <div className="my-5 overflow-hidden rounded-lg border border-border">
+      <div className="flex items-center justify-between bg-secondary px-4 py-2 text-sm font-semibold text-foreground">
+        <span className="lowercase text-xs font-mono">{language ?? "code"}</span>
         <button
           type="button"
           onClick={() => copyToClipboard(code)}
@@ -51,7 +51,7 @@ function CodeBlock({
           {isCopied ? <CheckIcon className="h-4 w-4" /> : <CopyIcon className="h-4 w-4" />}
         </button>
       </div>
-      <pre className="overflow-x-auto bg-black p-4 text-sm leading-relaxed text-white">
+      <pre className="overflow-x-auto bg-foreground/5 dark:bg-foreground/10 p-4 text-sm leading-relaxed text-foreground">
         <code className={className}>{children}</code>
       </pre>
     </div>
@@ -76,7 +76,7 @@ const components: Components = {
   h1: ({ className, ...props }) => (
     <h1
       className={cn(
-        "mb-8 mt-10 scroll-m-20 text-3xl font-extrabold tracking-tight first:mt-0 last:mb-0",
+        "font-display text-4xl leading-[1.14] tracking-tight mt-10 mb-6 first:mt-0 last:mb-0",
         className,
       )}
       {...props}
@@ -85,7 +85,7 @@ const components: Components = {
   h2: ({ className, ...props }) => (
     <h2
       className={cn(
-        "mt-10 mb-4 scroll-m-20 text-2xl font-semibold tracking-tight first:mt-0 last:mb-0",
+        "font-display text-3xl leading-[1.25] mt-10 mb-4 first:mt-0 last:mb-0",
         className,
       )}
       {...props}
@@ -94,7 +94,7 @@ const components: Components = {
   h3: ({ className, ...props }) => (
     <h3
       className={cn(
-        "mt-8 mb-4 scroll-m-20 text-xl font-semibold tracking-tight first:mt-0 last:mb-0",
+        "font-display text-2xl leading-[1.3] mt-9 mb-3 first:mt-0 last:mb-0",
         className,
       )}
       {...props}
@@ -103,7 +103,7 @@ const components: Components = {
   h4: ({ className, ...props }) => (
     <h4
       className={cn(
-        "mt-6 mb-4 scroll-m-20 text-lg font-semibold tracking-tight first:mt-0 last:mb-0",
+        "font-display text-xl leading-[1.35] mt-7 mb-3 first:mt-0 last:mb-0",
         className,
       )}
       {...props}
@@ -111,16 +111,16 @@ const components: Components = {
   ),
   h5: ({ className, ...props }) => (
     <h5
-      className={cn("my-4 text-base font-semibold first:mt-0 last:mb-0", className)}
+      className={cn("font-display text-lg leading-snug my-4 first:mt-0 last:mb-0", className)}
       {...props}
     />
   ),
   h6: ({ className, ...props }) => (
-    <h6 className={cn("my-4 font-semibold first:mt-0 last:mb-0", className)} {...props} />
+    <h6 className={cn("font-display text-base font-medium my-4 first:mt-0 last:mb-0", className)} {...props} />
   ),
   p: ({ className, ...props }) => (
     <p
-      className={cn("mt-5 mb-5 leading-7 first:mt-0 last:mb-0", className)}
+      className={cn("text-[17px] leading-[1.72] mt-5 mb-5 text-foreground first:mt-0 last:mb-0", className)}
       {...props}
     />
   ),
@@ -137,7 +137,7 @@ const components: Components = {
         rel="noopener noreferrer"
         target="_blank"
         className={cn(
-          "font-medium text-primary underline underline-offset-4",
+          "text-success underline underline-offset-[3px] font-medium",
           className,
         )}
         {...props}
@@ -147,21 +147,21 @@ const components: Components = {
   blockquote: ({ className, ...props }) => (
     <blockquote
       className={cn(
-        "my-5 border-l-2 border-primary/40 pl-6 italic text-muted-foreground",
+        "border-l-2 border-success pl-6 my-7 first:mt-0 last:mb-0",
         className,
       )}
       {...props}
     />
   ),
   ul: ({ className, ...props }) => (
-    <ul className={cn("my-5 ml-6 list-disc space-y-2", className)} {...props} />
+    <ul className={cn("pl-6 text-[17px] leading-[1.72] space-y-2 my-5 list-disc first:mt-0 last:mb-0", className)} {...props} />
   ),
   ol: ({ className, ...props }) => (
-    <ol className={cn("my-5 ml-6 list-decimal space-y-2", className)} {...props} />
+    <ol className={cn("pl-6 text-[17px] leading-[1.72] space-y-2 my-5 list-decimal first:mt-0 last:mb-0", className)} {...props} />
   ),
-  li: ({ className, ...props }) => <li className={cn("leading-7", className)} {...props} />,
+  li: ({ className, ...props }) => <li className={cn("text-[17px] leading-[1.72]", className)} {...props} />,
   hr: ({ className, ...props }) => (
-    <hr className={cn("my-8 border-b border-border", className)} {...props} />
+    <hr className={cn("border-border my-9 first:mt-0 last:mb-0", className)} {...props} />
   ),
   table: ({ className, ...props }) => (
     <div className="my-5 w-full overflow-x-auto">
@@ -174,7 +174,7 @@ const components: Components = {
   th: ({ className, ...props }) => (
     <th
       className={cn(
-        "bg-muted px-4 py-2 text-left font-bold first:rounded-tl-lg last:rounded-tr-lg [&[align=center]]:text-center [&[align=right]]:text-right",
+        "bg-secondary px-4 py-2 text-left font-bold border-border first:rounded-tl-lg last:rounded-tr-lg [&[align=center]]:text-center [&[align=right]]:text-right",
         className,
       )}
       {...props}
@@ -183,7 +183,7 @@ const components: Components = {
   td: ({ className, ...props }) => (
     <td
       className={cn(
-        "border-b border-l border-border px-4 py-2 text-left last:border-r [&[align=center]]:text-center [&[align=right]]:text-right",
+        "border-b border-l border-border px-4 py-2 text-left font-mono last:border-r [&[align=center]]:text-center [&[align=right]]:text-right",
         className,
       )}
       {...props}
@@ -192,7 +192,7 @@ const components: Components = {
   tr: ({ className, ...props }) => (
     <tr
       className={cn(
-        "m-0 border-b p-0 first:border-t [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg",
+        "m-0 border-b border-border p-0 first:border-t [&:last-child>td:first-child]:rounded-bl-lg [&:last-child>td:last-child]:rounded-br-lg",
         className,
       )}
       {...props}
@@ -203,7 +203,7 @@ const components: Components = {
     <img
       alt={alt ?? ""}
       src={typeof src === "string" ? src : undefined}
-      className={cn("my-6 h-auto w-full rounded-lg border border-border/40", className)}
+      className={cn("my-6 h-auto w-full rounded-xl border border-border", className)}
       loading="lazy"
       {...props}
     />
@@ -232,7 +232,7 @@ const components: Components = {
     return (
       <code
         className={cn(
-          "rounded border border-border/60 bg-muted px-1.5 py-0.5 font-mono text-[0.85em] font-semibold",
+          "font-mono text-[0.85em] bg-muted px-1.5 py-0.5 rounded border border-border",
           className,
         )}
         {...props}
@@ -249,7 +249,7 @@ const components: Components = {
 
 function ArticleMarkdownImpl({ content }: { content: string }) {
   return (
-    <div className="text-[15px] text-foreground">
+    <div className="text-[17px] leading-[1.72] text-foreground">
       <ReactMarkdown remarkPlugins={[remarkGfm]} components={components}>
         {content}
       </ReactMarkdown>
@@ -258,3 +258,37 @@ function ArticleMarkdownImpl({ content }: { content: string }) {
 }
 
 export const ArticleMarkdown = memo(ArticleMarkdownImpl);
+
+// =============================================================================
+// Reading progress bar — 2px sage bar tracking scroll position
+// =============================================================================
+
+export function ReadingProgress() {
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    const onScroll = () => {
+      const scrollTop = window.scrollY;
+      const docHeight = document.documentElement.scrollHeight - window.innerHeight;
+      const pct = docHeight > 0 ? Math.min(100, (scrollTop / docHeight) * 100) : 0;
+      setProgress(pct);
+    };
+    window.addEventListener('scroll', onScroll, { passive: true });
+    // Use requestAnimationFrame to defer the initial measurement so setState
+    // is not called synchronously within the effect body.
+    const raf = requestAnimationFrame(onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      cancelAnimationFrame(raf);
+    };
+  }, []);
+
+  return (
+    <div className="fixed top-0 left-0 right-0 z-50 h-0.5 bg-border">
+      <div
+        className="h-full bg-success transition-[width] duration-75"
+        style={{ width: `${progress}%` }}
+      />
+    </div>
+  );
+}

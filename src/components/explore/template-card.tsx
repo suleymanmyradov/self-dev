@@ -1,8 +1,4 @@
-import { Card, CardContent, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
-import { cn } from '@/lib/utils';
-import { getCategoryBadgeClass } from '@/lib/category-styles';
 import type { HabitTemplate, GoalTemplate } from '@/types/explore';
 
 interface HabitTemplateCardProps {
@@ -17,20 +13,21 @@ interface GoalTemplateCardProps {
 
 export function HabitTemplateCard({ template, onAdd }: HabitTemplateCardProps) {
   return (
-    <Card className="hover-lift transition-all duration-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">{template.name}</CardTitle>
-      </CardHeader>
-      <CardContent className="pb-3">
-        <p className="text-sm text-muted-foreground leading-relaxed">{template.description}</p>
-        <Badge className={cn('mt-3', getCategoryBadgeClass(template.category))}>
-          {template.category}
-        </Badge>
-      </CardContent>
-      <CardFooter className="pt-0">
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="mb-2 font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
+        {template.category}
+      </div>
+      <h3 className="font-display text-lg font-normal leading-tight tracking-tight text-foreground">
+        {template.name}
+      </h3>
+      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+        {template.description}
+      </p>
+      <div className="mt-4">
         <Button
           size="sm"
-          variant="growth"
+          variant="success"
+          className="h-8 rounded-lg text-xs"
           onClick={() =>
             onAdd({
               name: template.name,
@@ -41,27 +38,27 @@ export function HabitTemplateCard({ template, onAdd }: HabitTemplateCardProps) {
         >
           Add to Habits
         </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }
 
 export function GoalTemplateCard({ template, onAdd }: GoalTemplateCardProps) {
   return (
-    <Card className="hover-lift transition-all duration-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="text-base">{template.title}</CardTitle>
-      </CardHeader>
-      <CardContent className="pb-3">
-        <p className="text-sm text-muted-foreground leading-relaxed">{template.description}</p>
-        <Badge className={cn('mt-3', getCategoryBadgeClass(template.category))}>
-          {template.category}
-        </Badge>
-      </CardContent>
-      <CardFooter className="pt-0">
+    <div className="rounded-xl border border-border bg-card p-4">
+      <div className="mb-2 font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
+        {template.category}
+      </div>
+      <h3 className="font-display text-lg font-normal leading-tight tracking-tight text-foreground">
+        {template.title}
+      </h3>
+      <p className="mt-1.5 text-xs leading-relaxed text-muted-foreground">
+        {template.description}
+      </p>
+      <div className="mt-4">
         <Button
           size="sm"
-          variant="energy"
+          className="h-8 rounded-lg text-xs"
           onClick={() =>
             onAdd({
               title: template.title,
@@ -72,7 +69,7 @@ export function GoalTemplateCard({ template, onAdd }: GoalTemplateCardProps) {
         >
           Add to Goals
         </Button>
-      </CardFooter>
-    </Card>
+      </div>
+    </div>
   );
 }

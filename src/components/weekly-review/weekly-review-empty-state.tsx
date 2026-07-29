@@ -19,14 +19,14 @@ const variantConfig = {
     title: "No habits yet",
     description: "Create your first habit to unlock weekly reviews.",
     actionLabel: "Create Habit",
-    actionHref: "/habits",
+    actionHref: "/plan",
   },
   no_check_ins: {
     icon: Target,
     title: "No check-ins this week",
     description: "Complete a daily check-in to generate your first weekly review.",
     actionLabel: "Go to Habits",
-    actionHref: "/habits",
+    actionHref: "/plan",
   },
   partial_week: {
     icon: Calendar,

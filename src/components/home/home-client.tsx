@@ -1,33 +1,27 @@
 'use client';
 
-import { use, useMemo, useCallback } from 'react';
-import { ArticleCardGrid } from '@/components/home/article-card-grid';
-import { PlanAdjustmentCard } from '@/components/plan-adjustment-card';
-import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Lightbulb } from 'lucide-react';
+import { use } from 'react';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
 import {
   useArticles,
   usePlanAdjustments,
-  useBillingOverview,
-  useLikeArticle,
-  useSavedItems,
-  useSaveItem,
-  useRemoveSavedItem,
+  useHabits,
+  useGoals,
+  useProfile,
+  useCreateCheckIn,
+  useCheckInAll,
 } from '@/hooks';
-import { UpgradePrompt } from '@/components/billing/upgrade-prompt';
-import type { CategoriesResponse, ArticlesResponse } from '@/api';
-import { useSearchParamState } from '@/lib/url-state';
+import type { CategoriesResponse, ArticlesResponse, Habit } from '@/api';
+import { getDateEyebrow, getWeekDayLabels, getWeeklyCheckInCounts } from '@/lib/date-helpers';
+import { HabitsSection } from '@/components/home/habits-section';
+import { GoalsSection } from '@/components/home/goals-section';
+import { ArticlesSection } from '@/components/home/articles-section';
+import { useArticleActions } from '@/components/home/use-article-actions';
 
-const TAB_TRIGGER_CLASS =
-  'rounded-md px-3 py-1.5 text-sm font-medium text-muted-foreground transition-all duration-200 hover:text-foreground data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm data-[state=active]:font-semibold';
-
-const DEFAULT_CATEGORIES: { value: string; label: string }[] = [
-  { value: 'all', label: 'All' },
-  { value: 'philosophy', label: 'Philosophy' },
-  { value: 'habits', label: 'Habits' },
-  { value: 'relationships', label: 'Relationships' },
-  { value: 'productivity', label: 'Productivity' },
-];
+// =============================================================================
+// Props
+// =============================================================================
 
 interface HomeClientProps {
   categoriesPromise: Promise<CategoriesResponse>;
@@ -35,186 +29,215 @@ interface HomeClientProps {
 }
 
 export function HomeClient({ categoriesPromise, articlesPromise }: HomeClientProps) {
-  const [filter, setFilter] = useSearchParamState('category', 'all');
-
-  const categoriesData = use(categoriesPromise);
+  // Articles (SSR-hydrated) — used for the "Worth reading tonight" section.
+  use(categoriesPromise);
   const initialArticlesData = use(articlesPromise);
+  const { data: articles = [] } = useArticles(undefined, initialArticlesData);
 
-  const { data: articles = [], isFetching: isArticlesFetching } = useArticles(
-    filter !== 'all' ? { category: filter } : undefined,
-    initialArticlesData
-  );
+  // Habits + check-ins
+  const { data: habits = [] } = useHabits();
+  const createCheckIn = useCreateCheckIn();
+  const checkInAll = useCheckInAll();
 
-  // Fetch plan adjustment suggestions
-  const { data: suggestions = [], isPending: suggestionsLoading, applySuggestion, dismissSuggestion } = usePlanAdjustments();
+  // Goals — first active goal for "Goal in focus"
+  const { data: goals = [] } = useGoals();
 
-  // Billing entitlements for plan adjustment limit
-  const { data: billing } = useBillingOverview();
-  const canCreatePlanAdjustment = billing?.entitlements?.canCreatePlanAdjustment ?? true;
+  // Profile — for the personalized headline
+  const { data: profile } = useProfile();
+  const firstName = profile?.fullName?.split(' ')[0] ?? '';
 
-  const categories = useMemo(() => {
-    const cats = categoriesData.data;
-    if (cats && cats.length > 0) {
-      const mapped = [
-        { value: 'all', label: 'All' },
-        ...cats.map((c) => ({ value: c.slug, label: c.name })),
-      ];
-      return mapped;
-    }
-    return DEFAULT_CATEGORIES;
-  }, [categoriesData]);
+  // Plan adjustment suggestions — used for the coach nudge
+  const { data: suggestions = [], applySuggestion, dismissSuggestion } = usePlanAdjustments();
 
-  const handleFilterChange = (value: string) => {
-    setFilter(value);
+  // Like / save wiring for article cards
+  const {
+    handleLike,
+    isLikePendingFor,
+    getIsSaved,
+    handleToggleSave,
+  } = useArticleActions();
+
+  // =============================================================================
+  // Derived data
+  // =============================================================================
+
+  const completedHabits = habits.filter((h) => h.completed);
+  const pendingHabits = habits.filter((h) => !h.completed);
+  const completedCount = completedHabits.length;
+  const totalCount = habits.length;
+  const remainingCount = pendingHabits.length;
+
+  const headline = remainingCount === 0
+    ? `All done${firstName ? ', ' + firstName : ''}.`
+    : `${remainingCount} left${firstName ? ', ' + firstName : ''}.`;
+
+  const subtitle =
+    remainingCount === 0
+      ? "Everything's checked in for today. Nice work."
+      : pendingHabits.length <= 2
+        ? "Neither takes long. Pick one and keep the streak alive."
+        : "A few left to check in. Knock them out one by one.";
+
+  const weekCounts = getWeeklyCheckInCounts(habits);
+  const maxWeekCount = Math.max(1, ...weekCounts);
+  const todayIndex = weekCounts.length - 1;
+  const weekLabels = getWeekDayLabels();
+
+  const coachNudge = suggestions[0];
+
+  const readsTonight = articles.slice(0, 2);
+
+  // =============================================================================
+  // Handlers
+  // =============================================================================
+
+  const handleCheckIn = (habit: Habit) => {
+    if (createCheckIn.isPending) return;
+    createCheckIn.mutate({ habitId: habit.id, status: 'completed' });
   };
 
-  const likeArticleMutation = useLikeArticle();
-  const handleLike = (id: string) => {
-    if (likeArticleMutation.isPending) return;
-    likeArticleMutation.mutate(id);
+  const handleCheckInAll = () => {
+    if (checkInAll.isPending || pendingHabits.length === 0) return;
+    checkInAll.mutate({ habitIds: pendingHabits.map((h) => h.id) });
   };
-  const isLikePendingFor = (id: string) =>
-    likeArticleMutation.isPending && likeArticleMutation.variables === id;
 
-  // Saved items — used to drive the save/unsave state on article cards
-  const { data: savedItems } = useSavedItems({ page: 1, limit: 100 });
-  const saveItem = useSaveItem();
-  const removeSavedItem = useRemoveSavedItem();
+  const isCheckInPendingFor = (habitId: string) =>
+    createCheckIn.isPending && createCheckIn.variables?.habitId === habitId;
 
-  const savedArticleMap = useMemo(() => {
-    const map = new Map<string, string>();
-    savedItems?.forEach((item) => {
-      if (item.itemType === 'article') {
-        map.set(item.itemId, item.id);
-      }
-    });
-    return map;
-  }, [savedItems]);
-
-  const getIsSaved = useCallback(
-    (articleId: string) => {
-      return savedArticleMap.has(articleId);
-    },
-    [savedArticleMap]
-  );
-
-  const isSavePendingFor = useCallback(
-    (articleId: string) => {
-      return (
-        (saveItem.isPending && saveItem.variables?.itemId === articleId) ||
-        (removeSavedItem.isPending && savedArticleMap.get(articleId) === removeSavedItem.variables)
-      );
-    },
-    [saveItem, removeSavedItem, savedArticleMap]
-  );
-
-  const handleToggleSave = useCallback(
-    async (articleId: string) => {
-      if (isSavePendingFor(articleId)) return;
-      const savedItemId = savedArticleMap.get(articleId);
-      if (savedItemId) {
-        await removeSavedItem.mutateAsync(savedItemId);
-      } else {
-        await saveItem.mutateAsync({ itemType: 'article', itemId: articleId });
-      }
-    },
-    [savedArticleMap, saveItem, removeSavedItem, isSavePendingFor]
-  );
-
-  const isLoading = isArticlesFetching;
+  // =============================================================================
+  // Render
+  // =============================================================================
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
-      {/* Ambient background accents */}
-      <div className="pointer-events-none absolute inset-0 overflow-hidden">
-        <div className="absolute -top-20 left-1/3 h-80 w-80 rounded-full bg-ambient-calm opacity-20 blur-3xl" />
-        <div className="absolute bottom-0 right-1/4 h-64 w-64 rounded-full bg-ambient-growth opacity-15 blur-3xl" />
-      </div>
-
       <div className="relative flex-1 overflow-y-auto no-scrollbar">
-        <div className="w-full px-6 lg:px-10 pb-10">
-          {/* Plan Adjustment Suggestions */}
-          {suggestions.length > 0 && !suggestionsLoading && (
-            <div className="mb-6">
-              <div className="flex items-center gap-2 mb-3">
-                <Lightbulb className="h-4 w-4 text-energy" />
-                <h3 className="text-sm font-medium">Suggestions for you</h3>
-              </div>
-              <div className="space-y-3">
-                {suggestions.slice(0, 2).map((suggestion) => (
-                  <PlanAdjustmentCard
-                    key={suggestion.id}
-                    suggestion={suggestion}
-                    onAccept={() => applySuggestion(suggestion.id)}
-                    onDismiss={() => dismissSuggestion(suggestion.id)}
-                    loading={suggestionsLoading}
-                  />
-                ))}
-              </div>
-              {!canCreatePlanAdjustment && (
-                <div className="mt-3">
-                  <UpgradePrompt
-                    surface="plan_adjustments"
-                    trigger="plan_adjustments"
-                    title=""
-                    description=""
-                    compact
-                    isPro={billing?.subscription?.planCode === "pro"}
-                  />
+        <div className="w-full px-6 lg:px-10 py-8 pb-16">
+          <div className="flex flex-col md:flex-row gap-8 max-w-5xl mx-auto">
+            {/* === MAIN COLUMN === */}
+            <div className="flex-1 min-w-0">
+              {/* Header */}
+              <header className="flex items-start justify-between gap-6">
+                <div className="min-w-0">
+                  <p className="font-mono text-xs text-muted-foreground tracking-wider">
+                    {getDateEyebrow()}
+                  </p>
+                  <h1 className="font-display text-3xl md:text-4xl leading-[1.15] tracking-tight mt-2 text-foreground">
+                    {headline}
+                  </h1>
+                  <p className="mt-2 text-muted-foreground text-sm max-w-[48ch]">
+                    {subtitle}
+                  </p>
                 </div>
-              )}
+                <div className="shrink-0 text-right">
+                  <p className="font-mono text-2xl font-medium tabular-nums text-foreground">
+                    {completedCount}
+                    <span className="text-muted-foreground">/{totalCount}</span>
+                  </p>
+                  <p className="text-xs text-muted-foreground mt-0.5">checked in</p>
+                </div>
+              </header>
+
+              {/* Hairline divider */}
+              <hr className="border-border my-6" />
+
+              {/* Today section */}
+              <HabitsSection
+                habits={habits}
+                pendingHabits={pendingHabits}
+                completedHabits={completedHabits}
+                onCheckIn={handleCheckIn}
+                onCheckInAll={handleCheckInAll}
+                isCheckInPendingFor={isCheckInPendingFor}
+                isCheckInAllPending={checkInAll.isPending}
+              />
+
+              {/* Hairline divider */}
+              <hr className="border-border my-6" />
+
+              {/* Worth reading tonight */}
+              <ArticlesSection
+                articles={readsTonight}
+                onLike={handleLike}
+                onToggleSave={handleToggleSave}
+                isLikePendingFor={isLikePendingFor}
+                getIsSaved={getIsSaved}
+              />
             </div>
-          )}
 
-          <Tabs
-            value={filter}
-            onValueChange={(v) => handleFilterChange(v)}
-            className="mt-2 mb-6 w-full"
-          >
-            <TabsList className="h-auto w-fit bg-secondary/50 p-1 rounded-lg">
-              {categories.map(({ value, label }) => (
-                <TabsTrigger key={value} className={TAB_TRIGGER_CLASS} value={value}>
-                  {label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
-          </Tabs>
+            {/* === RIGHT SIDEBAR (330px, hidden on mobile) === */}
+            <aside className="hidden md:block w-[330px] shrink-0">
+              <div className="sticky top-0 space-y-5">
+                {/* Coach nudge card */}
+                {coachNudge && (
+                  <div className="rounded-xl bg-foreground text-background p-5">
+                    <p className="font-mono text-[0.65rem] tracking-widest text-background/60 mb-3">
+                      FROM YOUR COACH
+                    </p>
+                    <p className="text-sm leading-relaxed text-background/90 mb-4">
+                      {coachNudge.suggestion}
+                    </p>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        size="sm"
+                        variant="success"
+                        onClick={() => applySuggestion(coachNudge.id)}
+                      >
+                        Move it
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => dismissSuggestion(coachNudge.id)}
+                        className="text-background/70 hover:text-background hover:bg-background/10"
+                      >
+                        Not now
+                      </Button>
+                    </div>
+                  </div>
+                )}
 
-          {/* === 4-COLUMN ARTICLE GRID === */}
-          <section>
-            {isLoading ? (
-              <div className="flex items-center justify-center py-12">
-                <p className="text-muted-foreground animate-pulse">Loading articles...</p>
+                {/* This week chart */}
+                <div className="rounded-xl bg-card border border-border p-5">
+                  <h3 className="font-semibold text-xs text-foreground mb-4">This week</h3>
+                  <div className="flex items-end justify-between gap-1.5 h-24">
+                    {weekCounts.map((count, i) => {
+                      const heightPct = (count / maxWeekCount) * 100;
+                      const isToday = i === todayIndex;
+                      return (
+                        <div key={i} className="flex flex-col items-center gap-1.5 flex-1">
+                          <div className="w-full flex items-end justify-center h-16">
+                            <div
+                              className={cn(
+                                'w-full max-w-[20px] rounded-sm transition-[height] duration-300',
+                                isToday ? 'bg-success' : count > 0 ? 'bg-success/60' : 'bg-muted',
+                              )}
+                              style={{ height: `${Math.max(4, heightPct)}%` }}
+                            />
+                          </div>
+                          <span
+                            className={cn(
+                              'font-mono text-[0.6rem]',
+                              isToday ? 'text-foreground font-medium' : 'text-muted-foreground',
+                            )}
+                          >
+                            {weekLabels[i]}
+                          </span>
+                        </div>
+                      );
+                    })}
+                  </div>
+                  <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
+                    {remainingCount === 0
+                      ? "Perfect week so far. Keep the momentum going."
+                      : "Mornings are your strong window. Thursdays are the weak spot."}
+                  </p>
+                </div>
+
+                {/* Goal in focus */}
+                <GoalsSection goals={goals} />
               </div>
-            ) : articles.length === 0 ? (
-              <div className="flex flex-col items-center justify-center py-16 gap-3">
-                <p className="text-muted-foreground text-sm">No articles found</p>
-                <p className="text-muted-foreground/60 text-xs">Try selecting a different category</p>
-              </div>
-            ) : (
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-                {articles.map((a, i) => (
-                  <ArticleCardGrid
-                    key={a.id}
-                    id={a.id}
-                    title={a.title}
-                    excerpt={a.excerpt}
-                    image={a.imageUrl || '/images/article-placeholder.svg'}
-                    category={a.category?.name}
-                    postedAt={a.publishedAt}
-                    likes={a.likeCount ?? 0}
-                    isLiked={a.isLiked ?? false}
-                    saves={0}
-                    isSaved={getIsSaved(a.id) || (a.isSaved ?? false)}
-                    onLike={handleLike}
-                    onToggleSave={() => handleToggleSave(a.id)}
-                    isLikePending={isLikePendingFor(a.id)}
-                    index={i}
-                  />
-                ))}
-              </div>
-            )}
-          </section>
+            </aside>
+          </div>
         </div>
       </div>
     </div>

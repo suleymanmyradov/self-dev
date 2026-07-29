@@ -49,12 +49,19 @@ export function useCreateCheckIn() {
           queryClient.setQueryData(key, value);
         }
       }
+      toast.error('Check-in failed. Please try again.');
     },
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       queryClient.invalidateQueries({ queryKey: ['checkIns'] });
       queryClient.invalidateQueries({ queryKey: ['habits'] });
       queryClient.invalidateQueries({ queryKey: ['activities'] });
-      toast.success('Check-in submitted successfully');
+      if (variables.status === 'completed') {
+        // No Undo affordance: the backend has no DELETE /check-ins endpoint,
+        // so an "Undo" button would be a no-op lie. A plain confirmation toast
+        // is honest. If a delete endpoint is added later, reintroduce Undo
+        // with a real deleteCheckIn call here.
+        toast.success('Checked in');
+      }
     },
   });
 }
