@@ -11,6 +11,19 @@ import { clearAuthState } from '@/store/auth';
 // Debug logging in development
 const DEBUG = isDev;
 
+// Fields whose values are redacted from debug logs to avoid leaking secrets.
+const REDACTED_KEYS = new Set(['password', 'newPassword', 'token', 'authorizationCode', 'refreshToken']);
+
+function redactBody(data: unknown): unknown {
+  if (!data || typeof data !== 'object') return data;
+  const obj = data as Record<string, unknown>;
+  const redacted: Record<string, unknown> = {};
+  for (const [key, value] of Object.entries(obj)) {
+    redacted[key] = REDACTED_KEYS.has(key) ? '[REDACTED]' : value;
+  }
+  return redacted;
+}
+
 // API Error class
 export class ApiError extends Error {
   constructor(
@@ -61,7 +74,7 @@ axiosInstance.interceptors.request.use(
     if (DEBUG) {
       console.log(`[API] ${configObj.method?.toUpperCase()} ${configObj.url}`, {
         params: configObj.params,
-        data: configObj.data,
+        data: redactBody(configObj.data),
       });
     }
     return configObj;

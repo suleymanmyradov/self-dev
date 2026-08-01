@@ -11,6 +11,7 @@ import {
   ResetPasswordRequestSchema,
   ResendVerificationRequestSchema,
   VerifyEmailRequestSchema,
+  GoogleLoginRequestSchema,
 } from '@/lib/validation';
 import type {
   LoginRequest,
@@ -85,7 +86,8 @@ export async function resendVerification(data: ResendVerificationRequest): Promi
  * microservice); the browser only ever sees the public client ID.
  */
 export async function googleLogin(data: GoogleLoginRequest): Promise<AuthResponse> {
-  const response = await api.post<unknown>(ENDPOINTS.GOOGLE_LOGIN, data);
+  const validated = GoogleLoginRequestSchema.parse(data);
+  const response = await api.post<unknown>(ENDPOINTS.GOOGLE_LOGIN, validated);
   return AuthResponseSchema.parse(response);
 }
 

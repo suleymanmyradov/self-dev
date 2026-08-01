@@ -5,6 +5,8 @@
 export interface PageParams {
   page?: number;
   limit?: number;
+  // Allow arbitrary filter/query fields without enabling typo-prone keys.
+  // Constrained to the primitive types axios serializes into query params.
   [key: string]: string | number | boolean | undefined;
 }
 
@@ -225,7 +227,7 @@ export interface Profile {
   avatarUrl?: string;
   createdAt: string;
   updatedAt: string;
-  emailVerified?: boolean;
+  emailVerified: boolean;
 }
 
 export interface UpdateProfileRequest {

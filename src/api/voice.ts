@@ -1,9 +1,15 @@
 import { config } from '@/lib/config';
+import { parseSSEEvent } from '@/lib/sse';
 
 const ENDPOINTS = {
   TRANSCRIBE: '/personalization/transcribe',
   VOICE_TURN: '/personalization/voice-turn',
 };
+
+// Backend enforces a 25 MB upload cap (matching the OpenAI Whisper limit) for
+// both transcribe and voice-turn. Validate client-side to avoid wasting
+// bandwidth on uploads the server will reject.
+const MAX_AUDIO_BYTES = 25 * 1024 * 1024;
 
 export interface TranscribeResponse {
   text: string;
@@ -20,6 +26,9 @@ export async function transcribeAudio(
   audio: Blob,
   language?: string,
 ): Promise<TranscribeResponse> {
+  if (audio.size > MAX_AUDIO_BYTES) {
+    throw new Error(`Audio exceeds the 25 MB upload limit (${(audio.size / 1024 / 1024).toFixed(1)} MB)`);
+  }
   const form = new FormData();
   // MediaRecorder produces audio/webm on Chrome/Firefox, audio/mp4 on Safari.
   // The filename extension tells the backend the format; the MIME type is a
@@ -70,6 +79,10 @@ export function streamVoiceTurn(
 
   (async () => {
     try {
+      if (audio.size > MAX_AUDIO_BYTES) {
+        callbacks.onError?.(`Audio exceeds the 25 MB upload limit (${(audio.size / 1024 / 1024).toFixed(1)} MB)`);
+        return;
+      }
       const form = new FormData();
       const ext = audioExtensionFor(audio.type);
       form.append('audio', audio, `voice.${ext}`);
@@ -143,8 +156,9 @@ export function streamVoiceTurn(
                 callbacks.onError?.(data.message ?? 'Unknown error');
                 break;
             }
-          } catch {
-            // Ignore malformed JSON in an event.
+          } catch (parseErr) {
+            // Log malformed JSON so backend issues are debuggable; don't crash the stream.
+            console.error('[voice stream] malformed JSON in SSE event:', parsed.event, parseErr);
           }
         }
       }
@@ -170,23 +184,4 @@ function audioExtensionFor(mimeType: string): string {
   if (mt.includes('aac')) return 'aac';
   // Default: webm is the most common MediaRecorder output.
   return 'webm';
-}
-
-interface SSEEvent {
-  event: string;
-  data: string;
-}
-
-function parseSSEEvent(raw: string): SSEEvent | null {
-  let event = 'message';
-  let data = '';
-  for (const line of raw.split('\n')) {
-    if (line.startsWith('event:')) {
-      event = line.slice(6).trim();
-    } else if (line.startsWith('data:')) {
-      data += line.slice(5).trim();
-    }
-  }
-  if (!data) return null;
-  return { event, data };
 }

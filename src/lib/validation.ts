@@ -32,6 +32,11 @@ export const LoginRequestSchema = z.object({
   password: z.string().min(8, 'Password must be at least 8 characters'),
 });
 
+export const GoogleLoginRequestSchema = z.object({
+  authorizationCode: z.string().min(1, 'Authorization code is required'),
+  redirectUri: z.string().url().optional(),
+});
+
 export const RegisterRequestSchema = z.object({
   username: z.string()
     .min(3, 'Username must be at least 3 characters')
@@ -60,7 +65,7 @@ export const ProfileSchema = z.object({
   avatarUrl: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  emailVerified: z.boolean().optional(),
+  emailVerified: z.boolean(),
 });
 
 export const ProfileResponseSchema = ApiResponseSchema(ProfileSchema);

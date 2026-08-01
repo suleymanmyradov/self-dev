@@ -20,6 +20,8 @@ import {
   MessagesResponseSchema,
   CategoriesResponseSchema,
   BillingOverviewResponseSchema,
+  NotificationsResponseSchema,
+  UnreadNotificationCountResponseSchema,
 } from '@/lib/validation';
 import type {
   PageParams,
@@ -42,6 +44,8 @@ import type {
   CategoriesResponse,
   EntityType,
   BillingOverviewResponse,
+  NotificationsResponse,
+  UnreadNotificationCountResponse,
 } from './types';
 
 export async function listHabitsServer(params: PageParams = { page: 1, limit: 20 }): Promise<HabitsResponse> {
@@ -59,7 +63,10 @@ export async function listAllHabitsServer(): Promise<HabitsResponse> {
     return first;
   }
   const all = [...first.data];
-  for (let page = 2; page <= first.page.totalPages; page++) {
+  // Safety guard: cap pagination so an inconsistent `total`/`totalPages` from
+  // the backend can never cause an unbounded loop.
+  const maxPages = Math.min(first.page.totalPages, 100);
+  for (let page = 2; page <= maxPages; page++) {
     const res = await listHabitsServer({ page, limit });
     all.push(...res.data);
     if (all.length >= first.page.total) break;
@@ -147,6 +154,16 @@ export async function listCategoriesServer(entityType: EntityType): Promise<Cate
   return CategoriesResponseSchema.parse(data);
 }
 
+export async function listNotificationsServer(params: PageParams = { page: 1, limit: 20 }): Promise<NotificationsResponse> {
+  const data = await serverGet<unknown>('/notifications', params);
+  return NotificationsResponseSchema.parse(data);
+}
+
+export async function getUnreadNotificationCountServer(): Promise<UnreadNotificationCountResponse> {
+  const data = await serverGet<unknown>('/notifications/unread-count');
+  return UnreadNotificationCountResponseSchema.parse(data);
+}
+
 /**
  * Fetch billing overview server-side for SSR initial data.
  *
@@ -174,6 +191,10 @@ export async function getBillingOverviewServer(): Promise<BillingOverviewRespons
     }
     // Swallow other errors (expired token, network) — the client-side query
     // will retry after auth hydrates, and the cards render with defaults.
+    // Log in development so configuration/network issues are not silently hidden.
+    if (process.env.NODE_ENV !== 'production') {
+      console.error('[getBillingOverviewServer] non-Next.js error swallowed:', error);
+    }
     return null;
   }
 }

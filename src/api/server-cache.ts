@@ -67,6 +67,7 @@ export async function listArticlesCached(
 
   const response = await fetch(`${url}?${searchParams.toString()}`, {
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) {
     throw new Error(`[server-cache] listArticlesCached failed: ${response.status}`);
@@ -90,6 +91,7 @@ export async function getArticleCached(id: string): Promise<ArticleResponse> {
   const url = gatewayUrl(`/articles/${encodeURIComponent(id)}`);
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) {
     throw new Error(`[server-cache] getArticleCached failed: ${response.status}`);
@@ -113,6 +115,7 @@ export async function getFeaturedArticleCached(): Promise<ArticleResponse | null
   const url = gatewayUrl('/articles/featured');
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) {
     throw new Error(`[server-cache] getFeaturedArticleCached failed: ${response.status}`);
@@ -138,6 +141,7 @@ export async function listCategoriesCached(entityType: EntityType): Promise<Cate
   const searchParams = new URLSearchParams({ entityType });
   const response = await fetch(`${url}?${searchParams.toString()}`, {
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) {
     throw new Error(`[server-cache] listCategoriesCached failed: ${response.status}`);
@@ -160,6 +164,7 @@ export async function listSiteSettingsCached(): Promise<SiteSettingsResponse> {
   const url = gatewayUrl('/site-settings');
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) {
     throw new Error(`[server-cache] listSiteSettingsCached failed: ${response.status}`);
@@ -274,6 +279,7 @@ export async function listHabitTemplatesCached(): Promise<HabitTemplatesResponse
   const url = gatewayUrl('/habit-templates');
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) {
     throw new Error(`[server-cache] listHabitTemplatesCached failed: ${response.status}`);
@@ -294,6 +300,7 @@ export async function listGoalTemplatesCached(): Promise<GoalTemplatesResponse> 
   const url = gatewayUrl('/goal-templates');
   const response = await fetch(url, {
     headers: { 'Content-Type': 'application/json' },
+    signal: AbortSignal.timeout(10000),
   });
   if (!response.ok) {
     throw new Error(`[server-cache] listGoalTemplatesCached failed: ${response.status}`);

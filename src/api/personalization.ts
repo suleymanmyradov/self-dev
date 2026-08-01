@@ -11,6 +11,7 @@ import {
   ApplyPlanAdjustmentSuggestionRequestSchema,
   GeneratePersonalizedCoachingRequestSchema,
   PersonalizedCoachingResponseSchema,
+  GenerateOnboardingHabitsRequestSchema,
   GenerateOnboardingHabitsResponseSchema,
 } from '@/lib/validation';
 import type {
@@ -280,7 +281,8 @@ function parseCoachingSSEEvent(raw: string): { type: string; data: string } | nu
 export async function generateOnboardingHabits(
   data: GenerateOnboardingHabitsRequest
 ): Promise<OnboardingHabitSuggestion[]> {
-  const response = await api.post<unknown>(ENDPOINTS.ONBOARDING_HABITS, data);
+  const validated = GenerateOnboardingHabitsRequestSchema.parse(data);
+  const response = await api.post<unknown>(ENDPOINTS.ONBOARDING_HABITS, validated);
   const parsed = GenerateOnboardingHabitsResponseSchema.parse(response);
   return parsed.data;
 }

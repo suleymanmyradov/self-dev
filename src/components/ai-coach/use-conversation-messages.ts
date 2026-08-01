@@ -33,6 +33,7 @@ export function useConversationMessages(conversationId?: string) {
     const queryClient = useQueryClient();
     const [messages, setMessages] = useState<CoachingMessage[]>([]);
     const [isRunning, setIsRunning] = useState(false);
+    const [thinkingMessage, setThinkingMessage] = useState<string | null>(null);
     const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(
         conversationId,
     );
@@ -66,22 +67,34 @@ export function useConversationMessages(conversationId?: string) {
     }, [conversationId]);
 
     const convertMessage = useCallback((msg: CoachingMessage): ThreadMessageLike => {
-        const base = {
-            role: msg.role,
-            content: msg.content,
-            id: msg.id,
-        } satisfies Omit<ThreadMessageLike, 'status'>;
+        if (msg.role !== 'assistant') {
+            return {
+                role: msg.role,
+                content: msg.content,
+                id: msg.id,
+            };
+        }
 
-        if (msg.role !== 'assistant') return base;
+        // When the assistant is running and has no streamed content yet,
+        // show the latest thinking message so the user sees the coach is
+        // processing (e.g. "Looking up your goals...") instead of a blank
+        // bubble. Once the first delta arrives, thinkingMessage is cleared
+        // and msg.content takes over.
+        const content =
+            msg.status === 'running' && !msg.content && thinkingMessage
+                ? thinkingMessage
+                : msg.content;
 
         return {
-            ...base,
+            role: msg.role,
+            content,
+            id: msg.id,
             status:
                 msg.status === 'running'
                     ? { type: 'running' }
                     : { type: 'complete', reason: 'stop' },
         };
-    }, []);
+    }, [thinkingMessage]);
 
     const onNew = useCallback(
         async (message: AppendMessage) => {
@@ -102,6 +115,7 @@ export function useConversationMessages(conversationId?: string) {
 
             setMessages(prev => [...prev, userMsg, assistantMsg]);
             setIsRunning(true);
+            setThinkingMessage(null);
 
             // If we don't have a conversation yet, create one before opening the stream.
             let convId = currentConversationId;
@@ -129,7 +143,11 @@ export function useConversationMessages(conversationId?: string) {
                     conversationId: convId,
                 },
                 {
+                    onThinking: message => {
+                        setThinkingMessage(message);
+                    },
                     onDelta: text => {
+                        setThinkingMessage(null);
                         setMessages(prev =>
                             prev.map(m =>
                                 m.id === assistantId ? { ...m, content: m.content + text } : m,
@@ -137,6 +155,7 @@ export function useConversationMessages(conversationId?: string) {
                         );
                     },
                     onComplete: fullResponse => {
+                        setThinkingMessage(null);
                         setMessages(prev =>
                             prev.map(m =>
                                 m.id === assistantId
@@ -162,6 +181,7 @@ export function useConversationMessages(conversationId?: string) {
                         }
                     },
                     onError: errorMessage => {
+                        setThinkingMessage(null);
                         setMessages(prev =>
                             prev.map(m =>
                                 m.id === assistantId
@@ -196,6 +216,7 @@ export function useConversationMessages(conversationId?: string) {
         abortRef.current?.abort();
         abortRef.current = null;
         setIsRunning(false);
+        setThinkingMessage(null);
         setMessages(prev =>
             prev.map(m => (m.status === 'running' ? { ...m, status: 'complete' as const } : m)),
         );

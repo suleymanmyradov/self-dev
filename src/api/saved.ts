@@ -3,11 +3,13 @@ import {
   SavedItemsResponseSchema,
   SavedItemsDetailedResponseSchema,
   SaveItemRequestSchema,
+  SavedItemResponseSchema,
 } from '@/lib/validation';
 import type {
   SavedItemsResponse,
   SavedItemsDetailedResponse,
   SaveItemRequest,
+  SavedItemResponse,
   PageParams,
 } from './types';
 
@@ -21,9 +23,10 @@ export async function listSavedDetailed(params: PageParams = { page: 1, limit: 2
   return SavedItemsDetailedResponseSchema.parse(response);
 }
 
-export async function saveItem(data: SaveItemRequest): Promise<void> {
+export async function saveItem(data: SaveItemRequest): Promise<SavedItemResponse> {
   const validated = SaveItemRequestSchema.parse(data);
-  await api.post('/saved', validated);
+  const response = await api.post<unknown>('/saved', validated);
+  return SavedItemResponseSchema.parse(response);
 }
 
 export async function removeSavedItem(id: string): Promise<void> {

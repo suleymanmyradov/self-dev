@@ -153,6 +153,7 @@ export {
   googleLogin,
   forgotPassword,
   resetPassword,
+  updateProfile,
 } from './auth';
 
 // Goals API
@@ -275,6 +276,3 @@ export type {
   PortalSessionResponse,
   PlanLimitError,
 } from './types';
-
-// Profile update
-export { updateProfile } from './auth';

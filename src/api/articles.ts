@@ -1,4 +1,4 @@
-import { api } from './axios-client';
+import api from './axios-client';
 import {
   ArticlesResponseSchema,
   ArticleResponseSchema,
@@ -25,16 +25,18 @@ export async function getArticle(id: string): Promise<ArticleResponse> {
 }
 
 export async function likeArticle(id: string): Promise<LikeArticleResponse> {
-  const response = await api.post<unknown>(`/articles/${encodeURIComponent(id)}/like`, { id });
+  const response = await api.post<unknown>(`/articles/${encodeURIComponent(id)}/like`);
   return LikeArticleResponseSchema.parse(response);
 }
 
 export async function shareArticle(id: string, platform: string): Promise<ShareArticleResponse> {
-  const response = await api.post<unknown>(`/articles/${encodeURIComponent(id)}/share`, { id, platform });
+  const response = await api.post<unknown>(`/articles/${encodeURIComponent(id)}/share`, { platform });
   return ShareArticleResponseSchema.parse(response);
 }
 
 export async function getAuthorArticles(params: GetAuthorArticlesParams): Promise<ArticlesResponse> {
-  const response = await api.get<unknown>(`/articles/author/${encodeURIComponent(params.authorId)}`, params);
+  // authorId goes in the path; strip it so it's not duplicated as a query param.
+  const { authorId, ...queryParams } = params;
+  const response = await api.get<unknown>(`/articles/author/${encodeURIComponent(authorId)}`, queryParams);
   return ArticlesResponseSchema.parse(response);
 }

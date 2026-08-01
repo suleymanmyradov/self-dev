@@ -53,6 +53,7 @@ const useAuthStore = create<AuthState>()(
             avatarUrl: p.avatarUrl ?? "",
             createdAt: p.createdAt ?? now,
             updatedAt: p.updatedAt ?? now,
+            emailVerified: p.emailVerified ?? false,
           };
           return { user: profile, isAuthenticated: true };
         }),
