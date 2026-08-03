@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { useAuthStore } from '@/store/auth';
 import { toast } from 'sonner';
+import { capitalizeFirst } from '@/lib/utils';
 
 function VerifyEmailContent() {
   const router = useRouter();
@@ -93,7 +94,7 @@ function VerifyEmailContent() {
               <>
                 <XCircle className="size-8 text-destructive" />
                 <h1 className="text-xl font-bold tracking-tight">Verification failed</h1>
-                <p className="text-sm text-muted-foreground">{error}</p>
+                <p className="text-sm text-muted-foreground">{capitalizeFirst(error)}</p>
                 <div className="mt-2 w-full rounded-md bg-muted/40 p-4 text-left">
                   <div className="mb-2 flex items-center gap-2 text-sm font-medium">
                     <MailWarning className="size-4" /> Resend verification link

@@ -12,6 +12,7 @@ import { useRegisterForm } from '@/hooks';
 import { GoogleButton } from '@/components/google-button';
 import Link from 'next/link';
 import { toast } from 'sonner';
+import { capitalizeFirst } from '@/lib/utils';
 
 export function RegisterForm() {
   const router = useRouter();
@@ -74,7 +75,7 @@ export function RegisterForm() {
       <div className="grid gap-5">
         {error && (
           <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-            {error}
+            {capitalizeFirst(error)}
           </div>
         )}
 

@@ -22,14 +22,6 @@ export function ActivityCard({ activities }: { activities: Activity[] }) {
           ))
         )}
       </ul>
-      {activities.length > 0 && (
-        <button
-          type="button"
-          className="mt-3 text-sm font-medium text-success transition-colors hover:text-success/80"
-        >
-          Full history
-        </button>
-      )}
     </div>
   );
 }

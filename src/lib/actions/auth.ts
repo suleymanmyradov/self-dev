@@ -6,7 +6,6 @@ import {
   LoginRequestSchema,
   RegisterRequestSchema,
   AuthResponseSchema,
-  RegisterResponseSchema,
   ForgotPasswordRequestSchema,
   ResetPasswordRequestSchema,
   ResendVerificationRequestSchema,
@@ -31,16 +30,13 @@ async function publicPost<T>(
   body: unknown,
 ): Promise<T> {
   const url = gatewayUrl(path);
-  console.log('[publicPost] fetching:', url, 'body:', JSON.stringify(body));
   const res = await fetch(url, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify(body),
   });
 
-  console.log('[publicPost] response status:', res.status, 'url:', res.url);
   const data = await res.json().catch(() => null);
-  console.log('[publicPost] response data:', JSON.stringify(data));
 
   if (!res.ok) {
     const message =

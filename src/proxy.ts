@@ -11,7 +11,7 @@ const JWT_ISSUER = process.env.JWT_ISSUER || 'growth-auth';
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'growth-api';
 
 // Routes that require authentication
-const PROTECTED_ROUTES = [
+export const PROTECTED_ROUTES = [
   '/plan',
   '/progress',
   '/coach',
@@ -24,21 +24,33 @@ const PROTECTED_ROUTES = [
 ];
 
 // Routes that should be accessible only when NOT authenticated
-const AUTH_ROUTES = ['/login', '/register'];
+export const AUTH_ROUTES = ['/login', '/register'];
+
+/** Whether a pathname matches an auth-only route (login, register). */
+export function isAuthRoute(pathname: string): boolean {
+  return AUTH_ROUTES.some((route) => pathname === route);
+}
+
+/** Whether a pathname matches a protected route (requires authentication). */
+export function isProtectedRoute(pathname: string): boolean {
+  return PROTECTED_ROUTES.some(
+    (route) => pathname === route || pathname.startsWith(`${route}/`),
+  );
+}
 
 // API routes that should bypass auth check (handled by their own logic).
 // The former /api/chat route was removed: onboarding habit generation now goes
 // through the authenticated backend gateway at /api/v1/personalization/onboarding-habits.
 const PUBLIC_API_ROUTES: string[] = [];
 
-type TokenStatus = 'valid' | 'expired' | 'invalid';
+export type TokenStatus = 'valid' | 'expired' | 'invalid';
 
 /**
  * Check the access token locally.
  * Returns 'valid', 'expired', or 'invalid' so callers can decide whether to
  * attempt a silent refresh.
  */
-async function checkToken(token: string): Promise<TokenStatus> {
+export async function checkToken(token: string): Promise<TokenStatus> {
   if (!JWT_SECRET) {
     if (process.env.NODE_ENV === 'production') {
       console.warn('[proxy] JWT_SECRET is not set; treating tokens as invalid.');
@@ -126,7 +138,7 @@ export async function proxy(request: NextRequest) {
           authenticated = true;
 
           // Redirect authenticated users away from auth pages
-          if (AUTH_ROUTES.some((r) => pathname === r)) {
+          if (isAuthRoute(pathname)) {
             return NextResponse.redirect(new URL('/plan', request.url));
           }
 
@@ -146,16 +158,12 @@ export async function proxy(request: NextRequest) {
   }
 
   // Redirect authenticated users away from auth pages
-  if (authenticated && AUTH_ROUTES.some((route) => pathname === route)) {
+  if (authenticated && isAuthRoute(pathname)) {
     return NextResponse.redirect(new URL('/plan', request.url));
   }
 
   // Redirect unauthenticated users away from protected pages
-  const isProtected = PROTECTED_ROUTES.some(
-    (route) => pathname === route || pathname.startsWith(`${route}/`),
-  );
-
-  if (!authenticated && isProtected) {
+  if (!authenticated && isProtectedRoute(pathname)) {
     const loginUrl = new URL('/login', request.url);
     loginUrl.searchParams.set('redirect', pathname);
     return NextResponse.redirect(loginUrl);

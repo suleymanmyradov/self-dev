@@ -1,6 +1,6 @@
 "use client";
 
-import { use, useMemo } from "react";
+import { use, useMemo, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { WeeklyReviewEmptyState } from "@/components/weekly-review/weekly-review-empty-state";
 import { MetricCard } from "@/components/weekly-review/weekly-review-metric-card";
@@ -21,6 +21,10 @@ import {
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import type { WeeklyReview, ApiResponse, ActivityResponse } from "@/api";
 
+const subscribeToHydration = () => () => {};
+const getClientHydrationSnapshot = () => true;
+const getServerHydrationSnapshot = () => false;
+
 interface WeeklyReviewClientProps {
   currentReviewPromise: Promise<ApiResponse<WeeklyReview | null>>;
   reviewsPromise: Promise<ApiResponse<WeeklyReview[]>>;
@@ -33,26 +37,18 @@ interface WeeklyReviewClientProps {
  * per-day distribution by distributing completed check-ins across the week
  * proportionally. When the backend exposes per-day data, this can be replaced.
  */
-function useDailyCheckInCounts(review: WeeklyReview | null | undefined): number[] {
-  return useMemo(() => {
-    if (!review) return [0, 0, 0, 0, 0, 0, 0];
-    // Approximate: distribute completed check-ins evenly across 7 days,
-    // capped at totalHabits per day. This gives a reasonable visual.
-    const totalCompleted = review.completedCheckIns;
-    const perDay = review.totalHabits > 0 ? review.totalHabits : 7;
-    const avg = Math.round(totalCompleted / 7);
-    // Create a slightly varied distribution for visual interest
-    const counts = Array(7).fill(avg);
-    // Adjust so the sum matches completedCheckIns
-    const diff = totalCompleted - counts.reduce((a, b) => a + b, 0);
-    if (diff !== 0) {
-      for (let i = 0; i < 7 && diff > 0; i++) {
-        counts[i] = Math.min(perDay, counts[i] + 1);
-        if (counts[i] >= perDay) continue;
-      }
-    }
-    return counts.map((c) => Math.min(c, perDay));
-  }, [review]);
+export function getDailyCheckInCounts(review: WeeklyReview | null | undefined): number[] {
+  if (!review) return [0, 0, 0, 0, 0, 0, 0];
+  // Approximate: distribute completed check-ins evenly across 7 days,
+  // capped at totalHabits per day. This gives a reasonable visual.
+  const totalCompleted = Math.max(0, Math.floor(review.completedCheckIns));
+  const perDay = review.totalHabits > 0 ? review.totalHabits : totalCompleted;
+  const base = Math.floor(totalCompleted / 7);
+  const remainder = totalCompleted % 7;
+  // Create a slightly varied distribution for visual interest
+  const counts = Array.from({ length: 7 }, (_, index) => base + (index < remainder ? 1 : 0));
+  // Adjust so the sum matches completedCheckIns
+  return counts.map((count) => Math.min(count, perDay));
 }
 
 export function WeeklyReviewClient({
@@ -70,41 +66,63 @@ export function WeeklyReviewClient({
 
   const generateStream = useGenerateWeeklyReviewStream();
   const { data: billing } = useBillingOverview();
-  const isPro = billing?.subscription?.planCode === "pro";
+  const hasHydrated = useSyncExternalStore(
+    subscribeToHydration,
+    getClientHydrationSnapshot,
+    getServerHydrationSnapshot,
+  );
+  const isPro = hasHydrated && billing?.subscription?.planCode === "pro";
+  const [selectedWeekStart, setSelectedWeekStart] = useState<string | null>(null);
+
+  const reviewTimeline = useMemo(() => {
+    const reviewsByWeek = new Map<string, WeeklyReview>();
+    if (currentReview?.id) reviewsByWeek.set(currentReview.weekStart, currentReview);
+    for (const review of reviews) {
+      if (review.id) reviewsByWeek.set(review.weekStart, review);
+    }
+    return [...reviewsByWeek.values()].sort(
+      (first, second) => new Date(second.weekStart).getTime() - new Date(first.weekStart).getTime(),
+    );
+  }, [currentReview, reviews]);
+  const visibleTimeline = isPro ? reviewTimeline : reviewTimeline.slice(0, 1);
+  const activeReview = visibleTimeline.find((review) => review.weekStart === selectedWeekStart) ?? visibleTimeline[0];
+  const activeReviewIndex = activeReview ? visibleTimeline.findIndex((review) => review.weekStart === activeReview.weekStart) : -1;
+  const previousReview = activeReviewIndex >= 0 ? visibleTimeline[activeReviewIndex + 1] : undefined;
+  const isCurrentReview = Boolean(currentReview?.id && activeReview?.weekStart === currentReview.weekStart);
 
   const handleGenerate = () => {
-    generateStream.mutate({ forceRegenerate: true });
+    generateStream.mutate({ weekStart: activeReview?.weekStart, forceRegenerate: true });
   };
 
-  const dailyCounts = useDailyCheckInCounts(currentReview);
+  const dailyCounts = useMemo(() => getDailyCheckInCounts(activeReview), [activeReview]);
   const maxDaily = Math.max(...dailyCounts, 1);
-  const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1;
+  const todayIndex = isCurrentReview ? (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1) : -1;
 
   // Mood average from moodSummary
   const moodAvg = useMemo(() => {
-    if (!currentReview) return null;
+    if (!activeReview) return null;
     const moodValues: Record<string, number> = { great: 5, okay: 4, low: 2, stressed: 1 };
-    const entries = Object.entries(currentReview.moodSummary || {});
+    const entries = Object.entries(activeReview.moodSummary || {});
     const total = entries.reduce((sum, [, count]) => sum + count, 0);
     if (total === 0) return null;
     const weighted = entries.reduce((sum, [mood, count]) => {
       return sum + (moodValues[mood] ?? 3) * count;
     }, 0);
     return (weighted / total).toFixed(1);
-  }, [currentReview]);
+  }, [activeReview]);
 
   // Longest run from habit breakdown
   const longestRun = useMemo(() => {
-    if (!currentReview) return null;
-    const breakdown = currentReview.habitBreakdown ?? [];
+    if (!activeReview) return null;
+    const breakdown = activeReview.habitBreakdown ?? [];
     if (breakdown.length === 0) return null;
     const best = breakdown.reduce((max, h) => (h.completedCount > max.completedCount ? h : max), breakdown[0]);
     return { count: best.completedCount, name: best.habitName };
-  }, [currentReview]);
+  }, [activeReview]);
 
   // The backend returns a well-formed empty review (no id) when there is no
   // review for the current week yet — treat that as the "no review" state.
-  if (!currentReview || !currentReview.id) {
+  if (!activeReview) {
     return (
       <div className="h-full overflow-y-auto">
         <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
@@ -123,18 +141,23 @@ export function WeeklyReviewClient({
   }
 
   // Week label, e.g. "WEEK 30 · 21–27 JULY"
-  const weekStart = new Date(currentReview.weekStart);
-  const weekEnd = new Date(currentReview.weekEnd);
+  const weekStart = new Date(activeReview.weekStart);
+  const weekEnd = new Date(activeReview.weekEnd);
   const weekNumber = Math.ceil(((weekStart.getTime() - new Date(weekStart.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7);
   const weekLabel = `WEEK ${weekNumber} · ${weekStart.getDate()}–${weekEnd.getDate()} ${weekEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}`;
 
   // Summary headline — use aiSummary first sentence, or a default
-  const headline = currentReview.aiSummary
-    ? currentReview.aiSummary.split('.')[0].trim() + '.'
+  const headline = activeReview.aiSummary
+    ? activeReview.aiSummary.split('.')[0].trim() + '.'
     : 'A week of progress.';
 
-  const totalPossible = currentReview.totalHabits * 7;
-  const consistency = Math.round(currentReview.completionRate);
+  const totalPossible = activeReview.completedCheckIns + activeReview.missedCheckIns;
+  const consistency = Math.round(activeReview.completionRate);
+  const consistencyChange = previousReview ? consistency - Math.round(previousReview.completionRate) : null;
+  const consistencyContext = consistencyChange === null
+    ? 'No prior review'
+    : `${consistencyChange >= 0 ? '+' : ''}${consistencyChange} vs previous review`;
+  const consistencyClass = consistencyChange === null ? undefined : consistencyChange >= 0 ? 'text-success' : 'text-destructive';
 
   return (
     <div className="h-full overflow-y-auto">
@@ -150,11 +173,25 @@ export function WeeklyReviewClient({
               </div>
               {/* Week navigation */}
               <div className="flex items-center gap-1 shrink-0">
-                <Button variant="ghost" size="icon-sm" aria-label="Previous week">
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Previous available review"
+                  disabled={activeReviewIndex >= visibleTimeline.length - 1}
+                  onClick={() => setSelectedWeekStart(visibleTimeline[activeReviewIndex + 1]?.weekStart ?? null)}
+                >
                   <ChevronLeft className="h-4 w-4" />
                 </Button>
-                <span className="text-xs text-muted-foreground px-1">This week</span>
-                <Button variant="ghost" size="icon-sm" aria-label="Next week">
+                <span className="text-xs text-muted-foreground px-1">
+                  {isCurrentReview ? 'This week' : 'Past review'}
+                </span>
+                <Button
+                  variant="ghost"
+                  size="icon-sm"
+                  aria-label="Next available review"
+                  disabled={activeReviewIndex <= 0}
+                  onClick={() => setSelectedWeekStart(visibleTimeline[activeReviewIndex - 1]?.weekStart ?? null)}
+                >
                   <ChevronRight className="h-4 w-4" />
                 </Button>
               </div>
@@ -165,17 +202,17 @@ export function WeeklyReviewClient({
               <MetricCard
                 label="CONSISTENCY"
                 value={`${consistency}%`}
-                context={currentReview.completedCheckIns > 0 ? `+${Math.round(consistency * 0.15)} vs last week` : '—'}
-                contextClass="text-success"
+                context={consistencyContext}
+                contextClass={consistencyClass}
               />
               <MetricCard
                 label="CHECK-INS"
-                value={`${currentReview.completedCheckIns}/${totalPossible}`}
-                context={`across ${currentReview.totalHabits} habit${currentReview.totalHabits === 1 ? '' : 's'}`}
+                value={`${activeReview.completedCheckIns}/${totalPossible}`}
+                context={`across ${activeReview.totalHabits} habit${activeReview.totalHabits === 1 ? '' : 's'}`}
               />
               <MetricCard
-                label="LONGEST RUN"
-                value={longestRun ? `${longestRun.count}d` : '—'}
+                label="MOST COMPLETED"
+                value={longestRun ? `${longestRun.count}` : '—'}
                 context={longestRun?.name ?? 'No data'}
               />
               <MetricCard
@@ -190,11 +227,11 @@ export function WeeklyReviewClient({
               dailyCounts={dailyCounts}
               maxDaily={maxDaily}
               todayIndex={todayIndex}
-              totalHabits={currentReview.totalHabits}
+              totalHabits={activeReview.totalHabits}
             />
 
             {/* Per habit breakdown */}
-            <HabitBreakdown habits={currentReview.habitBreakdown ?? []} />
+            <HabitBreakdown habits={activeReview.habitBreakdown ?? []} />
 
             {/* Regenerate button */}
             <div className="flex items-center gap-2">
@@ -214,7 +251,7 @@ export function WeeklyReviewClient({
             </div>
 
             {/* Value moment upgrade prompt for free users */}
-            {!isPro && currentReview.completionRate > 50 && (
+            {!isPro && activeReview.completionRate > 50 && (
               <UpgradePrompt
                 surface="weekly_review_value_moment"
                 trigger="weekly_history"
@@ -230,7 +267,7 @@ export function WeeklyReviewClient({
           <aside className="hidden w-[330px] shrink-0 space-y-4 lg:block">
             {/* Coach's read on the week */}
             <CoachCard
-              review={currentReview}
+              review={activeReview}
               isStreaming={generateStream.isStreaming}
               streamingText={generateStream.streamingText}
             />
@@ -239,7 +276,12 @@ export function WeeklyReviewClient({
             <ActivityCard activities={activities} />
 
             {/* Past reviews */}
-            <PastReviews reviews={reviews} isPro={isPro} />
+            <PastReviews
+              reviews={visibleTimeline.filter((review) => review.weekStart !== currentReview?.weekStart)}
+              isPro={isPro}
+              selectedWeekStart={activeReview.weekStart}
+              onSelect={(weekStart) => setSelectedWeekStart(weekStart)}
+            />
           </aside>
         </div>
       </div>

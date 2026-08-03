@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { toast } from 'sonner';
+import { capitalizeFirst } from '@/lib/utils';
 
 function ResetPasswordContent() {
   const params = useSearchParams();
@@ -105,7 +106,7 @@ function ResetPasswordContent() {
             <div className="grid gap-6">
               {state.error && (
                 <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
-                  {state.error}
+                  {capitalizeFirst(state.error)}
                 </div>
               )}
               <input type="hidden" name="token" value={token} />

@@ -5,9 +5,13 @@ import type { WeeklyReview } from "@/api";
 export function PastReviews({
   reviews,
   isPro,
+  selectedWeekStart,
+  onSelect,
 }: {
   reviews: WeeklyReview[];
   isPro: boolean;
+  selectedWeekStart: string;
+  onSelect: (weekStart: string) => void;
 }) {
   return (
     <div className="rounded-xl bg-card p-5">
@@ -22,12 +26,17 @@ export function PastReviews({
               const rWeek = Math.ceil(((rStart.getTime() - new Date(rStart.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7);
               return (
                 <li key={r.id ?? `${r.weekStart}-${r.weekEnd}`}>
-                  <div className="flex items-center justify-between rounded-lg border border-border px-3 py-2">
+                  <button
+                    type="button"
+                    onClick={() => onSelect(r.weekStart)}
+                    aria-pressed={selectedWeekStart === r.weekStart}
+                    className="flex w-full items-center justify-between rounded-lg border border-border px-3 py-2 text-left transition-colors hover:bg-muted/50 aria-pressed:border-success aria-pressed:bg-success/10"
+                  >
                     <span className="text-sm font-medium">Week {rWeek}</span>
                     <span className="font-mono text-xs tabular-nums text-muted-foreground">
                       {Math.round(r.completionRate)}%
                     </span>
-                  </div>
+                  </button>
                 </li>
               );
             })}

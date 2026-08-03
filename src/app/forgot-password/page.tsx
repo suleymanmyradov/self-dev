@@ -6,6 +6,7 @@ import { forgotPasswordAction } from '@/lib/actions/auth';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
+import { capitalizeFirst } from '@/lib/utils';
 
 export default function ForgotPasswordPage() {
   const [email, setEmail] = useState('');
@@ -47,7 +48,7 @@ export default function ForgotPasswordPage() {
             <div className="grid gap-5">
               {state.error && (
                 <div className="rounded-lg bg-destructive/10 p-3 text-sm text-destructive">
-                  {state.error}
+                  {capitalizeFirst(state.error)}
                 </div>
               )}
               {state.success && (

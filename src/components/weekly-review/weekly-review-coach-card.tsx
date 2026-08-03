@@ -1,4 +1,3 @@
-import { Button } from "@/components/ui/button";
 import type { WeeklyReview } from "@/api";
 
 /** Dark "Coach's read on the week" sidebar card with AI summary + adjustments. */
@@ -32,14 +31,6 @@ export function CoachCard({
           {review.suggestedAdjustments[0].suggestion}
         </p>
       )}
-      <div className="mt-4 flex items-center gap-2">
-        <Button size="sm" variant="outline" className="border-background/20 text-background hover:bg-background/10">
-          Apply to next week
-        </Button>
-        <Button size="sm" variant="ghost" className="text-background/80 hover:bg-background/10 hover:text-background">
-          Discuss
-        </Button>
-      </div>
     </div>
   );
 }

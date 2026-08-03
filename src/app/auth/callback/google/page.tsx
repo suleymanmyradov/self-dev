@@ -7,6 +7,7 @@ import { GalleryVerticalEnd, Loader2, XCircle } from 'lucide-react';
 import { googleLoginAction } from '@/lib/actions/auth';
 import { useAuthStore } from '@/store/auth';
 import { toast } from 'sonner';
+import { capitalizeFirst } from '@/lib/utils';
 
 function GoogleCallbackContent() {
   const router = useRouter();
@@ -62,7 +63,7 @@ function GoogleCallbackContent() {
               <>
                 <XCircle className="size-8 text-destructive" />
                 <h1 className="text-xl font-bold tracking-tight">Google sign-in failed</h1>
-                <p className="text-sm text-muted-foreground">{error}</p>
+                <p className="text-sm text-muted-foreground">{capitalizeFirst(error)}</p>
                 <Link
                   href="/login"
                   className="text-sm text-muted-foreground underline underline-offset-4 hover:text-primary"
