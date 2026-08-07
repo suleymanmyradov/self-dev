@@ -1,8 +1,7 @@
 import type { FC } from 'react';
 import { ThreadListItemPrimitive, ThreadListPrimitive, useThreadListItem } from '@assistant-ui/react';
-import { ArchiveIcon, ArchiveRestoreIcon, PlusIcon, TrashIcon, SearchIcon } from 'lucide-react';
+import { ArchiveIcon, ArchiveRestoreIcon, SearchIcon, TrashIcon } from 'lucide-react';
 
-import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { TooltipIconButton } from '@/components/ai-conversation/tooltip-icon-button';
 import type { Conversation } from '@/api';
@@ -31,22 +30,8 @@ export const ThreadList: FC<ThreadListProps> = ({ conversations, searchQuery = '
                 />
             </div>
 
-            <ThreadListNew />
             <ThreadListItems convMap={convMap} />
         </ThreadListPrimitive.Root>
-    );
-};
-
-const ThreadListNew: FC = () => {
-    return (
-        <ThreadListPrimitive.New asChild>
-            <Button
-                className="aui-thread-list-new size-6 shrink-0 justify-center gap-0 rounded-md bg-foreground px-0 text-background hover:bg-foreground/90"
-                aria-label="New chat"
-            >
-                <PlusIcon className="size-3.5" />
-            </Button>
-        </ThreadListPrimitive.New>
     );
 };
 

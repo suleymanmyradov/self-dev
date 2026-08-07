@@ -249,7 +249,17 @@ export default async function ArticlePage({
                 <p className="text-sm text-muted-foreground mb-4">
                   Add a habit based on this article to your plan and start tracking today.
                 </p>
-                <Link href="/plan">
+                <Link
+                  href={{
+                    pathname: '/plan',
+                    query: {
+                      newHabitFromArticle: '1',
+                      name: article.title,
+                      description: article.excerpt ?? '',
+                      category: article.category?.slug ?? '',
+                    },
+                  }}
+                >
                   <Button variant="success" size="sm">
                     <Plus className="h-4 w-4" />
                     Add to Plan

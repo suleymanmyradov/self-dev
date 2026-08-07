@@ -3,16 +3,22 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
-import { config, isDev } from './config';
+import { backendUrl, config, isAiGatewayPath, isDev } from './config';
 import { ApiError } from '@/api/axios-client';
 
 const AUTH_COOKIE_NAME = 'auth-token';
 
-function buildServerBaseUrl(): string {
-  // Server components talk to the gateway directly (origin + /api/v1), attaching
-  // the access token from the httpOnly cookie. The middleware keeps that cookie
-  // fresh before the page renders.
-  return `${config.apiProxyUrl}${config.apiPrefix}`;
+/**
+ * Build the base URL for a server-side API call, routing to the ai-gateway
+ * or main gateway based on the path prefix. Server components talk to the
+ * backend directly (origin + /api/v1), attaching the access token from the
+ * httpOnly cookie.
+ */
+function buildServerBaseUrl(path: string): string {
+  // Strip the /api/v1 prefix if present — backendUrl adds it back.
+  const stripped = path.replace(/^\/api\/v1/, '');
+  const origin = isAiGatewayPath(stripped) ? config.aiGatewayUrl : config.apiProxyUrl;
+  return `${origin}${config.apiPrefix}`;
 }
 
 export async function getServerAccessToken(): Promise<string | null> {
@@ -56,7 +62,8 @@ async function tryServerRefresh(
 export async function serverRequest<T>(cfg: AxiosRequestConfig): Promise<T> {
   const cookieStore = await cookies();
   let accessToken = cookieStore.get(AUTH_COOKIE_NAME)?.value ?? null;
-  const baseUrl = buildServerBaseUrl();
+  const urlPath = cfg.url ?? '';
+  const baseUrl = buildServerBaseUrl(urlPath);
 
   const doRequest = async (token: string | null): Promise<T> => {
     const response = await axios({

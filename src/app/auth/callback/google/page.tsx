@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GalleryVerticalEnd, Loader2, XCircle } from 'lucide-react';
@@ -21,17 +21,24 @@ function GoogleCallbackContent() {
     code ? null : 'Google did not return an authorization code.',
   );
 
+  // Google authorization codes are single-use. React StrictMode (on in dev)
+  // double-invokes effects (mount → cleanup → remount), and a stale render can
+  // also re-run the effect. Without a guard, the same code is exchanged twice:
+  // the first call consumes it at Google and the second gets `invalid_grant`,
+  // surfacing a "sign-in failed" error even though the user was actually logged
+  // in by the first call. This ref ensures we exchange the code at most once.
+  const exchangedRef = useRef(false);
+
   useEffect(() => {
-    if (!code) return;
+    if (!code || exchangedRef.current) return;
+    exchangedRef.current = true;
 
     // Optional state validation: if we stored a state value before redirecting,
     // verify it matches to prevent CSRF. For now we accept any non-empty state.
     void state;
 
-    let cancelled = false;
     (async () => {
       const result = await googleLoginAction(code);
-      if (cancelled) return;
       if (result.success && result.user) {
         setAuth(result.user);
         toast.success('Signed in with Google');
@@ -43,9 +50,6 @@ function GoogleCallbackContent() {
         setError(result.error ?? 'Google sign-in failed.');
       }
     })();
-    return () => {
-      cancelled = true;
-    };
   }, [code, state, router, setAuth]);
 
   return (

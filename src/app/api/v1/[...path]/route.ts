@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { config } from '@/lib/config';
+import { backendUrl, config } from '@/lib/config';
 
 /**
  * Backend-for-frontend (BFF) proxy for all gateway routes.
@@ -8,6 +8,10 @@ import { config } from '@/lib/config';
  * The browser calls this same-origin endpoint without any token. We read the
  * httpOnly `auth-token` cookie, attach it as a Bearer header to the gateway, and
  * transparently rotate the token on a 401 using the `refresh-token` cookie.
+ *
+ * AI/streaming routes (coaching, weekly reviews, conversations, voice) are
+ * routed to a separate ai-gateway service in local dev; in production both
+ * services share a single origin via ingress path-prefix routing.
  *
  * This is the ONLY browser-facing place that knows the access token, so the two
  * token stores can no longer drift and revoke each other.
@@ -44,7 +48,8 @@ const STRIP_RESPONSE_HEADERS = new Set([
 
 function buildUpstreamUrl(req: NextRequest, pathParts: string[]): string {
   const path = pathParts.join('/');
-  return `${config.apiProxyUrl}${config.apiPrefix}/${path}${req.nextUrl.search}`;
+  // Route to the ai-gateway or main gateway based on the path prefix.
+  return backendUrl(`/${path}`, req.nextUrl.search);
 }
 
 async function exchangeRefreshToken(

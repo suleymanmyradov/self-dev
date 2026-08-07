@@ -145,6 +145,16 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                     <ConversationHeader
                         title={activeConversation?.title}
                         onVoiceMode={() => setIsVoiceMode(true)}
+                        conversationId={currentConversationId}
+                        isArchived={activeConversation?.archived}
+                        onArchive={id => archiveMutation.mutate(id)}
+                        onUnarchive={id => unarchiveMutation.mutate(id)}
+                        onDelete={id => {
+                            deleteMutation.mutate(id);
+                            if (id === currentConversationId) {
+                                router.push('/coach');
+                            }
+                        }}
                     />
 
                     {/* Conversation thread */}

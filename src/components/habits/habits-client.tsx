@@ -1,7 +1,8 @@
 "use client";
 
-import { use, useCallback, useMemo, useState } from "react";
+import { use, useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
+import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -111,6 +112,26 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
 
   // Create habit form
   const createForm = useHabitForm();
+
+  // "Add to Plan" from an article: when the user clicks "Add to Plan" on an
+  // article page, they land on /plan with query params pre-filling a new habit.
+  // On mount (or when the params first become available), seed the create form
+  // with the article data and open the dialog. The query params are then
+  // stripped from the URL so a refresh doesn't re-open the dialog.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  useEffect(() => {
+    if (searchParams?.get('newHabitFromArticle') !== '1') return;
+    createForm.setForm({
+      name: searchParams.get('name') ?? '',
+      description: searchParams.get('description') ?? '',
+      category: searchParams.get('category') ?? '',
+    });
+    createForm.setOpen(true);
+    // Clear the query params so the dialog doesn't re-open on refresh/back.
+    router.replace('/plan');
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchParams]);
 
   // Edit habit form
   const editForm = useHabitEditForm();
