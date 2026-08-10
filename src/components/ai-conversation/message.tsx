@@ -1,12 +1,14 @@
 import {
     ActionBarPrimitive,
     BranchPickerPrimitive,
+    ChainOfThoughtPrimitive,
     ComposerPrimitive,
     ErrorPrimitive,
     MessagePrimitive,
 } from '@assistant-ui/react';
 import {
     CheckIcon,
+    ChevronDownIcon,
     ChevronLeftIcon,
     ChevronRightIcon,
     CopyIcon,
@@ -34,6 +36,7 @@ export const AssistantMessage: FC = () => {
                         components={{
                             Text: MarkdownText,
                             tools: { Fallback: ToolFallback },
+                            ChainOfThought: ReasoningSection,
                         }}
                     />
                     <MessageError />
@@ -45,6 +48,25 @@ export const AssistantMessage: FC = () => {
                 </div>
             </div>
         </MessagePrimitive.Root>
+    );
+};
+
+// ReasoningSection renders the model's live reasoning/thinking process in a
+// collapsible accordion. Uses assistant-ui's ChainOfThoughtPrimitive which
+// groups all reasoning (and tool-call) parts together. Only reasoning models
+// emit reasoning content; for non-reasoning models this section never renders.
+const ReasoningSection: FC = () => {
+    return (
+        <ChainOfThoughtPrimitive.Root className="aui-reasoning-root mb-3 rounded-lg border border-border/40 bg-muted/30">
+            <ChainOfThoughtPrimitive.AccordionTrigger
+                className="aui-reasoning-trigger flex w-full items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground"
+                aria-label="Toggle thinking"
+            >
+                <ChevronDownIcon className="aui-reasoning-chevron size-3.5 shrink-0 transition-transform [[data-state=closed]_&]:-rotate-90" />
+                <span>thinking...</span>
+            </ChainOfThoughtPrimitive.AccordionTrigger>
+            <ChainOfThoughtPrimitive.Parts className="aui-reasoning-content px-3 pb-3 text-xs leading-relaxed text-muted-foreground" />
+        </ChainOfThoughtPrimitive.Root>
     );
 };
 

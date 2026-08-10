@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { Search } from "lucide-react";
+import { ArrowRight, Search } from "lucide-react";
 import { ArticleCard, FeaturedCard } from "@/components/explore";
 import type { Article, SearchResult } from "@/api";
 import type { HabitTemplate } from "@/types/explore";
@@ -14,13 +14,6 @@ const CATEGORY_CHIPS = [
   "Relationships",
   "Productivity",
   "Self-knowledge",
-] as const;
-
-/** Preview data for the "People on the same goal" section. */
-const PEOPLE_PREVIEW = [
-  { name: "Sarah K.", goal: "Morning meditation" },
-  { name: "James L.", goal: "Daily journaling" },
-  { name: "Maya R.", goal: "Reading 20 min/day" },
 ] as const;
 
 const SEARCH_RESULT_HREF: Record<SearchResult['type'], (id: string) => string> = {
@@ -69,6 +62,7 @@ interface ExploreTabProps {
   habitTemplates: HabitTemplate[];
   getIsSaved: (article: Article) => boolean;
   onToggleSave: (articleId: string) => void;
+  onViewAllTemplates: () => void;
 }
 
 export function ExploreTab({
@@ -83,6 +77,7 @@ export function ExploreTab({
   habitTemplates,
   getIsSaved,
   onToggleSave,
+  onViewAllTemplates,
 }: ExploreTabProps) {
   return (
     <>
@@ -150,49 +145,32 @@ export function ExploreTab({
         </div>
       )}
 
-      {/* Bottom section: habit templates + people (hidden while searching) */}
+      {/* Bottom section: habit templates (hidden while searching) */}
       {!isSearching && (
-      <div className="grid gap-4 md:grid-cols-[2fr_1fr]">
-        {/* Habit templates card */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <div className="mb-4 flex items-center justify-between">
-            <h3 className="font-display text-lg font-normal text-foreground">Habit templates</h3>
-            <button className="text-xs text-muted-foreground hover:text-foreground">
-              All {habitTemplates.length}
-            </button>
-          </div>
-          <div className="grid gap-3 sm:grid-cols-2">
-            {habitTemplates.slice(0, 4).map((habit) => (
-              <div
-                key={habit.name}
-                className="rounded-lg border border-border p-3"
-              >
-                <p className="text-sm font-medium text-foreground">{habit.name}</p>
-                <p className="mt-0.5 text-xs text-muted-foreground">
-                  3 habits · {habit.category}
-                </p>
-              </div>
-            ))}
-          </div>
+      <div className="rounded-xl border border-border bg-card p-5">
+        <div className="mb-4 flex items-center justify-between">
+          <h3 className="font-display text-lg font-normal text-foreground">Habit templates</h3>
+          <button
+            onClick={onViewAllTemplates}
+            className="flex items-center gap-1 text-xs text-muted-foreground transition-[color] hover:text-foreground"
+          >
+            All {habitTemplates.length}
+            <ArrowRight className="size-3" />
+          </button>
         </div>
-
-        {/* People on the same goal card */}
-        <div className="rounded-xl border border-border bg-card p-5">
-          <h3 className="mb-4 font-display text-lg font-normal text-foreground">
-            People on the same goal
-          </h3>
-          <div className="space-y-3">
-            {PEOPLE_PREVIEW.map((person) => (
-              <div key={person.name} className="flex items-center gap-3">
-                <div className="size-[30px] shrink-0 rounded-full bg-secondary" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-foreground">{person.name}</p>
-                  <p className="truncate text-xs text-muted-foreground">{person.goal}</p>
-                </div>
-                <button className="text-xs text-success hover:text-success/80">Follow</button>
-              </div>
-            ))}
-          </div>
+        <div className="grid gap-3 sm:grid-cols-2">
+          {habitTemplates.slice(0, 4).map((habit) => (
+            <button
+              key={habit.name}
+              onClick={onViewAllTemplates}
+              className="rounded-lg border border-border p-3 text-left transition-[background-color] hover:bg-secondary/50"
+            >
+              <p className="text-sm font-medium text-foreground">{habit.name}</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                3 habits · {habit.category}
+              </p>
+            </button>
+          ))}
         </div>
       </div>
       )}

@@ -226,6 +226,7 @@ export default async function ArticlePage({
                     articleId={article.id}
                     likeCount={article.likeCount ?? 0}
                     isLiked={article.isLiked ?? false}
+                    initialArticleData={response ?? undefined}
                   />
                   <span className="text-xs text-muted-foreground">liked</span>
                 </div>

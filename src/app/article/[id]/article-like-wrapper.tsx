@@ -1,53 +1,43 @@
 "use client";
 
-import { useState, useCallback } from "react";
-import { useLikeArticle } from "@/hooks";
+import { useCallback } from "react";
+import { useArticle, useLikeArticle } from "@/hooks";
 import { Heart } from "lucide-react";
 import { cn } from "@/lib/utils";
+import type { ArticleResponse } from "@/api";
 
 interface ArticleLikeWrapperProps {
   articleId: string;
   likeCount: number;
   isLiked: boolean;
+  /** Server-fetched article response, used as initialData for the client-side refetch. */
+  initialArticleData?: ArticleResponse;
 }
 
-export default function ArticleLikeWrapper({ articleId, likeCount, isLiked }: ArticleLikeWrapperProps) {
+export default function ArticleLikeWrapper({
+  articleId,
+  likeCount,
+  isLiked,
+  initialArticleData,
+}: ArticleLikeWrapperProps) {
   const likeMutation = useLikeArticle();
 
-  // Local state synced from server props; mutation result updates it directly
-  const [displayCount, setDisplayCount] = useState(likeCount);
-  const [displayLiked, setDisplayLiked] = useState(isLiked);
+  // Fetch the article client-side with auth to get the correct isLiked state.
+  // The server-side cached fetch is unauthenticated, so isLiked is always
+  // false from the server. This refetches with the user's auth cookie and
+  // derives the display state from the live query data, falling back to the
+  // server props during SSR / before the client fetch resolves.
+  // The useLikeArticle mutation does optimistic updates on the same
+  // ['article', articleId] query key, so the UI updates instantly on click.
+  const { data: article } = useArticle(articleId, initialArticleData);
 
-  // Reset local state when navigating to a different article (render-time
-  // adjustment per React's "storing info from previous renders" pattern).
-  const [prevLikeCount, setPrevLikeCount] = useState(likeCount);
-  const [prevIsLiked, setPrevIsLiked] = useState(isLiked);
-  if (likeCount !== prevLikeCount || isLiked !== prevIsLiked) {
-    setPrevLikeCount(likeCount);
-    setPrevIsLiked(isLiked);
-    setDisplayCount(likeCount);
-    setDisplayLiked(isLiked);
-  }
+  const displayLiked = article ? article.isLiked ?? false : isLiked;
+  const displayCount = article ? article.likeCount ?? 0 : likeCount;
 
   const handleToggleLike = useCallback(() => {
     if (likeMutation.isPending) return;
-
-    // Optimistic local update for instant feedback
-    setDisplayLiked((prev) => !prev);
-    setDisplayCount((prev) => (displayLiked ? Math.max(0, prev - 1) : prev + 1));
-
-    likeMutation.mutate(articleId, {
-      onSuccess: (data) => {
-        setDisplayCount(data.newLikeCount);
-        setDisplayLiked(data.isLiked);
-      },
-      onError: () => {
-        // Rollback on error
-        setDisplayLiked(isLiked);
-        setDisplayCount(likeCount);
-      },
-    });
-  }, [likeMutation, articleId, displayLiked, isLiked, likeCount]);
+    likeMutation.mutate(articleId);
+  }, [likeMutation, articleId]);
 
   const isPending = likeMutation.isPending && likeMutation.variables === articleId;
 

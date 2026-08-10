@@ -58,9 +58,9 @@ const ThreadListItem: FC<{ convMap: Map<string, Conversation> }> = ({ convMap })
                 )}
             </ThreadListItemPrimitive.Trigger>
 
-            {/* Action buttons — shown on hover, positioned at top-right */}
+            {/* Action buttons — replace the timestamp in the top-right on hover */}
             {!isActive && (
-                <div className="absolute right-1.5 top-1.5 flex items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100">
+                <div className="absolute right-2 top-1.5 flex items-center gap-0.5 opacity-0 transition-opacity duration-150 group-hover:opacity-100">
                     <ThreadListItemArchiveToggle />
                     <ThreadListItemDelete />
                 </div>
@@ -98,7 +98,7 @@ function formatThreadTimestamp(dateString: string): string {
 
 const ThreadListItemTimestamp: FC<{ date: string }> = ({ date }) => {
     return (
-        <span className="aui-thread-list-item-timestamp shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground">
+        <span className="aui-thread-list-item-timestamp shrink-0 font-mono text-[10px] tabular-nums text-muted-foreground transition-opacity duration-150 group-hover:opacity-0">
             {formatThreadTimestamp(date)}
         </span>
     );

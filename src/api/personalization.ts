@@ -159,6 +159,7 @@ export interface CoachingStreamCallbacks {
   onComplete: (fullResponse: string) => void;
   onError: (message: string) => void;
   onThinking?: (message: string) => void;
+  onReasoning?: (text: string) => void;
 }
 
 /**
@@ -227,6 +228,9 @@ export function streamPersonalizedCoaching(
             if (event.type === 'delta') {
               const payload = JSON.parse(event.data) as { text: string };
               callbacks.onDelta(payload.text);
+            } else if (event.type === 'reasoning') {
+              const payload = JSON.parse(event.data) as { text: string };
+              callbacks.onReasoning?.(payload.text);
             } else if (event.type === 'thinking') {
               const payload = JSON.parse(event.data) as { message: string };
               callbacks.onThinking?.(payload.message);

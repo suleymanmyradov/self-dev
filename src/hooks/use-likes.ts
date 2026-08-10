@@ -47,6 +47,28 @@ export function useLikeArticle() {
 
       return { previousArticles, previousArticle };
     },
+    onSuccess: (data, articleId) => {
+      // Sync the actual server response into the cache, replacing the
+      // optimistic guess with the real likeCount and isLiked values.
+      queryClient.setQueriesData<ArticlesResponse>({ queryKey: ['articles'] }, (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: old.data.map((a) =>
+            a.id === articleId
+              ? { ...a, isLiked: data.isLiked, likeCount: data.newLikeCount }
+              : a
+          ),
+        };
+      });
+      queryClient.setQueryData<ArticleResponse>(['article', articleId], (old) => {
+        if (!old?.data) return old;
+        return {
+          ...old,
+          data: { ...old.data, isLiked: data.isLiked, likeCount: data.newLikeCount },
+        };
+      });
+    },
     onError: (_err, articleId, context) => {
       if (context?.previousArticles) {
         context.previousArticles.forEach(([key, data]) => {

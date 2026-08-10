@@ -10,6 +10,7 @@ export interface CoachingMessage {
     id: string;
     role: 'user' | 'assistant';
     content: string;
+    reasoning?: string;
     status: 'complete' | 'running';
 }
 
@@ -76,18 +77,44 @@ export function useConversationMessages(conversationId?: string) {
         }
 
         // When the assistant is running and has no streamed content yet,
-        // show the latest thinking message so the user sees the coach is
-        // processing (e.g. "Looking up your goals...") instead of a blank
-        // bubble. Once the first delta arrives, thinkingMessage is cleared
-        // and msg.content takes over.
-        const content =
-            msg.status === 'running' && !msg.content && thinkingMessage
-                ? thinkingMessage
-                : msg.content;
+        // show a simple "thinking..." indicator so the user sees the coach
+        // is processing. The backend sends tool-status events (which tool is
+        // running), but we surface only a neutral label here. Once the first
+        // delta or reasoning chunk arrives, thinkingMessage is cleared and
+        // the real content takes over.
+        const isThinkingPlaceholder =
+            msg.status === 'running' && !msg.content && !msg.reasoning && thinkingMessage;
+
+        // Build content parts: reasoning (if any) + text content.
+        // assistant-ui renders reasoning parts natively as a collapsible
+        // "thinking" section via ChainOfThoughtPrimitive.
+        if (msg.reasoning || msg.content) {
+            const parts: Array<
+                | { type: 'reasoning'; text: string }
+                | { type: 'text'; text: string }
+            > = [];
+            if (msg.reasoning) {
+                parts.push({ type: 'reasoning', text: msg.reasoning });
+            }
+            if (msg.content) {
+                parts.push({ type: 'text', text: msg.content });
+            } else if (isThinkingPlaceholder) {
+                parts.push({ type: 'text', text: 'thinking...' });
+            }
+            return {
+                role: msg.role,
+                content: parts,
+                id: msg.id,
+                status:
+                    msg.status === 'running'
+                        ? { type: 'running' }
+                        : { type: 'complete', reason: 'stop' },
+            };
+        }
 
         return {
             role: msg.role,
-            content,
+            content: isThinkingPlaceholder ? 'thinking...' : msg.content,
             id: msg.id,
             status:
                 msg.status === 'running'
@@ -110,6 +137,7 @@ export function useConversationMessages(conversationId?: string) {
                 id: assistantId,
                 role: 'assistant',
                 content: '',
+                reasoning: '',
                 status: 'running',
             };
 
@@ -145,6 +173,16 @@ export function useConversationMessages(conversationId?: string) {
                 {
                     onThinking: message => {
                         setThinkingMessage(message);
+                    },
+                    onReasoning: text => {
+                        setThinkingMessage(null);
+                        setMessages(prev =>
+                            prev.map(m =>
+                                m.id === assistantId
+                                    ? { ...m, reasoning: (m.reasoning ?? '') + text }
+                                    : m,
+                            ),
+                        );
                     },
                     onDelta: text => {
                         setThinkingMessage(null);

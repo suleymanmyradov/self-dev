@@ -7,7 +7,7 @@ const nextConfig: NextConfig = {
     // Allow the dev server (HMR WebSocket, dev-only assets) to be reached from
     // LAN IPs so testing from other devices / VMs on the local network works.
     // Production is unaffected.
-    allowedDevOrigins: ['192.168.77.40', '192.168.77.*'],
+    allowedDevOrigins: ['127.0.0.1', '192.168.77.40', '192.168.77.*'],
     images: {
         remotePatterns: [
             {
@@ -41,6 +41,11 @@ const nextConfig: NextConfig = {
     compress: true,
     experimental: {
         optimizePackageImports: ['lucide-react', '@radix-ui/react-icons'],
+        ...(process.env.NODE_ENV === 'development' && {
+            serverActions: {
+                allowedOrigins: ['127.0.0.*'],
+            },
+        }),
     },
     // No /api rewrite: browser traffic goes through the same-origin BFF route
     // (src/app/api/v1/[...path]) which attaches the token cookie; SSR calls the

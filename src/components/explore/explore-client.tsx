@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
 import { useSearchParamState } from "@/lib/url-state";
-import { useCreateHabit, useCreateGoal, useSavedItems, useSavedItemsDetailed, useSaveItem, useRemoveSavedItem, useSearch } from "@/hooks";
+import { useCreateHabit, useCreateGoal, useArticles, useSavedItems, useSavedItemsDetailed, useSaveItem, useRemoveSavedItem, useSearch } from "@/hooks";
 import { toast } from "@/components/ui/sonner";
 import type { ArticlesResponse, ExploreSettings, Article, SavedItemDetailed, SearchResult } from "@/api";
 import type { HabitTemplate, GoalTemplate } from "@/types/explore";
@@ -34,7 +34,14 @@ function useDebounceValue<T>(value: T, delay: number): T {
 }
 
 export function ExploreClient({ articlesPromise, settings, featuredArticle, habitTemplates, goalTemplates }: ExploreClientProps) {
-  const articlesData = use(articlesPromise);
+  // Resolve the server-fetched promise as initialData for the react-query hook.
+  // This keeps the library page's article data in the same react-query cache as
+  // the home page and article detail page, so optimistic updates from
+  // useLikeArticle (and other mutations) propagate here too. staleTime: 0 in
+  // useArticles triggers a background refetch with auth so per-user fields
+  // (isLiked, isSaved) are correct.
+  const initialArticlesData = use(articlesPromise);
+  const { data: articlesList = [] } = useArticles(undefined, initialArticlesData);
 
   const createHabit = useCreateHabit().mutate;
   const createGoal = useCreateGoal().mutate;
@@ -65,7 +72,7 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
   });
 
   const articles = useMemo(() => {
-    const allArticles = articlesData.data ?? [];
+    const allArticles = articlesList;
     if (!isSearching) {
       let filtered = allArticles;
       if (category !== "All") {
@@ -83,7 +90,7 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
       .filter((r) => r.type === 'article')
       .map((r) => byId.get(r.id))
       .filter((a): a is Article => !!a);
-  }, [isSearching, searchResults, articlesData, category]);
+  }, [isSearching, searchResults, articlesList, category]);
 
   const nonArticleResults = useMemo<SearchResult[]>(
     () => (isSearching ? (searchResults ?? []).filter((r) => r.type !== 'article') : []),
@@ -228,6 +235,7 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
                 habitTemplates={habitTemplates}
                 getIsSaved={getIsSaved}
                 onToggleSave={handleToggleSave}
+                onViewAllTemplates={() => setTab("templates")}
               />
             </TabsContent>
 
