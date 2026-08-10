@@ -13,11 +13,16 @@ export type {
   // Goal Types
   Goal,
   GoalCategory,
+  GoalMeasurement,
+  GoalMilestone,
   CreateGoalRequest,
   UpdateGoalRequest,
   UpdateGoalProgressRequest,
+  LogGoalValueRequest,
+  CreateMilestoneRequest,
   GoalsResponse,
   GoalResponse,
+  DeleteMilestoneResponse,
 
   // Habit Types
   Habit,
@@ -165,6 +170,10 @@ export {
   deleteGoal,
   toggleGoal,
   updateGoalProgress,
+  logGoalValue,
+  createMilestone,
+  toggleMilestone,
+  deleteMilestone,
 } from './goals';
 
 // Habits API

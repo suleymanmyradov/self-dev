@@ -120,6 +120,16 @@ export const ResetPasswordRequestSchema = z.object({
 
 export const GoalCategorySchema = z.string().min(1).max(50);
 
+export const GoalMeasurementSchema = z.enum(['binary', 'numeric', 'milestone', 'habit', 'manual']).catch('manual');
+
+export const GoalMilestoneSchema = z.object({
+  id: z.string(),
+  goalId: z.string(),
+  title: z.string().min(1).max(200),
+  sortOrder: z.number().int(),
+  doneAt: z.string().optional(),
+});
+
 export const GoalSchema = z.object({
   id: z.string(),
   title: z.string().min(1).max(200),
@@ -135,6 +145,17 @@ export const GoalSchema = z.object({
     (v) => (v === null ? undefined : v),
     z.array(z.string()).optional()
   ),
+  // measurement defaults to 'manual' so pre-deploy cached responses (missing
+  // the field) parse without throwing — existing goals behave as before.
+  measurement: GoalMeasurementSchema,
+  startValue: z.number().optional(),
+  currentValue: z.number().optional(),
+  targetValue: z.number().optional(),
+  unit: z.string().optional(),
+  milestones: z.preprocess(
+    (v) => (v === null ? undefined : v),
+    z.array(GoalMilestoneSchema).optional()
+  ),
   userId: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -146,6 +167,12 @@ export const CreateGoalRequestSchema = z.object({
   category: GoalCategorySchema,
   dueDate: z.string().optional(),
   relatedHabitIds: z.array(z.string()).optional(),
+  measurement: GoalMeasurementSchema.optional(),
+  startValue: z.number().optional(),
+  currentValue: z.number().optional(),
+  targetValue: z.number().optional(),
+  unit: z.string().max(32).optional(),
+  milestoneTitles: z.array(z.string()).optional(),
 });
 
 export const UpdateGoalRequestSchema = z.object({
@@ -154,10 +181,29 @@ export const UpdateGoalRequestSchema = z.object({
   category: GoalCategorySchema.optional(),
   dueDate: z.string().optional(),
   relatedHabitIds: z.array(z.string()).optional(),
+  measurement: GoalMeasurementSchema.optional(),
+  startValue: z.number().optional(),
+  currentValue: z.number().optional(),
+  targetValue: z.number().optional(),
+  unit: z.string().max(32).optional(),
+  milestoneTitles: z.array(z.string()).optional(),
+  milestones: z.array(z.object({
+    id: z.string().optional(),
+    title: z.string().min(1).max(200),
+  })).optional(),
 });
 
 export const UpdateGoalProgressRequestSchema = z.object({
   progress: z.number().min(0).max(100),
+});
+
+export const LogGoalValueRequestSchema = z.object({
+  value: z.number(),
+});
+
+export const CreateMilestoneRequestSchema = z.object({
+  title: z.string().min(1, 'Title is required').max(200),
+  sortOrder: z.number().int().optional(),
 });
 
 export const GoalsResponseSchema = ApiResponseSchema(z.array(GoalSchema)).extend({

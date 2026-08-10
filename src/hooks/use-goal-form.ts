@@ -1,5 +1,5 @@
 import { useState, useCallback, useRef, useLayoutEffect } from 'react';
-import { CreateGoalSchema, type GoalFormValues } from '@/lib/validators/goal';
+import { CreateGoalSchema, type GoalFormValues, type MilestoneFormEntry } from '@/lib/validators/goal';
 import type { Goal } from '@/api';
 
 const DEFAULT_FORM: GoalFormValues = {
@@ -8,6 +8,12 @@ const DEFAULT_FORM: GoalFormValues = {
   category: '',
   progress: 0,
   relatedHabitIds: [],
+  measurement: 'manual',
+  startValue: 0,
+  currentValue: 0,
+  targetValue: 0,
+  unit: '',
+  milestones: [],
 };
 
 export function useGoalForm(initial?: Partial<GoalFormValues>) {
@@ -42,6 +48,30 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
     setForm((f) => ({ ...f, progress }));
   }, []);
 
+  const setMeasurement = useCallback((measurement: GoalFormValues['measurement']) => {
+    setForm((f) => ({ ...f, measurement }));
+  }, []);
+
+  const setStartValue = useCallback((startValue: number) => {
+    setForm((f) => ({ ...f, startValue }));
+  }, []);
+
+  const setCurrentValue = useCallback((currentValue: number) => {
+    setForm((f) => ({ ...f, currentValue }));
+  }, []);
+
+  const setTargetValue = useCallback((targetValue: number) => {
+    setForm((f) => ({ ...f, targetValue }));
+  }, []);
+
+  const setUnit = useCallback((unit: string) => {
+    setForm((f) => ({ ...f, unit }));
+  }, []);
+
+  const setMilestones = useCallback((milestones: MilestoneFormEntry[]) => {
+    setForm((f) => ({ ...f, milestones }));
+  }, []);
+
   const toggleHabitId = useCallback((habitId: string) => {
     setForm((f) => {
       const current = f.relatedHabitIds ?? [];
@@ -65,6 +95,12 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
       dueDate: goal.dueDate,
       progress: goal.progress,
       relatedHabitIds: goal.relatedHabitIds ?? [],
+      measurement: goal.measurement ?? 'manual',
+      startValue: goal.startValue ?? 0,
+      currentValue: goal.currentValue ?? 0,
+      targetValue: goal.targetValue ?? 0,
+      unit: goal.unit ?? '',
+      milestones: goal.milestones?.map((m) => ({ id: m.id, title: m.title })) ?? [],
     });
     setError(null);
   }, []);
@@ -76,6 +112,16 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
       setError(message);
       return null;
     }
+    // Type-specific validation
+    const measurement = form.measurement ?? 'manual';
+    if (measurement === 'habit' && (form.relatedHabitIds ?? []).length === 0) {
+      setError('Habit goals require at least one linked habit');
+      return null;
+    }
+    if (measurement === 'numeric' && (form.targetValue ?? 0) === (form.startValue ?? 0)) {
+      setError('Target value must be different from start value');
+      return null;
+    }
     setError(null);
     return {
       title: form.title.trim(),
@@ -83,6 +129,12 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
       category: form.category,
       dueDate: form.dueDate,
       relatedHabitIds: form.relatedHabitIds ?? [],
+      measurement,
+      startValue: form.startValue,
+      currentValue: form.currentValue,
+      targetValue: form.targetValue,
+      unit: form.unit,
+      milestones: form.milestones?.filter((m) => m.title.trim() !== '') ?? [],
     };
   }, [form]);
 
@@ -94,6 +146,12 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
     setCategory,
     setDueDate,
     setProgress,
+    setMeasurement,
+    setStartValue,
+    setCurrentValue,
+    setTargetValue,
+    setUnit,
+    setMilestones,
     toggleHabitId,
     reset,
     loadGoal,

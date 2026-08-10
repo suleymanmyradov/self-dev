@@ -1,5 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { listGoals, getGoal, createGoal, updateGoal, deleteGoal, toggleGoal, updateGoalProgress } from '@/api';
+import {
+  listGoals,
+  getGoal,
+  createGoal,
+  updateGoal,
+  deleteGoal,
+  toggleGoal,
+  updateGoalProgress,
+  logGoalValue,
+  createMilestone,
+  toggleMilestone,
+  deleteMilestone,
+} from '@/api';
 import type { CreateGoalRequest, UpdateGoalRequest, GoalsResponse } from '@/api';
 import { toast } from 'sonner';
 
@@ -97,6 +109,70 @@ export function useUpdateGoalProgress() {
 
   return useMutation({
     mutationFn: ({ id, progress }: { id: string; progress: number }) => updateGoalProgress(id, progress),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });
+    },
+  });
+}
+
+/**
+ * Hook to log a new value for a numeric goal
+ */
+export function useLogGoalValue() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, value }: { id: string; value: number }) => logGoalValue(id, value),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });
+      toast.success('Value logged');
+    },
+  });
+}
+
+/**
+ * Hook to create a milestone
+ */
+export function useCreateMilestone() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, title, sortOrder }: { id: string; title: string; sortOrder?: number }) =>
+      createMilestone(id, title, sortOrder),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });
+    },
+  });
+}
+
+/**
+ * Hook to toggle a milestone's done state
+ */
+export function useToggleMilestone() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, milestoneId }: { id: string; milestoneId: string }) =>
+      toggleMilestone(id, milestoneId),
+    onSuccess: (_, variables) => {
+      queryClient.invalidateQueries({ queryKey: ['goals'] });
+      queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });
+    },
+  });
+}
+
+/**
+ * Hook to delete a milestone
+ */
+export function useDeleteMilestone() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: ({ id, milestoneId }: { id: string; milestoneId: string }) =>
+      deleteMilestone(id, milestoneId),
     onSuccess: (_, variables) => {
       queryClient.invalidateQueries({ queryKey: ['goals'] });
       queryClient.invalidateQueries({ queryKey: ['goals', variables.id] });

@@ -1,9 +1,10 @@
 export { useActivities } from './use-activities';
 export { useArticles } from './use-articles';
+export { useArticle } from './use-article';
 export { useIsAuthenticated } from './use-auth';
 export { useProfile } from './use-profile';
 export { useHydrated } from './use-hydrated';
-export { useGoals, useGoal, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress } from './use-goals';
+export { useGoals, useGoal, useCreateGoal, useUpdateGoal, useDeleteGoal, useToggleGoal, useUpdateGoalProgress, useLogGoalValue, useCreateMilestone, useToggleMilestone, useDeleteMilestone } from './use-goals';
 export { useGoalForm } from './use-goal-form';
 export { useHabits, useHabit, useCreateHabit, useUpdateHabit, useDeleteHabit, useResetTodayHabits } from './use-habits';
 export { useCategories, useCategorySlugs } from './use-categories';

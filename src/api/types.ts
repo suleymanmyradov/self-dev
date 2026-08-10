@@ -35,6 +35,21 @@ export type EmptyResponse = Record<string, never>;
 // Category slugs come from the DB categories table, not a hardcoded enum.
 export type GoalCategory = string;
 
+export type GoalMeasurement = 'binary' | 'numeric' | 'milestone' | 'habit' | 'manual';
+
+export interface GoalMilestone {
+  id: string;
+  goalId: string;
+  title: string;
+  sortOrder: number;
+  doneAt?: string;
+}
+
+export interface MilestoneInput {
+  id?: string;  // empty/undefined = new milestone
+  title: string;
+}
+
 export interface Goal {
   id: string;
   title: string;
@@ -44,6 +59,12 @@ export interface Goal {
   progress: number;
   completed: boolean;
   relatedHabitIds?: string[];
+  measurement?: GoalMeasurement;
+  startValue?: number;
+  currentValue?: number;
+  targetValue?: number;
+  unit?: string;
+  milestones?: GoalMilestone[];
   userId: string;
   createdAt: string;
   updatedAt: string;
@@ -55,6 +76,12 @@ export interface CreateGoalRequest {
   category: GoalCategory;
   dueDate?: string;
   relatedHabitIds?: string[];
+  measurement?: GoalMeasurement;
+  startValue?: number;
+  currentValue?: number;
+  targetValue?: number;
+  unit?: string;
+  milestoneTitles?: string[];
 }
 
 export interface UpdateGoalRequest {
@@ -63,10 +90,26 @@ export interface UpdateGoalRequest {
   category?: GoalCategory;
   dueDate?: string;
   relatedHabitIds?: string[];
+  measurement?: GoalMeasurement;
+  startValue?: number;
+  currentValue?: number;
+  targetValue?: number;
+  unit?: string;
+  milestoneTitles?: string[];
+  milestones?: MilestoneInput[];
 }
 
 export interface UpdateGoalProgressRequest {
   progress: number;
+}
+
+export interface LogGoalValueRequest {
+  value: number;
+}
+
+export interface CreateMilestoneRequest {
+  title: string;
+  sortOrder?: number;
 }
 
 export interface GoalsResponse extends ApiResponse<Goal[]> {
@@ -74,6 +117,8 @@ export interface GoalsResponse extends ApiResponse<Goal[]> {
 }
 
 export type GoalResponse = ApiResponse<Goal>;
+
+export type DeleteMilestoneResponse = ApiResponse<{ success: boolean }>;
 
 // ============================================
 // Habit Types

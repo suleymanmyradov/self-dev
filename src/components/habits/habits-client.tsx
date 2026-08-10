@@ -14,7 +14,7 @@ import { GoalCard } from "@/components/habits/goal-card";
 import { LimitUpgradePrompt } from "@/components/habits/limit-upgrade-prompt";
 import { useHabitsFilters } from "@/components/habits/use-habits-filters";
 import type { StatusFilter } from "@/components/habits/use-habits-filters";
-import type { Habit, HabitsResponse, Goal, GoalsResponse } from "@/api";
+import type { Habit, HabitsResponse, Goal, GoalsResponse, GoalMeasurement, CreateGoalRequest, UpdateGoalRequest } from "@/api";
 import type { CheckInSubmitData } from "@/components/check-in/check-in-modal";
 import { useUIStore } from "@/store/uiStore";
 import { useBillingUIStore } from "@/store/billing-ui";
@@ -42,6 +42,10 @@ import {
   useDeleteGoal,
   useToggleGoal,
   useUpdateGoalProgress,
+  useToggleMilestone,
+  useCreateMilestone,
+  useDeleteMilestone,
+  useLogGoalValue,
 } from "@/hooks";
 
 interface HabitsClientProps {
@@ -77,6 +81,10 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   const deleteGoalMutation = useDeleteGoal();
   const toggleGoalMutation = useToggleGoal();
   const updateGoalProgressMutation = useUpdateGoalProgress();
+  const toggleMilestoneMutation = useToggleMilestone();
+  const createMilestoneMutation = useCreateMilestone();
+  const deleteMilestoneMutation = useDeleteMilestone();
+  const logGoalValueMutation = useLogGoalValue();
 
   // Billing / upgrade UI from store
   const { upgradePromptOpen, upgradeSurface, upgradeTrigger, showUpgradePrompt, dismissUpgradePrompt } =
@@ -184,7 +192,11 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
 
   // Goal handlers
   const handleCreateGoal = useCallback(
-    (validated: { title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[] }) => {
+    (validated: {
+      title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[];
+      measurement?: GoalMeasurement; startValue?: number; currentValue?: number;
+      targetValue?: number; unit?: string; milestones?: { id?: string; title: string }[];
+    }) => {
       if (entitlements && !entitlements.canCreateGoal) {
         showUpgradePrompt("goal_create_limit", "goal_limit");
         trackUpgradeEvent.mutate({
@@ -195,17 +207,22 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         });
         return;
       }
-      createGoalMutation.mutate(validated, {
-        onSuccess: () => {
-          setGoalCreateOpen(false);
-        },
-        onError: (error: unknown) => {
-          const err = error as { data?: { code?: string } };
-          if (err?.data?.code === "plan_limit_reached") {
-            showUpgradePrompt("goal_create_limit", "goal_limit");
-          }
-        },
-      });
+      // Create uses milestoneTitles (no IDs yet — milestones don't exist).
+      const { milestones, ...rest } = validated;
+      createGoalMutation.mutate(
+        { ...rest, milestoneTitles: milestones?.map((m) => m.title) } as CreateGoalRequest,
+        {
+          onSuccess: () => {
+            setGoalCreateOpen(false);
+          },
+          onError: (error: unknown) => {
+            const err = error as { data?: { code?: string } };
+            if (err?.data?.code === "plan_limit_reached") {
+              showUpgradePrompt("goal_create_limit", "goal_limit");
+            }
+          },
+        }
+      );
     },
     [entitlements, showUpgradePrompt, trackUpgradeEvent, createGoalMutation]
   );
@@ -216,10 +233,17 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   }, []);
 
   const handleSaveEditGoal = useCallback(
-    (validated: { title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[] }) => {
+    (validated: {
+      title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[];
+      measurement?: GoalMeasurement; startValue?: number; currentValue?: number;
+      targetValue?: number; unit?: string; milestones?: { id?: string; title: string }[];
+    }) => {
       if (!editingGoal) return;
+      // Pass milestones straight through — the form state is a single list of
+      // {id?, title} objects, so there's no zipping or index alignment to get
+      // wrong. The backend reconciles by ID (preserving done_at on rename).
       updateGoalMutation.mutate(
-        { id: editingGoal.id, data: validated },
+        { id: editingGoal.id, data: validated as UpdateGoalRequest },
         { onSuccess: () => setGoalEditOpen(false) }
       );
     },
@@ -237,6 +261,22 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   const handleToggleGoal = useCallback((id: string) => {
     toggleGoalMutation.mutate(id);
   }, [toggleGoalMutation]);
+
+  const handleToggleMilestone = useCallback((goalId: string, milestoneId: string) => {
+    toggleMilestoneMutation.mutate({ id: goalId, milestoneId });
+  }, [toggleMilestoneMutation]);
+
+  const handleAddMilestone = useCallback((goalId: string, title: string) => {
+    createMilestoneMutation.mutate({ id: goalId, title });
+  }, [createMilestoneMutation]);
+
+  const handleDeleteMilestone = useCallback((goalId: string, milestoneId: string) => {
+    deleteMilestoneMutation.mutate({ id: goalId, milestoneId });
+  }, [deleteMilestoneMutation]);
+
+  const handleLogValue = useCallback((goalId: string, value: number) => {
+    logGoalValueMutation.mutate({ id: goalId, value });
+  }, [logGoalValueMutation]);
 
   // Group habits by their parent goal.
   // Goals link to habits via `relatedHabitIds`; habits do not have a `goalId` field.
@@ -272,8 +312,6 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   const statusPills: { label: string; value: StatusFilter }[] = [
     { label: 'All', value: 'all' },
     { label: 'Active', value: 'active' },
-    { label: 'Paused', value: 'paused' },
-    { label: 'Archived', value: 'archived' },
   ];
 
   return (
@@ -371,6 +409,10 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
                   onDeleteGoal={goalDeleteConfirm.confirmDelete}
                   onToggleGoal={handleToggleGoal}
                   onAddHabit={() => createForm.setOpen(true)}
+                  onToggleMilestone={(milestoneId) => handleToggleMilestone(goal.id, milestoneId)}
+                  onAddMilestone={(title) => handleAddMilestone(goal.id, title)}
+                  onDeleteMilestone={(milestoneId) => handleDeleteMilestone(goal.id, milestoneId)}
+                  onLogValue={(value) => handleLogValue(goal.id, value)}
                 />
               );
             })}
@@ -538,6 +580,12 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
           dueDate: editingGoal.dueDate,
           progress: editingGoal.progress,
           relatedHabitIds: editingGoal.relatedHabitIds ?? [],
+          measurement: editingGoal.measurement ?? "manual",
+          startValue: editingGoal.startValue ?? 0,
+          currentValue: editingGoal.currentValue ?? 0,
+          targetValue: editingGoal.targetValue ?? 0,
+          unit: editingGoal.unit ?? "",
+          milestones: editingGoal.milestones?.map((m) => ({ id: m.id, title: m.title })) ?? [],
         } : undefined}
         onProgressChange={handleProgressChange}
         onSubmit={handleSaveEditGoal}
