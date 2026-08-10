@@ -11,5 +11,10 @@ export function useArticles(params?: ListArticlesParams, initialData?: ArticlesR
     queryFn: () => listArticles({ category, page, limit }),
     select: (data) => data.data,
     initialData,
+    // Refetch on mount so per-user fields (isLiked, isSaved) are correct.
+    // The SSR initialData comes from an unauthenticated cached fetch, so
+    // user-specific fields are always false from the server; the background
+    // refetch with the auth cookie updates them.
+    staleTime: 0,
   });
 }

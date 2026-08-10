@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import type { Habit } from "@/api";
 
-export type StatusFilter = 'all' | 'active' | 'paused' | 'archived';
+export type StatusFilter = 'all' | 'active';
 
 export function useHabitsFilters(habits: Habit[]) {
   // Status filter (pill chips)
@@ -17,9 +17,6 @@ export function useHabitsFilters(habits: Habit[]) {
     let filtered = list;
     if (statusFilter === 'active') {
       filtered = filtered.filter((h) => !h.completed);
-    } else if (statusFilter === 'paused' || statusFilter === 'archived') {
-      // No "paused"/"archived" status on habits yet — show empty for those filters
-      filtered = [];
     }
     if (categoryFilter !== 'all') {
       filtered = filtered.filter((h) => h.category === categoryFilter);
