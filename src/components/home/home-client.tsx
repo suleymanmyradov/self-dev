@@ -82,6 +82,8 @@ export function HomeClient({ categoriesPromise, articlesPromise }: HomeClientPro
   const maxWeekCount = Math.max(1, ...weekCounts);
   const todayIndex = weekCounts.length - 1;
   const weekLabels = getWeekDayLabels();
+  const weekTotal = weekCounts.reduce((sum, c) => sum + c, 0);
+  const activeDays = weekCounts.filter((c) => c > 0).length;
 
   const coachNudge = suggestions[0];
 
@@ -229,7 +231,9 @@ export function HomeClient({ categoriesPromise, articlesPromise }: HomeClientPro
                   <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
                     {remainingCount === 0
                       ? "Perfect week so far. Keep the momentum going."
-                      : "Mornings are your strong window. Thursdays are the weak spot."}
+                      : weekTotal === 0
+                        ? "No check-ins yet this week. Today's a good day to start."
+                        : `${weekTotal} check-in${weekTotal === 1 ? "" : "s"} across ${activeDays} day${activeDays === 1 ? "" : "s"} this week.`}
                   </p>
                 </div>
 

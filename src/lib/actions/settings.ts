@@ -107,17 +107,19 @@ export async function updateNotificationPreferencesAction(
   formData: FormData
 ): Promise<ActionState> {
   try {
-    const habitReminders = formData.get('habitRemindersEnabled');
-    if (habitReminders === null) {
-      return { success: false, error: 'habitRemindersEnabled is required' };
-    }
+    // The backend upserts the full preferences object, so the caller must send
+    // every field (not just the one that changed) to avoid clobbering the
+    // others. Each field is passed as 'true'/'false' in the formData.
+    const boolField = (key: string) => formData.get(key) === 'true';
 
     const raw: UpdateNotificationPreferencesRequest = {
       preferences: {
-        emailEnabled: false,
-        pushEnabled: false,
-        habitRemindersEnabled: habitReminders === 'true',
-        goalRemindersEnabled: false,
+        emailEnabled: boolField('emailEnabled'),
+        pushEnabled: boolField('pushEnabled'),
+        habitRemindersEnabled: boolField('habitRemindersEnabled'),
+        goalRemindersEnabled: boolField('goalRemindersEnabled'),
+        streakWarningsEnabled: boolField('streakWarningsEnabled'),
+        sundayReviewEnabled: boolField('sundayReviewEnabled'),
       },
     };
 

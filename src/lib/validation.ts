@@ -476,6 +476,8 @@ export const NotificationPreferencesSchema = z.object({
   pushEnabled: z.boolean(),
   habitRemindersEnabled: z.boolean(),
   goalRemindersEnabled: z.boolean(),
+  streakWarningsEnabled: z.boolean(),
+  sundayReviewEnabled: z.boolean(),
 });
 
 export const NotificationPreferencesResponseSchema = z.object({

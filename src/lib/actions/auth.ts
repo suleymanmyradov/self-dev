@@ -11,7 +11,7 @@ import {
   ResendVerificationRequestSchema,
   VerifyEmailRequestSchema,
 } from '@/lib/validation';
-import { serverPost } from '@/lib/server-api';
+import { serverPost, serverDelete } from '@/lib/server-api';
 import { gatewayUrl } from '@/lib/config';
 import type { LoginRequest, RegisterRequest, Profile, AuthResponse, RegisterResponse } from '@/api/types';
 
@@ -357,4 +357,45 @@ export async function logoutAction(): Promise<void> {
     await clearAuthCookies();
     redirect('/login');
   }
+}
+
+export interface DeleteAccountActionState {
+  success: boolean;
+  error?: string;
+}
+
+/**
+ * Permanently delete the current user's account via DELETE /profile, then clear
+ * the session cookies and redirect to /login. On success the redirect throws
+ * internally (Next.js behavior), so no success state is ever returned to the
+ * client — the user simply lands on /login. On failure the cookies are still
+ * cleared locally so the user is logged out, but the error is surfaced so they
+ * know the server-side deletion may not have completed and can retry/contact
+ * support.
+ */
+export async function deleteAccountAction(): Promise<DeleteAccountActionState> {
+  try {
+    await serverDelete('/profile');
+  } catch (error) {
+    // serverDelete may throw a Next.js redirect error (NEXT_REDIRECT) if the
+    // session is expired (401). Re-throw it so the framework can perform the
+    // redirect instead of surfacing it as a "failed to delete" error.
+    if (
+      error !== null &&
+      typeof error === 'object' &&
+      'digest' in error &&
+      typeof (error as { digest: unknown }).digest === 'string' &&
+      (error as { digest: string }).digest.startsWith('NEXT_REDIRECT')
+    ) {
+      throw error;
+    }
+    // Clear cookies regardless so the user is logged out locally, but report
+    // the error — the account may still exist server-side.
+    await clearAuthCookies();
+    const message =
+      error instanceof Error ? error.message : 'Failed to delete account. Please try again or contact support.';
+    return { success: false, error: message };
+  }
+  await clearAuthCookies();
+  redirect('/login');
 }

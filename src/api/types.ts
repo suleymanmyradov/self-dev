@@ -447,6 +447,8 @@ export interface NotificationPreferences {
   pushEnabled: boolean;
   habitRemindersEnabled: boolean;
   goalRemindersEnabled: boolean;
+  streakWarningsEnabled: boolean;
+  sundayReviewEnabled: boolean;
 }
 
 export interface NotificationPreferencesResponse {

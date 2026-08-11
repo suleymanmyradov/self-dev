@@ -5,7 +5,6 @@ import { Button } from "@/components/ui/button";
 import { WeeklyReviewEmptyState } from "@/components/weekly-review/weekly-review-empty-state";
 import { MetricCard } from "@/components/weekly-review/weekly-review-metric-card";
 import { StreamingCoachCard } from "@/components/weekly-review/weekly-review-streaming-card";
-import { CheckInChart } from "@/components/weekly-review/weekly-review-check-in-chart";
 import { HabitBreakdown } from "@/components/weekly-review/weekly-review-habit-breakdown";
 import { CoachCard } from "@/components/weekly-review/weekly-review-coach-card";
 import { ActivityCard } from "@/components/weekly-review/weekly-review-activity-card";
@@ -29,26 +28,6 @@ interface WeeklyReviewClientProps {
   currentReviewPromise: Promise<ApiResponse<WeeklyReview | null>>;
   reviewsPromise: Promise<ApiResponse<WeeklyReview[]>>;
   activitiesPromise: Promise<ActivityResponse>;
-}
-
-/**
- * Derive per-day check-in counts from the habit breakdown data.
- * Each habit has `completedCount` and `totalCheckIns`; we approximate the
- * per-day distribution by distributing completed check-ins across the week
- * proportionally. When the backend exposes per-day data, this can be replaced.
- */
-export function getDailyCheckInCounts(review: WeeklyReview | null | undefined): number[] {
-  if (!review) return [0, 0, 0, 0, 0, 0, 0];
-  // Approximate: distribute completed check-ins evenly across 7 days,
-  // capped at totalHabits per day. This gives a reasonable visual.
-  const totalCompleted = Math.max(0, Math.floor(review.completedCheckIns));
-  const perDay = review.totalHabits > 0 ? review.totalHabits : totalCompleted;
-  const base = Math.floor(totalCompleted / 7);
-  const remainder = totalCompleted % 7;
-  // Create a slightly varied distribution for visual interest
-  const counts = Array.from({ length: 7 }, (_, index) => base + (index < remainder ? 1 : 0));
-  // Adjust so the sum matches completedCheckIns
-  return counts.map((count) => Math.min(count, perDay));
 }
 
 export function WeeklyReviewClient({
@@ -93,10 +72,6 @@ export function WeeklyReviewClient({
   const handleGenerate = () => {
     generateStream.mutate({ weekStart: activeReview?.weekStart, forceRegenerate: true });
   };
-
-  const dailyCounts = useMemo(() => getDailyCheckInCounts(activeReview), [activeReview]);
-  const maxDaily = Math.max(...dailyCounts, 1);
-  const todayIndex = isCurrentReview ? (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1) : -1;
 
   // Mood average from moodSummary
   const moodAvg = useMemo(() => {
@@ -221,14 +196,6 @@ export function WeeklyReviewClient({
                 context={moodAvg ? 'steady all week' : 'No mood data'}
               />
             </div>
-
-            {/* Check-ins by day chart */}
-            <CheckInChart
-              dailyCounts={dailyCounts}
-              maxDaily={maxDaily}
-              todayIndex={todayIndex}
-              totalHabits={activeReview.totalHabits}
-            />
 
             {/* Per habit breakdown */}
             <HabitBreakdown habits={activeReview.habitBreakdown ?? []} />

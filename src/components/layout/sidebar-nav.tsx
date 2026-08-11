@@ -1,6 +1,6 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useEffect, useState } from 'react';
 import Link from 'next/link';
 import { MoreMenu } from './more-menu';
 import { NavButton } from './nav-button';
@@ -41,6 +41,11 @@ export const SidebarNav = memo(function SidebarNav() {
   const openLeftPanel = useUIStore(s => s.openLeftPanel);
   const closeLeftPanel = useUIStore(s => s.closeLeftPanel);
   const unreadCount = useUnreadCount();
+  // Guard the badge so it never renders during SSR or the first hydration
+  // render — the unread count is client-only data and would otherwise cause a
+  // hydration mismatch (server renders no badge, client renders one).
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const handlePanelClick = (panel: "notifications") => {
     if (isLeftPanelOpen && leftPanelType === panel) {
@@ -91,7 +96,7 @@ export const SidebarNav = memo(function SidebarNav() {
             isActive={isLeftPanelOpen && leftPanelType === 'notifications'}
             onClick={() => handlePanelClick('notifications')}
           />
-          {unreadCount > 0 && (
+          {mounted && unreadCount > 0 && (
             <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
               {unreadCount > 9 ? '9+' : unreadCount}
             </span>

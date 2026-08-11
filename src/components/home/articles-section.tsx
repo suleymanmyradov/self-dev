@@ -58,7 +58,6 @@ export function ArticlesSection({
             postedAt={a.publishedAt}
             likes={a.likeCount ?? 0}
             isLiked={a.isLiked ?? false}
-            saves={0}
             isSaved={getIsSaved(a.id) || (a.isSaved ?? false)}
             onLike={onLike}
             onToggleSave={() => onToggleSave(a.id)}
@@ -82,7 +81,6 @@ export function ArticlesSection({
             postedAt={a.publishedAt}
             likes={a.likeCount ?? 0}
             isLiked={a.isLiked ?? false}
-            saves={0}
             isSaved={getIsSaved(a.id) || (a.isSaved ?? false)}
             onLike={onLike}
             onToggleSave={() => onToggleSave(a.id)}

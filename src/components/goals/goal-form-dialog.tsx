@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { ChevronDown, Link2, Search, X } from "lucide-react";
@@ -112,6 +112,9 @@ export function GoalFormDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "New goal" : "Edit goal"}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {mode === "create" ? "Create a new goal" : "Edit your goal"}
+          </DialogDescription>
         </DialogHeader>
         <div className="grid gap-3 py-2">
           <div className="grid gap-1">

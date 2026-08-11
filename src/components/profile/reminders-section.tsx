@@ -56,6 +56,7 @@ export function RemindersSection({
           <Switch
             checked={sundayReview}
             onCheckedChange={onSundayReviewChange}
+            disabled={notifPending}
           />
         </div>
 
@@ -70,6 +71,7 @@ export function RemindersSection({
           <Switch
             checked={streakWarnings}
             onCheckedChange={onStreakWarningsChange}
+            disabled={notifPending}
           />
         </div>
       </div>

@@ -7,6 +7,7 @@ import type {
   AccountabilityStyle,
   PreferredTone,
   DifficultyPreference,
+  NotificationPreferences,
 } from "@/api";
 import {
   updateProfileAction,
@@ -53,9 +54,15 @@ export function ProfileClient({
     success: false,
   });
 
-  // Local toggle states for reminders (streak warnings is UI-only, default OFF)
-  const [streakWarnings, setStreakWarnings] = useState(false);
-  const [sundayReview, setSundayReview] = useState(false);
+  // Notification preferences — derived from the server response so toggles
+  // reflect persisted state. Defaults match the backend table defaults.
+  const prefs = notificationPreferences;
+  const habitReminders = prefs?.habitRemindersEnabled ?? true;
+  const emailEnabled = prefs?.emailEnabled ?? false;
+  const pushEnabled = prefs?.pushEnabled ?? false;
+  const goalReminders = prefs?.goalRemindersEnabled ?? false;
+  const streakWarnings = prefs?.streakWarningsEnabled ?? false;
+  const sundayReview = prefs?.sundayReviewEnabled ?? false;
 
   // Billing
   const { data: billing } = useBillingOverview(billingInitialData);
@@ -82,14 +89,43 @@ export function ProfileClient({
     else if (coachingState.error) toast.error(coachingState.error);
   }, [coachingState]);
 
-  // Handlers
-  const handleHabitRemindersToggle = useCallback(
-    (value: boolean) => {
+  // Notification preference toggle handlers. The backend upserts the full
+  // preferences object, so every toggle sends all fields (current values plus
+  // the one being changed) to avoid clobbering the others.
+  const submitPrefs = useCallback(
+    (overrides: Partial<NotificationPreferences>) => {
+      const merged: NotificationPreferences = {
+        emailEnabled,
+        pushEnabled,
+        habitRemindersEnabled: habitReminders,
+        goalRemindersEnabled: goalReminders,
+        streakWarningsEnabled: streakWarnings,
+        sundayReviewEnabled: sundayReview,
+        ...overrides,
+      };
       const formData = new FormData();
-      formData.set("habitRemindersEnabled", String(value));
+      formData.set("emailEnabled", String(merged.emailEnabled));
+      formData.set("pushEnabled", String(merged.pushEnabled));
+      formData.set("habitRemindersEnabled", String(merged.habitRemindersEnabled));
+      formData.set("goalRemindersEnabled", String(merged.goalRemindersEnabled));
+      formData.set("streakWarningsEnabled", String(merged.streakWarningsEnabled));
+      formData.set("sundayReviewEnabled", String(merged.sundayReviewEnabled));
       notifAction(formData);
     },
-    [notifAction]
+    [notifAction, emailEnabled, pushEnabled, habitReminders, goalReminders, streakWarnings, sundayReview],
+  );
+
+  const handleHabitRemindersToggle = useCallback(
+    (value: boolean) => submitPrefs({ habitRemindersEnabled: value }),
+    [submitPrefs],
+  );
+  const handleStreakWarningsToggle = useCallback(
+    (value: boolean) => submitPrefs({ streakWarningsEnabled: value }),
+    [submitPrefs],
+  );
+  const handleSundayReviewToggle = useCallback(
+    (value: boolean) => submitPrefs({ sundayReviewEnabled: value }),
+    [submitPrefs],
   );
 
   const handleCoachingChange = useCallback(
@@ -213,9 +249,9 @@ export function ProfileClient({
               notifPending={notifPending}
               onHabitRemindersToggle={handleHabitRemindersToggle}
               streakWarnings={streakWarnings}
-              onStreakWarningsChange={setStreakWarnings}
+              onStreakWarningsChange={handleStreakWarningsToggle}
               sundayReview={sundayReview}
-              onSundayReviewChange={setSundayReview}
+              onSundayReviewChange={handleSundayReviewToggle}
               settings={settings}
             />
           )}

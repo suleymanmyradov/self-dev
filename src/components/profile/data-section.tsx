@@ -1,8 +1,33 @@
 "use client";
 
+import { useActionState, useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import { toast } from "@/components/ui/sonner";
+import { deleteAccountAction } from "@/lib/actions/auth";
 
 export function DataSection() {
+  const [confirmOpen, setConfirmOpen] = useState(false);
+  const [state, action, pending] = useActionState(deleteAccountAction, {
+    success: false,
+  });
+
+  // On success the server action redirects to /login, so we only need to
+  // handle the error path here.
+  useEffect(() => {
+    if (!state.success && state.error) {
+      toast.error(state.error);
+      setConfirmOpen(false);
+    }
+  }, [state]);
+
   return (
     <div className="space-y-6">
       <h1 className="font-display text-2xl">Data & privacy</h1>
@@ -22,7 +47,7 @@ export function DataSection() {
             <p className="text-sm font-medium">Export everything</p>
             <p className="text-xs text-muted-foreground">Download all your data as JSON</p>
           </div>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" disabled>
             Export
           </Button>
         </div>
@@ -34,11 +59,48 @@ export function DataSection() {
             <p className="text-sm font-medium text-destructive">Delete account</p>
             <p className="text-xs text-muted-foreground">This action cannot be undone</p>
           </div>
-          <Button variant="outline" size="sm" className="text-destructive border-destructive/30 hover:bg-destructive/5">
+          <Button
+            variant="outline"
+            size="sm"
+            className="text-destructive border-destructive/30 hover:bg-destructive/5"
+            onClick={() => setConfirmOpen(true)}
+          >
             Delete
           </Button>
         </div>
       </div>
+
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Delete account?</DialogTitle>
+            <DialogDescription>
+              This permanently removes your profile, habits, goals, check-ins,
+              conversations, and saved items. This action cannot be undone.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConfirmOpen(false)}
+              disabled={pending}
+            >
+              Cancel
+            </Button>
+            <form action={action}>
+              <Button
+                type="submit"
+                variant="destructive"
+                size="sm"
+                disabled={pending}
+              >
+                {pending ? "Deleting…" : "Yes, delete my account"}
+              </Button>
+            </form>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

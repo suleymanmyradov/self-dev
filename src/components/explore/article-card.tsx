@@ -16,7 +16,7 @@ export function ArticleCard({ article, isSaved, onToggleSave }: ArticleCardProps
     <Card className="overflow-hidden rounded-xl border-border">
       {article.imageUrl ? (
         <div className="relative h-[132px] w-full overflow-hidden bg-muted">
-          <Link href={`/article/${article.id}`} className="block size-full">
+          <Link href={`/article/${article.id}`} className="relative block size-full">
             <Image
               src={article.imageUrl}
               alt={article.title}

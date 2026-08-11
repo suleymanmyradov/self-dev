@@ -16,7 +16,7 @@ export function FeaturedCard({ article, isSaved, onToggleSave }: FeaturedCardPro
     <Card className="flex flex-col overflow-hidden rounded-xl border-border md:flex-row">
       {article.imageUrl ? (
         <div className="relative h-48 w-full shrink-0 overflow-hidden bg-muted md:h-auto md:w-[300px]">
-          <Link href={`/article/${article.id}`} className="block size-full">
+          <Link href={`/article/${article.id}`} className="relative block size-full">
             <Image
               src={article.imageUrl}
               alt={article.title}

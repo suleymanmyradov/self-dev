@@ -8,6 +8,7 @@ import {
 import type { PageParams } from '@/api';
 import { toast } from 'sonner';
 import { useAuthStore } from '@/store/auth';
+import { useHydrated } from '@/hooks/use-hydrated';
 
 const DEFAULT_NOTIFICATIONS_PARAMS: PageParams = { page: 1, limit: 20 };
 
@@ -34,6 +35,7 @@ export function useNotifications(params: PageParams = DEFAULT_NOTIFICATIONS_PARA
  * can use it directly in comparisons and badges.
  */
 export function useUnreadCount(): number {
+  const hydrated = useHydrated();
   const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const { data } = useQuery({
     queryKey: ['notifications', 'unread-count'],
@@ -43,7 +45,11 @@ export function useUnreadCount(): number {
     refetchInterval: 60 * 1000, // 1 minute
     refetchOnWindowFocus: true,
   });
-  return data ?? 0;
+  // Return 0 until the client has hydrated so the badge matches the
+  // prerendered (PPR) shell. Without this, React Query's internal
+  // useSyncExternalStore can resolve with cached data during hydration
+  // and render the badge on the client but not the server.
+  return hydrated ? (data ?? 0) : 0;
 }
 
 export function useMarkNotificationRead() {

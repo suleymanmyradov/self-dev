@@ -4,7 +4,7 @@ import { use, useCallback, useEffect, useMemo, useState } from "react";
 import dynamic from "next/dynamic";
 import { useSearchParams, useRouter } from "next/navigation";
 import { Button } from "@/components/ui/button";
-import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { toast } from "@/components/ui/sonner";
 import { Plus } from "lucide-react";
@@ -442,12 +442,6 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
                     />
                   ))}
                 </div>
-                <button
-                  type="button"
-                  className="mt-3 text-sm font-medium text-success transition-colors hover:text-success/80"
-                >
-                  Assign or archive
-                </button>
               </div>
             </section>
           )}
@@ -596,10 +590,10 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete habit</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this habit? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete this habit? This action cannot be undone.
-          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => habitDeleteConfirm.setOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleHabitDelete}>Delete</Button>
@@ -612,10 +606,10 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete goal</DialogTitle>
+            <DialogDescription>
+              Are you sure you want to delete this goal? This action cannot be undone.
+            </DialogDescription>
           </DialogHeader>
-          <p className="text-sm text-muted-foreground">
-            Are you sure you want to delete this goal? This action cannot be undone.
-          </p>
           <DialogFooter>
             <Button variant="outline" onClick={() => goalDeleteConfirm.setOpen(false)}>Cancel</Button>
             <Button variant="destructive" onClick={handleGoalDelete}>Delete</Button>
