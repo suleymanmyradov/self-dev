@@ -3,7 +3,7 @@ import { Skeleton } from '@/components/ui/skeleton';
 export default function Loading() {
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
           <header className="mb-4 flex items-center justify-between">
             <div>

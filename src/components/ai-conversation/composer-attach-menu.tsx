@@ -1,15 +1,9 @@
 'use client';
 
 import { useCallback, type FC } from 'react';
-import { useComposerRuntime } from '@assistant-ui/react';
-import {
-    PaperclipIcon,
-    TargetIcon,
-    TrophyIcon,
-    ChevronRightIcon,
-    FileIcon,
-} from 'lucide-react';
+import { PaperclipIcon, TargetIcon, TrophyIcon, FileIcon } from 'lucide-react';
 
+import { useChatComposer } from '@/components/ai-conversation/chat-context';
 import {
     DropdownMenu,
     DropdownMenuTrigger,
@@ -22,33 +16,23 @@ import {
     DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 import { useGoals, useHabits } from '@/hooks';
-import { cn } from '@/lib/utils';
 
 /**
- * Attach menu for the composer. A single pill-style dropdown button that
- * replaces the old separate "Attach" and "Reference a habit" pills. Provides:
- *
- * - Attach file (opens the OS file picker, respects attachmentAccept)
- * - Reference goal (submenu listing the user's goals)
- * - Reference habit (submenu listing the user's habits)
- *
- * When a goal or habit is selected, a textual reference like
- * `[Goal: "Read 10 books"]` is appended to the composer input so the coaching
- * model knows which entity the user is asking about.
+ * Attach menu for the composer. Provides file attachments and textual
+ * references to the user's goals and habits.
  */
 export const ComposerAttachMenu: FC = () => {
-    const composer = useComposerRuntime();
+    const { text, setText, attachmentAccept, addAttachment } = useChatComposer();
     const { data: goals } = useGoals();
     const { data: habits } = useHabits();
 
     const insertReference = useCallback(
         (label: string, title: string) => {
-            const current = composer.getState().text;
-            const ref = `[${label}: "${title}"]`;
-            const prefix = current && !/\s$/.test(current) ? ' ' : '';
-            composer.setText(current + prefix + ref);
+            const reference = `[${label}: "${title}"]`;
+            const prefix = text && !/\s$/.test(text) ? ' ' : '';
+            setText(text + prefix + reference);
         },
-        [composer],
+        [setText, text],
     );
 
     const handleAttachFile = useCallback(() => {
@@ -56,24 +40,18 @@ export const ComposerAttachMenu: FC = () => {
         input.type = 'file';
         input.multiple = true;
         input.hidden = true;
-        const accept = composer.getState().attachmentAccept;
-        if (accept !== '*') input.accept = accept;
+        input.accept = attachmentAccept;
         document.body.appendChild(input);
-        input.onchange = async e => {
-            const fileList = (e.target as HTMLInputElement).files;
-            if (!fileList) return;
-            for (const file of fileList) {
-                await composer.addAttachment(file);
+        input.onchange = event => {
+            const fileList = (event.target as HTMLInputElement).files;
+            if (fileList) {
+                Array.from(fileList).forEach(addAttachment);
             }
-            document.body.removeChild(input);
+            input.remove();
         };
-        input.oncancel = () => {
-            if (!input.files || input.files.length === 0) {
-                document.body.removeChild(input);
-            }
-        };
+        input.oncancel = () => input.remove();
         input.click();
-    }, [composer]);
+    }, [addAttachment, attachmentAccept]);
 
     return (
         <DropdownMenu>

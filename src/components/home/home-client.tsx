@@ -112,7 +112,7 @@ export function HomeClient({ categoriesPromise, articlesPromise }: HomeClientPro
 
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
-      <div className="relative flex-1 overflow-y-auto no-scrollbar">
+      <div className="relative flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <div className="w-full px-6 lg:px-10 py-8 pb-16">
           <div className="flex flex-col md:flex-row gap-8 max-w-5xl mx-auto">
             {/* === MAIN COLUMN === */}

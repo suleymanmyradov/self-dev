@@ -22,7 +22,7 @@ export default function LogoutPage() {
 
   return (
     <div className="h-full flex flex-col">
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <div className="mx-auto w-full max-w-sm px-4 py-6 md:py-8">
           <Card>
             <CardHeader>

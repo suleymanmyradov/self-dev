@@ -85,17 +85,17 @@ export function GoalCard({
       )}
     >
       {/* Goal header */}
-      <div className="flex items-start justify-between gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between sm:gap-4">
         <div className="min-w-0 flex-1">
-          <div className="flex items-center gap-2">
-            <h2 className="font-display text-xl font-semibold leading-tight truncate">
+          <div className="flex min-w-0 items-center gap-2">
+            <h2 className="font-display text-lg sm:text-xl font-semibold leading-tight truncate">
               {goal.title}
             </h2>
             <Badge variant="outline" className="capitalize shrink-0">
               {goal.category}
             </Badge>
           </div>
-          <p className="mt-1 text-sm text-muted-foreground leading-relaxed" style={{ maxWidth: '62ch' }}>
+          <p className="mt-1 text-sm text-muted-foreground leading-relaxed break-words" style={{ maxWidth: '62ch' }}>
             {goal.description}
           </p>
           {goal.dueDate && (
@@ -107,8 +107,8 @@ export function GoalCard({
         </div>
 
         {/* Goal progress (right side) + actions — type-driven */}
-        <div className="flex items-start gap-2 shrink-0">
-          <div className="flex flex-col items-end gap-1" style={{ width: 160 }}>
+        <div className="flex items-center gap-2 sm:items-start sm:justify-end">
+          <div className="flex flex-col items-end gap-1 w-28 sm:w-40">
             {measurement === "binary" ? (
               <Badge variant={isCompleted ? "default" : "outline"} className="capitalize">
                 {isCompleted ? "Done" : "Not done"}

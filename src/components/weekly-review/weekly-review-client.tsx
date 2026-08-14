@@ -99,7 +99,7 @@ export function WeeklyReviewClient({
   // review for the current week yet — treat that as the "no review" state.
   if (!activeReview) {
     return (
-      <div className="h-full overflow-y-auto">
+      <div className="h-full overflow-y-auto overflow-x-hidden">
         <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
           {generateStream.isStreaming ? (
             <StreamingCoachCard
@@ -135,16 +135,16 @@ export function WeeklyReviewClient({
   const consistencyClass = consistencyChange === null ? undefined : consistencyChange >= 0 ? 'text-success' : 'text-destructive';
 
   return (
-    <div className="h-full overflow-y-auto">
+    <div className="h-full overflow-y-auto overflow-x-hidden">
       <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
         <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
           {/* Main column */}
           <div className="min-w-0 flex-1 space-y-6">
             {/* Header */}
             <header className="flex items-start justify-between gap-4">
-              <div>
+              <div className="min-w-0 flex-1">
                 <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{weekLabel}</p>
-                <h1 className="mt-1 font-display text-3xl font-bold tracking-tight">{headline}</h1>
+                <h1 className="mt-1 font-display text-xl font-semibold leading-snug tracking-tight sm:text-2xl md:text-3xl">{headline}</h1>
               </div>
               {/* Week navigation */}
               <div className="flex items-center gap-1 shrink-0">

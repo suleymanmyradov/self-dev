@@ -124,7 +124,7 @@ export default async function ArticlePage({
       <ReadingProgress />
 
       <div className="h-full flex flex-col relative">
-        <div className="relative flex-1 overflow-y-auto no-scrollbar">
+        <div className="relative flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
           {/* Article header bar */}
           <div className="sticky top-0 z-40 bg-background/80 backdrop-blur-sm border-b border-border">
             <div className="mx-auto max-w-[660px] px-4 h-12 flex items-center justify-between">

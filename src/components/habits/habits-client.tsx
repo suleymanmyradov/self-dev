@@ -366,7 +366,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
 
   return (
     <div className="h-full flex flex-col relative">
-      <div className="relative flex-1 overflow-y-auto no-scrollbar">
+      <div className="relative flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
           {/* Header */}
           <header className="mb-6">

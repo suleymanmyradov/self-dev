@@ -184,7 +184,7 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
 
   return (
     <div className="h-full flex flex-col relative">
-      <div className="relative flex-1 overflow-y-auto no-scrollbar">
+      <div className="relative flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <div className="mx-auto w-full max-w-5xl px-6 py-8 md:py-10">
           {/* Header */}
           <header className="mb-8 flex items-start justify-between gap-6">

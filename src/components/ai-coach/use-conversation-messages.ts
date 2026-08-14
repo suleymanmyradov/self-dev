@@ -2,9 +2,9 @@
 
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { type AppendMessage, type ThreadMessageLike } from '@assistant-ui/react';
-import { streamPersonalizedCoaching } from '@/api/personalization';
+import { streamPersonalizedCoaching, type CoachingProposal } from '@/api/personalization';
 import { startConversation, getMessages } from '@/api/conversations';
+import type { ChatAttachment } from '@/components/ai-coach/attachment-adapter';
 
 export interface CoachingMessage {
     id: string;
@@ -12,22 +12,20 @@ export interface CoachingMessage {
     content: string;
     reasoning?: string;
     status: 'complete' | 'running';
+    error?: string;
+    attachments?: ChatAttachment[];
+    proposals?: CoachingProposal[];
+}
+
+export interface SendMessageOptions {
+    /** Text shown in the user bubble. Defaults to the streamed `text`. */
+    displayText?: string;
+    attachments?: ChatAttachment[];
 }
 
 let messageCounter = 0;
 function generateId() {
     return `msg-${++messageCounter}`;
-}
-
-function extractText(message: AppendMessage): string {
-    if (typeof message.content === 'string') return message.content;
-    if (Array.isArray(message.content)) {
-        return message.content
-            .filter((p): p is { type: 'text'; text: string } => p.type === 'text')
-            .map(p => p.text)
-            .join('');
-    }
-    return '';
 }
 
 export function useConversationMessages(conversationId?: string) {
@@ -67,70 +65,15 @@ export function useConversationMessages(conversationId?: string) {
         };
     }, [conversationId]);
 
-    const convertMessage = useCallback((msg: CoachingMessage): ThreadMessageLike => {
-        if (msg.role !== 'assistant') {
-            return {
-                role: msg.role,
-                content: msg.content,
-                id: msg.id,
-            };
-        }
-
-        // When the assistant is running and has no streamed content yet,
-        // show a simple "thinking..." indicator so the user sees the coach
-        // is processing. The backend sends tool-status events (which tool is
-        // running), but we surface only a neutral label here. Once the first
-        // delta or reasoning chunk arrives, thinkingMessage is cleared and
-        // the real content takes over.
-        const isThinkingPlaceholder =
-            msg.status === 'running' && !msg.content && !msg.reasoning && thinkingMessage;
-
-        // Build content parts: reasoning (if any) + text content.
-        // assistant-ui renders reasoning parts natively as a collapsible
-        // "thinking" section via ChainOfThoughtPrimitive.
-        if (msg.reasoning || msg.content) {
-            const parts: Array<
-                | { type: 'reasoning'; text: string }
-                | { type: 'text'; text: string }
-            > = [];
-            if (msg.reasoning) {
-                parts.push({ type: 'reasoning', text: msg.reasoning });
-            }
-            if (msg.content) {
-                parts.push({ type: 'text', text: msg.content });
-            } else if (isThinkingPlaceholder) {
-                parts.push({ type: 'text', text: 'Thinking...' });
-            }
-            return {
-                role: msg.role,
-                content: parts,
-                id: msg.id,
-                status:
-                    msg.status === 'running'
-                        ? { type: 'running' }
-                        : { type: 'complete', reason: 'stop' },
-            };
-        }
-
-        return {
-            role: msg.role,
-            content: isThinkingPlaceholder ? 'Thinking...' : msg.content,
-            id: msg.id,
-            status:
-                msg.status === 'running'
-                    ? { type: 'running' }
-                    : { type: 'complete', reason: 'stop' },
-        };
-    }, [thinkingMessage]);
-
     const onNew = useCallback(
-        async (message: AppendMessage) => {
-            const userText = extractText(message);
+        async (text: string, options?: SendMessageOptions) => {
+            const userText = options?.displayText ?? text;
             const userMsg: CoachingMessage = {
                 id: generateId(),
                 role: 'user',
                 content: userText,
                 status: 'complete',
+                attachments: options?.attachments,
             };
             const assistantId = generateId();
             const assistantMsg: CoachingMessage = {
@@ -152,7 +95,7 @@ export function useConversationMessages(conversationId?: string) {
                 try {
                     const resp = await startConversation({
                         type: 'coach',
-                        title: userText,
+                        title: userText || text,
                     });
                     convId = resp.data.id;
                     createdConversationId = convId;
@@ -167,28 +110,37 @@ export function useConversationMessages(conversationId?: string) {
 
             abortRef.current = streamPersonalizedCoaching(
                 {
-                    userMessage: userText,
+                    userMessage: text,
                     conversationId: convId,
                 },
                 {
                     onThinking: message => {
                         setThinkingMessage(message);
                     },
-                    onReasoning: text => {
-                        setThinkingMessage(null);
+                    onProposal: proposal => {
                         setMessages(prev =>
                             prev.map(m =>
                                 m.id === assistantId
-                                    ? { ...m, reasoning: (m.reasoning ?? '') + text }
+                                    ? { ...m, proposals: [...(m.proposals ?? []), proposal] }
                                     : m,
                             ),
                         );
                     },
-                    onDelta: text => {
+                    onReasoning: chunk => {
                         setThinkingMessage(null);
                         setMessages(prev =>
                             prev.map(m =>
-                                m.id === assistantId ? { ...m, content: m.content + text } : m,
+                                m.id === assistantId
+                                    ? { ...m, reasoning: (m.reasoning ?? '') + chunk }
+                                    : m,
+                            ),
+                        );
+                    },
+                    onDelta: chunk => {
+                        setThinkingMessage(null);
+                        setMessages(prev =>
+                            prev.map(m =>
+                                m.id === assistantId ? { ...m, content: m.content + chunk } : m,
                             ),
                         );
                     },
@@ -225,9 +177,7 @@ export function useConversationMessages(conversationId?: string) {
                                 m.id === assistantId
                                     ? {
                                           ...m,
-                                          content:
-                                              m.content ||
-                                              `Sorry, I encountered an error: ${errorMessage}`,
+                                          error: errorMessage,
                                           status: 'complete' as const,
                                       }
                                     : m,
@@ -262,9 +212,7 @@ export function useConversationMessages(conversationId?: string) {
 
     // Abort any in-flight stream when the component unmounts (e.g. navigating
     // away mid-stream). Without this, stream callbacks keep firing setMessages
-    // / setIsRunning on an unmounted component, which races with assistant-ui's
-    // internal fiber cleanup and surfaces as "Tried to unmount a fiber that is
-    // already unmounted".
+    // / setIsRunning on an unmounted component.
     useEffect(() => {
         return () => {
             abortRef.current?.abort();
@@ -276,9 +224,9 @@ export function useConversationMessages(conversationId?: string) {
         messages,
         setMessages,
         isRunning,
+        thinkingMessage,
         currentConversationId,
         setCurrentConversationId,
-        convertMessage,
         onNew,
         onCancel,
     };

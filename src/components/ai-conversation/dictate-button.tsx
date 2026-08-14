@@ -1,13 +1,9 @@
 'use client';
 
-import { useState, useRef, useCallback, type FC } from 'react';
+import { useState, useRef, useCallback, useEffect, type FC } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
-import {
-    Tooltip,
-    TooltipContent,
-    TooltipTrigger,
-} from '@/components/ui/tooltip';
-import { useComposerRuntime } from '@assistant-ui/react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
+import { useChatComposer } from '@/components/ai-conversation/chat-context';
 import { transcribeAudio } from '@/api/voice';
 import { cn } from '@/lib/utils';
 
@@ -24,15 +20,20 @@ type DictateState = 'idle' | 'recording' | 'transcribing' | 'error';
  * server-side via the pluggable pkg/speech STT provider.
  */
 export const DictateButton: FC = () => {
-    const composer = useComposerRuntime();
+    const { text, setText } = useChatComposer();
     const [state, setState] = useState<DictateState>('idle');
     const [errorMsg, setErrorMsg] = useState('');
     const mediaRecorderRef = useRef<MediaRecorder | null>(null);
     const chunksRef = useRef<Blob[]>([]);
     const streamRef = useRef<MediaStream | null>(null);
+    const textRef = useRef(text);
+
+    useEffect(() => {
+        textRef.current = text;
+    }, [text]);
 
     const stopTracks = useCallback(() => {
-        streamRef.current?.getTracks().forEach(t => t.stop());
+        streamRef.current?.getTracks().forEach(track => track.stop());
         streamRef.current = null;
     }, []);
 
@@ -47,16 +48,13 @@ export const DictateButton: FC = () => {
             const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
             streamRef.current = stream;
 
-            // Pick the best supported MIME type for MediaRecorder. Chrome/
-            // Firefox default to audio/webm; Safari to audio/mp4. The backend
-            // derives the format from the filename extension we send.
             const mimeType = pickMimeType();
             const recorder = mimeType
                 ? new MediaRecorder(stream, { mimeType })
                 : new MediaRecorder(stream);
             chunksRef.current = [];
-            recorder.ondataavailable = e => {
-                if (e.data.size > 0) chunksRef.current.push(e.data);
+            recorder.ondataavailable = event => {
+                if (event.data.size > 0) chunksRef.current.push(event.data);
             };
             recorder.onstop = async () => {
                 stopTracks();
@@ -72,18 +70,14 @@ export const DictateButton: FC = () => {
                 try {
                     const result = await transcribeAudio(audio);
                     if (result.text) {
-                        // Append to whatever is already in the composer,
-                        // adding a space if there's existing text without
-                        // trailing whitespace.
-                        const current = composer.getState().text;
+                        const current = textRef.current;
                         const prefix = current && !/\s$/.test(current) ? ' ' : '';
-                        composer.setText(current + prefix + result.text);
+                        setText(current + prefix + result.text);
                     }
                     setState('idle');
                 } catch (err) {
                     setState('error');
                     setErrorMsg((err as Error).message || 'Transcription failed');
-                    // Auto-recover from the error state after 2s.
                     setTimeout(() => setState('idle'), 2000);
                 }
             };
@@ -100,7 +94,7 @@ export const DictateButton: FC = () => {
             );
             setTimeout(() => setState('idle'), 2000);
         }
-    }, [composer, stopTracks]);
+    }, [setText, stopTracks]);
 
     const stopRecording = useCallback(() => {
         const recorder = mediaRecorderRef.current;
@@ -116,8 +110,7 @@ export const DictateButton: FC = () => {
         } else if (state === 'idle') {
             void startRecording();
         }
-        // In transcribing/error states, ignore clicks.
-    }, [state, startRecording, stopRecording]);
+    }, [startRecording, state, stopRecording]);
 
     const tooltip =
         state === 'recording'
@@ -167,8 +160,8 @@ function pickMimeType(): string | undefined {
         'audio/mp4',
         'audio/aac',
     ];
-    for (const c of candidates) {
-        if (MediaRecorder.isTypeSupported?.(c)) return c;
+    for (const candidate of candidates) {
+        if (MediaRecorder.isTypeSupported?.(candidate)) return candidate;
     }
     return undefined;
 }

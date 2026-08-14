@@ -2,12 +2,8 @@
 
 import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import {
-    AssistantRuntimeProvider,
-    useExternalStoreRuntime,
-    type ExternalStoreThreadListAdapter,
-} from '@assistant-ui/react';
 import { Thread } from '@/components/ai-conversation/thread';
+import { ChatProvider } from '@/components/ai-conversation/chat-context';
 import { VoiceMode } from '@/components/ai-coach/voice-mode';
 import { ConversationSidebar } from '@/components/ai-coach/conversation-sidebar';
 import { ConversationHeader } from '@/components/ai-coach/conversation-header';
@@ -20,17 +16,16 @@ import {
     useDeleteConversation,
 } from '@/hooks';
 import { getMessages } from '@/api/conversations';
-import { coachAttachmentAdapter } from '@/components/ai-coach/attachment-adapter';
 
 export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     const router = useRouter();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [isVoiceMode, setIsVoiceMode] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const { data: billing } = useBillingOverview();
     const isPro = billing?.subscription?.planCode === 'pro';
 
-    // Fetch the list of coach conversations for the sidebar thread list.
     const { data: conversations, isLoading: conversationsLoading } = useConversations({
         page: 1,
         limit: 50,
@@ -39,115 +34,55 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     const archiveMutation = useArchiveConversation();
     const unarchiveMutation = useUnarchiveConversation();
     const deleteMutation = useDeleteConversation();
+    const conversationState = useConversationMessages(conversationId);
+    const { setMessages, currentConversationId, setCurrentConversationId } = conversationState;
 
-    const {
-        messages,
-        setMessages,
-        isRunning,
-        currentConversationId,
-        setCurrentConversationId,
-        convertMessage,
-        onNew,
-        onCancel,
-    } = useConversationMessages(conversationId);
-
-    // Filter conversations by search query
     const filteredConversations = useMemo(() => {
         const all = conversations ?? [];
-        const q = searchQuery.trim().toLowerCase();
-        if (!q) return all;
+        const query = searchQuery.trim().toLowerCase();
+        if (!query) return all;
         return all.filter(
-            c =>
-                c.title?.toLowerCase().includes(q) ||
-                c.lastMessage?.toLowerCase().includes(q),
+            conversation =>
+                conversation.title?.toLowerCase().includes(query) ||
+                conversation.lastMessage?.toLowerCase().includes(query),
         );
     }, [conversations, searchQuery]);
 
-    // Find the active conversation for the header bar
     const activeConversation = useMemo(() => {
         if (!currentConversationId) return undefined;
-        return conversations?.find(c => c.id === currentConversationId);
+        return conversations?.find(conversation => conversation.id === currentConversationId);
     }, [conversations, currentConversationId]);
 
-    // Build the thread list adapter so the sidebar shows real conversations,
-    // "New Chat" works, and clicking a chat navigates to it.
-    const threadListAdapter = useMemo<ExternalStoreThreadListAdapter>(() => {
-        const active = filteredConversations.filter(c => !c.archived);
-        const archived = filteredConversations.filter(c => c.archived);
-        return {
-            threadId: currentConversationId,
-            isLoading: conversationsLoading,
-            threads: active.map(c => ({
-                id: c.id,
-                title: c.title || 'New Chat',
-                status: 'regular' as const,
-            })),
-            archivedThreads: archived.map(c => ({
-                id: c.id,
-                title: c.title || 'New Chat',
-                status: 'archived' as const,
-            })),
-            onSwitchToNewThread: () => {
-                router.push('/coach');
-            },
-            onSwitchToThread: (threadId: string) => {
-                router.push(`/coach/${threadId}`);
-            },
-            onArchive: (threadId: string) => {
-                archiveMutation.mutate(threadId);
-            },
-            onUnarchive: (threadId: string) => {
-                unarchiveMutation.mutate(threadId);
-            },
-            onDelete: (threadId: string) => {
-                deleteMutation.mutate(threadId);
-                // If we're deleting the currently open conversation, go to /coach.
-                if (threadId === currentConversationId) {
-                    router.push('/coach');
-                }
-            },
-        };
-    }, [
-        filteredConversations,
-        conversationsLoading,
-        currentConversationId,
-        router,
-        archiveMutation,
-        unarchiveMutation,
-        deleteMutation,
-    ]);
-
-    const runtime = useExternalStoreRuntime({
-        messages,
-        isRunning,
-        convertMessage,
-        onNew,
-        onCancel,
-        adapters: {
-            threadList: threadListAdapter,
-            attachments: coachAttachmentAdapter,
-        },
-    });
-
     return (
-        <AssistantRuntimeProvider runtime={runtime}>
+        <ChatProvider key={conversationId ?? 'new'} state={conversationState}>
             <div className="relative flex h-full overflow-hidden bg-background text-foreground">
-                {/* Sidebar — 276px, white bg, border-right */}
                 <ConversationSidebar
                     conversations={filteredConversations}
                     isLoading={conversationsLoading}
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
+                    activeConversationId={currentConversationId}
+                    onNewChat={() => router.push('/coach')}
+                    onSelectConversation={id => router.push(`/coach/${id}`)}
+                    onArchive={id => archiveMutation.mutate(id)}
+                    onUnarchive={id => unarchiveMutation.mutate(id)}
+                    onDelete={id => {
+                        deleteMutation.mutate(id);
+                        if (id === currentConversationId) {
+                            router.push('/coach');
+                        }
+                    }}
                     isSidebarOpen={isSidebarOpen}
                     onToggleSidebar={setIsSidebarOpen}
+                    isMobileSidebarOpen={isMobileSidebarOpen}
+                    onMobileSidebarOpenChange={setIsMobileSidebarOpen}
                     isPro={isPro}
                 />
 
-                {/* Main chat area */}
                 <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
-                    {/* Header bar */}
                     <ConversationHeader
                         title={activeConversation?.title}
+                        onOpenConversations={() => setIsMobileSidebarOpen(true)}
                         onVoiceMode={() => setIsVoiceMode(true)}
                         conversationId={currentConversationId}
                         isArchived={activeConversation?.archived}
@@ -160,38 +95,33 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                             }
                         }}
                     />
-
-                    {/* Conversation thread */}
                     <Thread />
                 </main>
             </div>
 
-            {/* Full-screen live voice chat overlay. */}
             {isVoiceMode && (
                 <VoiceMode
                     conversationId={currentConversationId}
                     onConversationCreated={id => {
                         setCurrentConversationId(id);
-                        // Reload messages from the backend so the text thread
-                        // reflects the voice conversation when voice mode closes.
                         void (async () => {
                             try {
-                                const resp = await getMessages(id);
-                                const loaded = resp.data.map(m => ({
-                                    id: m.id,
-                                    role: m.role,
-                                    content: m.content,
+                                const response = await getMessages(id);
+                                const loaded = response.data.map(message => ({
+                                    id: message.id,
+                                    role: message.role,
+                                    content: message.content,
                                     status: 'complete' as const,
                                 }));
                                 setMessages(loaded);
                             } catch {
-                                // Non-fatal — the sidebar will still refresh.
+                                // The sidebar still refreshes if the text history cannot load.
                             }
                         })();
                     }}
                     onClose={() => setIsVoiceMode(false)}
                 />
             )}
-        </AssistantRuntimeProvider>
+        </ChatProvider>
     );
 };

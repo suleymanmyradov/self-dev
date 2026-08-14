@@ -218,7 +218,7 @@ export function ProfileClient({
       </aside>
 
       {/* ─── Main content ────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto no-scrollbar">
+      <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <div className="mx-auto w-full max-w-2xl px-6 py-8 md:py-10">
           {activeSection === "profile" && (
             <ProfileSection

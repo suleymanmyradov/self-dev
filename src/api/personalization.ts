@@ -160,6 +160,27 @@ export interface CoachingStreamCallbacks {
   onError: (message: string) => void;
   onThinking?: (message: string) => void;
   onReasoning?: (text: string) => void;
+  onProposal?: (proposal: CoachingProposal) => void;
+}
+
+/**
+ * A proposal action emitted by the agentic coaching flow. The agent calls
+ * a propose_* tool to prepare a goal/habit create/update/delete; the
+ * backend forwards it as an SSE "proposal" event. The client renders a
+ * confirm card and calls the existing CRUD endpoint on accept.
+ */
+export type ProposalAction =
+  | 'create_goal'
+  | 'update_goal'
+  | 'delete_goal'
+  | 'create_habit'
+  | 'update_habit'
+  | 'delete_habit';
+
+export interface CoachingProposal {
+  id: string;
+  action: ProposalAction;
+  payload: Record<string, unknown>;
 }
 
 /**
@@ -234,6 +255,9 @@ export function streamPersonalizedCoaching(
             } else if (event.type === 'thinking') {
               const payload = JSON.parse(event.data) as { message: string };
               callbacks.onThinking?.(payload.message);
+            } else if (event.type === 'proposal') {
+              const payload = JSON.parse(event.data) as CoachingProposal;
+              callbacks.onProposal?.(payload);
             } else if (event.type === 'complete') {
               const payload = JSON.parse(event.data) as { fullResponse: string };
               callbacks.onComplete(payload.fullResponse);

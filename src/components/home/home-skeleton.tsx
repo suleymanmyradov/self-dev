@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function HomeSkeleton() {
   return (
     <div className="relative h-full flex flex-col overflow-hidden">
-      <div className="relative flex-1 overflow-y-auto no-scrollbar">
+      <div className="relative flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <div className="w-full px-6 lg:px-10 pb-10">
           {/* Tab skeleton */}
           <div className="mt-2 mb-6 w-full">

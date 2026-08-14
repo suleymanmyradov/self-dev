@@ -7,7 +7,12 @@ const nextConfig: NextConfig = {
     // Allow the dev server (HMR WebSocket, dev-only assets) to be reached from
     // LAN IPs so testing from other devices / VMs on the local network works.
     // Production is unaffected.
-    allowedDevOrigins: ['127.0.0.1', '192.168.77.40', '192.168.77.*'],
+    allowedDevOrigins: [
+        '127.0.0.1',
+        '192.168.77.40',
+        '192.168.77.*',
+        '*.trycloudflare.com',
+    ],
     images: {
         remotePatterns: [
             {

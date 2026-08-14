@@ -3,7 +3,7 @@ import { Skeleton } from "@/components/ui/skeleton";
 export function ExploreSkeleton() {
   return (
     <div className="h-full flex flex-col relative">
-      <div className="relative flex-1 overflow-y-auto no-scrollbar">
+      <div className="relative flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <div className="mx-auto w-full max-w-4xl px-4 py-6 md:py-8">
           <header className="mb-6">
             <Skeleton className="h-8 w-32 mb-2" />
