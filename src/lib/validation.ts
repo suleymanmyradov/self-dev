@@ -304,6 +304,10 @@ export const CreateCheckInResponseDataSchema = z.object({
   aiFeedback: z.string().optional(),
 });
 
+export const DeleteCheckInResponseDataSchema = z.object({
+  habit: HabitSchema,
+});
+
 // The backend returns { checkIns: [...] } for today/history endpoints, not
 // { data: [...] }. Accept both shapes and normalize to { data: [...] }.
 export const CheckInsResponseSchema = z.union([

@@ -1,26 +1,22 @@
 'use client';
 
-import { memo } from 'react';
+import { memo, useState } from 'react';
 import Link from 'next/link';
 import { Button } from '@/components/ui/button';
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+  SheetDescription,
+} from '@/components/ui/sheet';
 import { Bell, Leaf } from 'lucide-react';
-import { useUIStore } from '@/store/uiStore';
 import { useUnreadCount } from '@/hooks';
+import { NotificationsList } from '@/components/layout/left-nested-panel';
 
 export const MobileTopBar = memo(function MobileTopBar() {
-  const openLeftPanel = useUIStore(s => s.openLeftPanel);
-  const closeLeftPanel = useUIStore(s => s.closeLeftPanel);
-  const isLeftPanelOpen = useUIStore(s => s.isLeftPanelOpen);
-  const leftPanelType = useUIStore(s => s.leftPanelType);
   const unreadCount = useUnreadCount();
-
-  const handleBellClick = () => {
-    if (isLeftPanelOpen && leftPanelType === 'notifications') {
-      closeLeftPanel();
-    } else {
-      openLeftPanel('notifications');
-    }
-  };
+  const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   return (
     <header
@@ -41,7 +37,7 @@ export const MobileTopBar = memo(function MobileTopBar() {
             size="icon"
             className="relative border border-border/60 bg-background/80 shadow-sm hover:bg-muted/50"
             aria-label="Notifications"
-            onClick={handleBellClick}
+            onClick={() => setNotificationsOpen(true)}
           >
             <Bell className="h-5 w-5" />
             {unreadCount > 0 && (
@@ -53,6 +49,21 @@ export const MobileTopBar = memo(function MobileTopBar() {
           </Button>
         </div>
       </div>
+
+      {/* Notifications sheet — slides in from the right */}
+      <Sheet open={notificationsOpen} onOpenChange={setNotificationsOpen}>
+        <SheetContent side="right" className="w-[320px] max-w-[85vw] p-0 flex flex-col">
+          <SheetHeader className="px-4 py-3 border-b border-border/40 shrink-0">
+            <SheetTitle>Notifications</SheetTitle>
+            <SheetDescription className="sr-only">
+              Your recent notifications and alerts
+            </SheetDescription>
+          </SheetHeader>
+          <div className="flex-1 overflow-y-auto">
+            <NotificationsList onClose={() => setNotificationsOpen(false)} />
+          </div>
+        </SheetContent>
+      </Sheet>
     </header>
   );
 });

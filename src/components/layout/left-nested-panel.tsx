@@ -151,11 +151,12 @@ function relativeTime(dateStr: string): string {
   })
 }
 
-function NotificationsList() {
+export function NotificationsList({ onClose }: { onClose?: () => void }) {
   const { data: notifications = [], isLoading, isError, refetch, isFetching } = useNotifications({ page: 1, limit: 20 })
   const markAllRead = useMarkAllNotificationsRead()
   const markRead = useMarkNotificationRead()
   const closeLeftPanel = useUIStore(s => s.closeLeftPanel)
+  const handleClose = onClose ?? closeLeftPanel
 
   const unreadCount = notifications?.filter((n) => !n.read).length ?? 0
 
@@ -240,7 +241,7 @@ function NotificationsList() {
                 href="/progress"
                 onClick={() => {
                   handleMarkRead(n.id, n.read)
-                  closeLeftPanel()
+                  handleClose()
                 }}
                 className={cn(
                   "flex gap-3 rounded-md p-3 text-sm hover:bg-accent",

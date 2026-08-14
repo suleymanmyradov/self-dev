@@ -11,12 +11,12 @@ export const Thread: FC = () => {
         <LazyMotion features={domAnimation}>
             <MotionConfig reducedMotion="user">
                 <ThreadPrimitive.Root
-                    className="aui-root aui-thread-root @container flex h-full flex-col bg-transparent"
+                    className="aui-root aui-thread-root @container flex min-h-0 flex-1 flex-col bg-transparent"
                     style={{
                         ['--thread-max-width' as string]: '48rem',
                     }}
                 >
-                    <ThreadPrimitive.Viewport className="aui-thread-viewport styled-scrollbar relative flex flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 md:px-6">
+                    <ThreadPrimitive.Viewport className="aui-thread-viewport styled-scrollbar relative flex min-h-0 flex-1 flex-col overflow-x-hidden overflow-y-auto px-4 md:px-6">
                         <ThreadWelcome />
 
                         <ThreadPrimitive.Messages

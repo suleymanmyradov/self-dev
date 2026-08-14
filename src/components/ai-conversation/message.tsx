@@ -5,6 +5,7 @@ import {
     ComposerPrimitive,
     ErrorPrimitive,
     MessagePrimitive,
+    type ReasoningMessagePartProps,
 } from '@assistant-ui/react';
 import {
     CheckIcon,
@@ -35,7 +36,6 @@ export const AssistantMessage: FC = () => {
                     <MessagePrimitive.Parts
                         components={{
                             Text: MarkdownText,
-                            tools: { Fallback: ToolFallback },
                             ChainOfThought: ReasoningSection,
                         }}
                     />
@@ -51,6 +51,11 @@ export const AssistantMessage: FC = () => {
     );
 };
 
+// ReasoningPart renders a single reasoning text chunk inside the collapsible.
+const ReasoningPart: FC<ReasoningMessagePartProps> = ({ text }) => {
+    return <p className="whitespace-pre-wrap">{text}</p>;
+};
+
 // ReasoningSection renders the model's live reasoning/thinking process in a
 // collapsible accordion. Uses assistant-ui's ChainOfThoughtPrimitive which
 // groups all reasoning (and tool-call) parts together. Only reasoning models
@@ -63,9 +68,19 @@ const ReasoningSection: FC = () => {
                 aria-label="Toggle thinking"
             >
                 <ChevronDownIcon className="aui-reasoning-chevron size-3.5 shrink-0 transition-transform [[data-state=closed]_&]:-rotate-90" />
-                <span>thinking...</span>
+                <span>Thinking</span>
             </ChainOfThoughtPrimitive.AccordionTrigger>
-            <ChainOfThoughtPrimitive.Parts className="aui-reasoning-content px-3 pb-3 text-xs leading-relaxed text-muted-foreground" />
+            <ChainOfThoughtPrimitive.Parts
+                components={{
+                    Reasoning: ReasoningPart,
+                    tools: { Fallback: ToolFallback },
+                    Layout: ({ children }) => (
+                        <div className="aui-reasoning-content px-3 pb-3 text-xs leading-relaxed text-muted-foreground">
+                            {children}
+                        </div>
+                    ),
+                }}
+            />
         </ChainOfThoughtPrimitive.Root>
     );
 };

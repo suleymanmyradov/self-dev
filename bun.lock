@@ -65,6 +65,9 @@
       },
     },
   },
+  "patchedDependencies": {
+    "@assistant-ui/tap@0.9.4": "patches/@assistant-ui%2Ftap@0.9.4.patch",
+  },
   "overrides": {
     "@types/react": "19.2.14",
     "@types/react-dom": "19.2.3",

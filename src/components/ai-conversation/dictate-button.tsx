@@ -2,9 +2,13 @@
 
 import { useState, useRef, useCallback, type FC } from 'react';
 import { Mic, MicOff, Loader2 } from 'lucide-react';
+import {
+    Tooltip,
+    TooltipContent,
+    TooltipTrigger,
+} from '@/components/ui/tooltip';
 import { useComposerRuntime } from '@assistant-ui/react';
 import { transcribeAudio } from '@/api/voice';
-import { TooltipIconButton } from '@/components/ai-conversation/tooltip-icon-button';
 import { cn } from '@/lib/utils';
 
 type DictateState = 'idle' | 'recording' | 'transcribing' | 'error';
@@ -125,28 +129,32 @@ export const DictateButton: FC = () => {
                 : 'Dictate (speech to text)';
 
     return (
-        <TooltipIconButton
-            tooltip={tooltip}
-            side="bottom"
-            variant="ghost"
-            size="icon"
-            className={cn(
-                'aui-composer-dictate size-[34px] rounded-full p-1',
-                state === 'recording' &&
-                    'bg-destructive/10 text-destructive hover:bg-destructive/15',
-            )}
-            aria-label={tooltip}
-            disabled={state === 'transcribing'}
-            onClick={handleClick}
-        >
-            {state === 'transcribing' ? (
-                <Loader2 className="size-5 animate-spin" />
-            ) : state === 'recording' ? (
-                <MicOff className="size-5" />
-            ) : (
-                <Mic className="size-5" />
-            )}
-        </TooltipIconButton>
+        <Tooltip>
+            <TooltipTrigger asChild>
+                <button
+                    type="button"
+                    onClick={handleClick}
+                    disabled={state === 'transcribing'}
+                    aria-label={tooltip}
+                    className={cn(
+                        'aui-composer-pill flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs font-medium text-muted-foreground transition-[color,background-color] hover:bg-secondary hover:text-foreground',
+                        state === 'recording' &&
+                            'border-destructive/30 bg-destructive/10 text-destructive hover:bg-destructive/15',
+                        state === 'transcribing' && 'cursor-not-allowed opacity-60',
+                    )}
+                >
+                    {state === 'transcribing' ? (
+                        <Loader2 className="size-3 animate-spin" />
+                    ) : state === 'recording' ? (
+                        <MicOff className="size-3" />
+                    ) : (
+                        <Mic className="size-3" />
+                    )}
+                    <span>{state === 'recording' ? 'Stop' : state === 'transcribing' ? '…' : 'Dictate'}</span>
+                </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">{tooltip}</TooltipContent>
+        </Tooltip>
     );
 };
 

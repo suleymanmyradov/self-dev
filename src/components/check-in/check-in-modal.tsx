@@ -1,5 +1,6 @@
 "use client";
 
+import { useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Textarea } from "@/components/ui/textarea";
@@ -51,6 +52,15 @@ const BLOCKER_OPTIONS: { value: CheckInBlocker; label: string }[] = [
 export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting }: CheckInModalProps) {
   const { form, updateField, reset, canSubmit, finalNote } = useCheckInForm();
 
+  // Reset to step 1 every time the modal opens, regardless of how it was
+  // closed previously (X button, backdrop, successful submit, parent-driven
+  // close). Without this, the form retains stale state from the last session.
+  useEffect(() => {
+    if (open) {
+      reset();
+    }
+  }, [open, reset]);
+
   const handleSubmit = () => {
     if (!habit || !form.status) return;
 
@@ -65,9 +75,6 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
   };
 
   const handleOpenChange = (newOpen: boolean) => {
-    if (!newOpen) {
-      reset();
-    }
     onOpenChange(newOpen);
   };
 

@@ -32,7 +32,7 @@ export function LayoutFrame({ children }: { children: React.ReactNode }) {
       {/* Left nested panel – slides out beside the sidebar */}
       <LeftNestedPanel />
 
-      {/* Scrim – click to close left panel */}
+      {/* Scrim – click to close left panel (desktop only) */}
       {isLeftPanelOpen && (
         <div
           role="button"

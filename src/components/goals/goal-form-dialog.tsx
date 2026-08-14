@@ -109,7 +109,7 @@ export function GoalFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md">
+      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "New goal" : "Edit goal"}</DialogTitle>
           <DialogDescription className="sr-only">
@@ -197,8 +197,9 @@ export function GoalFormDialog({
                 <label className="text-xs font-medium text-muted-foreground">Start</label>
                 <Input
                   type="number"
-                  value={form.startValue ?? 0}
-                  onChange={(e) => setStartValue(Number(e.target.value))}
+                  value={form.startValue ?? ""}
+                  onChange={(e) => setStartValue(e.target.value === "" ? undefined : Number(e.target.value))}
+                  placeholder="0"
                 />
               </div>
               {mode === "edit" && (
@@ -206,8 +207,9 @@ export function GoalFormDialog({
                   <label className="text-xs font-medium text-muted-foreground">Current</label>
                   <Input
                     type="number"
-                    value={form.currentValue ?? 0}
-                    onChange={(e) => setCurrentValue(Number(e.target.value))}
+                    value={form.currentValue ?? ""}
+                    onChange={(e) => setCurrentValue(e.target.value === "" ? undefined : Number(e.target.value))}
+                    placeholder="0"
                   />
                 </div>
               )}
@@ -215,8 +217,9 @@ export function GoalFormDialog({
                 <label className="text-xs font-medium text-muted-foreground">Target</label>
                 <Input
                   type="number"
-                  value={form.targetValue ?? 0}
-                  onChange={(e) => setTargetValue(Number(e.target.value))}
+                  value={form.targetValue ?? ""}
+                  onChange={(e) => setTargetValue(e.target.value === "" ? undefined : Number(e.target.value))}
+                  placeholder="0"
                 />
               </div>
               <div className="col-span-3 grid gap-1">

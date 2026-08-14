@@ -202,6 +202,10 @@ export interface CreateCheckInResponseData {
 export type CheckInsResponse = ApiResponse<CheckIn[]>;
 export type CheckInResponse = ApiResponse<CheckIn>;
 
+export interface DeleteCheckInResponseData {
+  habit: Habit;
+}
+
 // ============================================
 // Auth Types
 // ============================================

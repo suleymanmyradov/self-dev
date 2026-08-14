@@ -15,6 +15,7 @@ interface UpgradePromptProps {
   compact?: boolean;
   isPro?: boolean;
   onDismiss?: () => void;
+  onArchive?: () => void;
 }
 
 const TRIGGER_MESSAGES: Record<UpgradeTrigger, { title: string; description: string }> = {
@@ -48,6 +49,7 @@ export const UpgradePrompt = memo(function UpgradePrompt({
   compact = false,
   isPro = false,
   onDismiss,
+  onArchive,
 }: UpgradePromptProps) {
   const trackEvent = useTrackUpgradeEvent();
   const hasTrackedView = useRef(false);
@@ -133,13 +135,13 @@ export const UpgradePrompt = memo(function UpgradePrompt({
         <Button size="sm" onClick={handleClick}>
           See Pro
         </Button>
-        {trigger === "goal_limit" && (
-          <Button size="sm" variant="ghost" onClick={handleDismiss}>
+        {trigger === "goal_limit" && onArchive && (
+          <Button size="sm" variant="ghost" onClick={onArchive}>
             Archive a goal
           </Button>
         )}
-        {trigger === "habit_limit" && (
-          <Button size="sm" variant="ghost" onClick={handleDismiss}>
+        {trigger === "habit_limit" && onArchive && (
+          <Button size="sm" variant="ghost" onClick={onArchive}>
             Archive a habit
           </Button>
         )}

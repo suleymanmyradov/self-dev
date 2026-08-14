@@ -1,11 +1,9 @@
 import { ComposerPrimitive, ThreadPrimitive } from '@assistant-ui/react';
-import { ArrowUpIcon, Square, PaperclipIcon, MicIcon, TargetIcon } from 'lucide-react';
+import { ArrowUpIcon, Square } from 'lucide-react';
 import type { FC } from 'react';
 
-import {
-    ComposerAddAttachment,
-    ComposerAttachments,
-} from '@/components/ai-conversation/attachment';
+import { ComposerAttachments } from '@/components/ai-conversation/attachment';
+import { ComposerAttachMenu } from '@/components/ai-conversation/composer-attach-menu';
 import { DictateButton } from '@/components/ai-conversation/dictate-button';
 import { TooltipIconButton } from '@/components/ai-conversation/tooltip-icon-button';
 import { Button } from '@/components/ui/button';
@@ -27,7 +25,7 @@ const ThreadScrollToBottom: FC = () => {
 
 export const Composer: FC = () => {
     return (
-        <div className="aui-composer-wrapper sticky bottom-0 mx-auto flex w-full max-w-[var(--thread-max-width)] flex-col gap-3 overflow-visible bg-gradient-to-t from-card via-card/95 to-transparent px-8 pb-[26px] pt-6">
+        <div className="aui-composer-wrapper sticky bottom-0 z-10 mx-auto flex w-full max-w-[var(--thread-max-width)] shrink-0 flex-col gap-3 overflow-visible bg-gradient-to-t from-card via-card/95 to-transparent px-8 pb-[26px] pt-6">
             <ThreadScrollToBottom />
             <ThreadPrimitive.Empty>
                 <ThreadWelcomeSuggestions />
@@ -51,13 +49,8 @@ const ComposerAction: FC = () => {
     return (
         <div className="aui-composer-action-wrapper relative mb-3 flex items-center justify-between">
             <div className="flex items-center gap-1.5">
-                <ComposerPillButton icon={<PaperclipIcon className="size-3" />} label="Attach">
-                    <ComposerAddAttachment />
-                </ComposerPillButton>
-                <ComposerPillButton icon={<MicIcon className="size-3" />} label="Dictate">
-                    <DictateButton />
-                </ComposerPillButton>
-                <ComposerPillButton icon={<TargetIcon className="size-3" />} label="Reference a habit" />
+                <ComposerAttachMenu />
+                <DictateButton />
             </div>
 
             <ThreadPrimitive.If running={false}>
@@ -86,34 +79,6 @@ const ComposerAction: FC = () => {
                     </Button>
                 </ComposerPrimitive.Cancel>
             </ThreadPrimitive.If>
-        </div>
-    );
-};
-
-/**
- * Pill-style button for the composer action row.
- * If children are provided (e.g. ComposerAddAttachment, DictateButton),
- * they are rendered inside the pill as the interactive trigger.
- * Otherwise the pill itself is a static label.
- */
-const ComposerPillButton: FC<{
-    icon: React.ReactNode;
-    label: string;
-    children?: React.ReactNode;
-}> = ({ icon, label, children }) => {
-    if (children) {
-        return (
-            <div className="aui-composer-pill flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground transition-[color,background-color] hover:bg-secondary hover:text-foreground">
-                {icon}
-                <span className="font-medium">{label}</span>
-                <div className="sr-only">{children}</div>
-            </div>
-        );
-    }
-    return (
-        <div className="aui-composer-pill flex items-center gap-1.5 rounded-full border border-border bg-background px-3 py-1.5 text-xs text-muted-foreground transition-[color,background-color] hover:bg-secondary hover:text-foreground">
-            {icon}
-            <span className="font-medium">{label}</span>
         </div>
     );
 };

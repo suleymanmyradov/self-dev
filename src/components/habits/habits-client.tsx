@@ -12,6 +12,7 @@ import { cn } from "@/lib/utils";
 import { HabitRow } from "@/components/habits/habit-row";
 import { GoalCard } from "@/components/habits/goal-card";
 import { LimitUpgradePrompt } from "@/components/habits/limit-upgrade-prompt";
+import { ArchiveDialog } from "@/components/habits/archive-dialog";
 import { useHabitsFilters } from "@/components/habits/use-habits-filters";
 import type { StatusFilter } from "@/components/habits/use-habits-filters";
 import type { Habit, HabitsResponse, Goal, GoalsResponse, GoalMeasurement, CreateGoalRequest, UpdateGoalRequest } from "@/api";
@@ -32,6 +33,7 @@ import {
   useHabitEditForm,
   useConfirmDelete,
   useCreateCheckIn,
+  useDeleteCheckIn,
   useEntitlements,
   useTrackUpgradeEvent,
   useBillingOverview,
@@ -74,6 +76,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   const updateHabitMutation = useUpdateHabit();
   const deleteHabitMutation = useDeleteHabit();
   const checkInMutation = useCreateCheckIn();
+  const undoCheckInMutation = useDeleteCheckIn();
 
   // Mutations — goals
   const createGoalMutation = useCreateGoal();
@@ -99,14 +102,23 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
     );
 
   // Check-in modal state from UI store (modal kept for retro check-ins from /progress)
-  const { checkInModalOpen, checkInHabitId, closeCheckInModal } = useUIStore(
+  const { checkInModalOpen, checkInHabitId, openCheckInModal, closeCheckInModal } = useUIStore(
     useShallow((s) => ({
       checkInModalOpen: s.checkInModalOpen,
       checkInHabitId: s.checkInHabitId,
+      openCheckInModal: s.openCheckInModal,
       closeCheckInModal: s.closeCheckInModal,
     }))
   );
   const checkInHabit = habits.find((h) => h.id === checkInHabitId);
+
+  // URL params: sort is persisted in the URL (?sort=streak|name) so it
+  // survives refresh and can be shared. The article pre-fill params are
+  // consumed once and then stripped.
+  const searchParams = useSearchParams();
+  const router = useRouter();
+  const urlSort = searchParams?.get('sort');
+  const initialSortBy: 'streak' | 'name' = urlSort === 'name' ? 'name' : 'streak';
 
   const {
     filterAndSort,
@@ -116,7 +128,25 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
     setCategoryFilter,
     sortBy,
     setSortBy,
-  } = useHabitsFilters(habits);
+  } = useHabitsFilters(habits, initialSortBy);
+
+  // Sync sort changes back to the URL (replace, not push, so it doesn't
+  // pollute browser history with every sort toggle). Guard against loops:
+  // only write when sortBy actually differs from what's already in the URL.
+  useEffect(() => {
+    const currentUrlSort = searchParams?.get('sort');
+    const urlValue = currentUrlSort === 'name' ? 'name' : 'streak';
+    if (sortBy === urlValue) return; // already in sync — don't write
+    const params = new URLSearchParams(searchParams?.toString() ?? '');
+    if (sortBy === 'streak') {
+      params.delete('sort');
+    } else {
+      params.set('sort', sortBy);
+    }
+    const qs = params.toString();
+    router.replace(qs ? `/plan?${qs}` : '/plan', { scroll: false });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sortBy, router]);
 
   // Create habit form
   const createForm = useHabitForm();
@@ -126,8 +156,6 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   // On mount (or when the params first become available), seed the create form
   // with the article data and open the dialog. The query params are then
   // stripped from the URL so a refresh doesn't re-open the dialog.
-  const searchParams = useSearchParams();
-  const router = useRouter();
   useEffect(() => {
     if (searchParams?.get('newHabitFromArticle') !== '1') return;
     createForm.setForm({
@@ -158,6 +186,10 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   // Goal create/edit state
   const [goalCreateOpen, setGoalCreateOpen] = useState(false);
   const [goalEditOpen, setGoalEditOpen] = useState(false);
+
+  // Archive dialog state (opened from the upgrade prompt's "Archive" button)
+  const [archiveOpen, setArchiveOpen] = useState(false);
+  const [archiveMode, setArchiveMode] = useState<'habit' | 'goal'>('habit');
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
   // Goal delete confirmation
@@ -175,6 +207,18 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   const handleCheckIn = useCallback((habit: Habit) => {
     checkInMutation.mutate({ habitId: habit.id, status: 'completed' });
   }, [checkInMutation]);
+
+  // Undo check-in — deletes today's check-in for the habit
+  const handleUndoCheckIn = useCallback((habit: Habit) => {
+    undoCheckInMutation.mutate(habit.id);
+  }, [undoCheckInMutation]);
+
+  // Open the detailed check-in modal (mood/energy/blocker/note) from the
+  // habit row dropdown. One-tap stays the default; this is the optional
+  // "log details" path.
+  const handleLogDetails = useCallback((habit: Habit) => {
+    openCheckInModal(habit.id);
+  }, [openCheckInModal]);
 
   const handleSubmitCheckIn = (data: CheckInSubmitData) => {
     checkInMutation.mutate(data, {
@@ -198,6 +242,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
       targetValue?: number; unit?: string; milestones?: { id?: string; title: string }[];
     }) => {
       if (entitlements && !entitlements.canCreateGoal) {
+        setGoalCreateOpen(false);
         showUpgradePrompt("goal_create_limit", "goal_limit");
         trackUpgradeEvent.mutate({
           eventType: "prompt_viewed",
@@ -218,13 +263,14 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
           onError: (error: unknown) => {
             const err = error as { data?: { code?: string } };
             if (err?.data?.code === "plan_limit_reached") {
+              setGoalCreateOpen(false);
               showUpgradePrompt("goal_create_limit", "goal_limit");
             }
           },
         }
       );
     },
-    [entitlements, showUpgradePrompt, trackUpgradeEvent, createGoalMutation]
+    [entitlements, showUpgradePrompt, trackUpgradeEvent, createGoalMutation, setGoalCreateOpen]
   );
 
   const openEditGoal = useCallback((goal: Goal) => {
@@ -309,6 +355,10 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   const goalsUsed = goals.length;
   const atGoalLimit = !isPro && goalsUsed >= goalLimit;
 
+  // Today's overall habit completion percentage (across all habits).
+  const todayCompleted = habits.filter((h) => h.completed).length;
+  const todayPct = habits.length > 0 ? Math.round((todayCompleted / habits.length) * 100) : 0;
+
   const statusPills: { label: string; value: StatusFilter }[] = [
     { label: 'All', value: 'all' },
     { label: 'Active', value: 'active' },
@@ -324,7 +374,9 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
               <div>
                 <h1 className="font-display text-3xl font-bold tracking-tight">Plan</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  Three goals, nine habits. A habit without a goal is just a chore.
+                  {habits.length > 0
+                    ? `${todayCompleted} of ${habits.length} habits done today · ${todayPct}%`
+                    : 'Three goals, nine habits. A habit without a goal is just a chore.'}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -402,9 +454,12 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
                   habits={goalHabits}
                   visibleHabits={visibleGoalHabits}
                   isCheckInPending={checkInMutation.isPending}
+                  isUndoPending={undoCheckInMutation.isPending}
                   onCheckIn={handleCheckIn}
+                  onUndoCheckIn={handleUndoCheckIn}
                   onEditHabit={editForm.openEdit}
                   onDeleteHabit={habitDeleteConfirm.confirmDelete}
+                  onLogDetails={handleLogDetails}
                   onEditGoal={openEditGoal}
                   onDeleteGoal={goalDeleteConfirm.confirmDelete}
                   onToggleGoal={handleToggleGoal}
@@ -436,9 +491,12 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
                       key={h.id}
                       habit={h}
                       onCheckIn={handleCheckIn}
+                      onUndoCheckIn={handleUndoCheckIn}
                       onEdit={editForm.openEdit}
                       onDelete={habitDeleteConfirm.confirmDelete}
+                      onLogDetails={handleLogDetails}
                       isPending={checkInMutation.isPending}
+                      isUndoPending={undoCheckInMutation.isPending}
                     />
                   ))}
                 </div>
@@ -486,6 +544,11 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
             trigger={upgradeTrigger}
             isPro={isPro}
             onDismiss={dismissUpgradePrompt}
+            onArchive={() => {
+              setArchiveMode(upgradeTrigger === 'goal_limit' ? 'goal' : 'habit');
+              setArchiveOpen(true);
+              dismissUpgradePrompt();
+            }}
           />
         </div>
       </div>
@@ -571,7 +634,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
           title: editingGoal.title,
           description: editingGoal.description,
           category: editingGoal.category,
-          dueDate: editingGoal.dueDate,
+          dueDate: editingGoal.dueDate ? editingGoal.dueDate.split('T')[0] : undefined,
           progress: editingGoal.progress,
           relatedHabitIds: editingGoal.relatedHabitIds ?? [],
           measurement: editingGoal.measurement ?? "manual",
@@ -624,6 +687,17 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         habit={checkInHabit}
         onSubmit={handleSubmitCheckIn}
         isSubmitting={checkInMutation.isPending}
+      />
+
+      {/* Archive dialog (from upgrade prompt "Archive" button) */}
+      <ArchiveDialog
+        open={archiveOpen}
+        onOpenChange={setArchiveOpen}
+        mode={archiveMode}
+        habits={habits}
+        goals={goals}
+        onDeleteHabit={(id) => deleteHabitMutation.mutate(id)}
+        onDeleteGoal={(id) => deleteGoalMutation.mutate(id)}
       />
     </div>
   );

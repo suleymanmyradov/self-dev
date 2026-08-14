@@ -8,9 +8,10 @@ interface LimitUpgradePromptProps {
   trigger: string;
   isPro: boolean;
   onDismiss: () => void;
+  onArchive?: () => void;
 }
 
-export function LimitUpgradePrompt({ open, surface, trigger, isPro, onDismiss }: LimitUpgradePromptProps) {
+export function LimitUpgradePrompt({ open, surface, trigger, isPro, onDismiss, onArchive }: LimitUpgradePromptProps) {
   return (
     <>
       {/* Habit limit upgrade prompt */}
@@ -23,6 +24,7 @@ export function LimitUpgradePrompt({ open, surface, trigger, isPro, onDismiss }:
             description="You've reached the Free plan habit limit. Upgrade to Pro to build more daily habits."
             isPro={isPro}
             onDismiss={onDismiss}
+            onArchive={onArchive}
           />
         </div>
       )}
@@ -37,6 +39,7 @@ export function LimitUpgradePrompt({ open, surface, trigger, isPro, onDismiss }:
             description="You've reached the Free plan goal limit. Upgrade to Pro to track as many goals as you need."
             isPro={isPro}
             onDismiss={onDismiss}
+            onArchive={onArchive}
           />
         </div>
       )}

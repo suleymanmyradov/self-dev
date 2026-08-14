@@ -7,7 +7,7 @@ import { toast } from 'sonner';
 // truncating users with >100 habits, the list query fetches every page and
 // concatenates the results into a single list. The returned `page` metadata
 // reflects the totals from the first page.
-async function listAllHabits(): Promise<HabitsResponse> {
+export async function listAllHabits(): Promise<HabitsResponse> {
   const limit = 100;
   const first = await listHabits({ page: 1, limit });
   if (first.data.length >= first.page.total) {

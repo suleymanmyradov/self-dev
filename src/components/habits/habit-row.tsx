@@ -9,7 +9,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { CheckInControl } from "@/components/shared/check-in-control";
 import { StreakBar } from "@/components/shared/streak-bar";
-import { MoreHorizontal, Pencil, Trash2 } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, ClipboardList } from "lucide-react";
 import type { Habit } from "@/api";
 import { cn } from "@/lib/utils";
 
@@ -20,27 +20,39 @@ import { cn } from "@/lib/utils";
 export function HabitRow({
   habit: h,
   onCheckIn,
+  onUndoCheckIn,
   onEdit,
   onDelete,
+  onLogDetails,
   isPending = false,
+  isUndoPending = false,
 }: {
   habit: Habit;
   onCheckIn: (habit: Habit) => void;
+  onUndoCheckIn?: (habit: Habit) => void;
   onEdit: (habit: Habit) => void;
   onDelete: (id: string) => void;
+  onLogDetails?: (habit: Habit) => void;
   isPending?: boolean;
+  isUndoPending?: boolean;
 }) {
   const streakDays = (h.recentHistory ?? []).slice(-14);
 
   return (
     <div className="flex items-center gap-3 py-2.5">
-      {/* Check-in control */}
+      {/* Check-in control — toggleable: click to check in, click again to undo */}
       <CheckInControl
         checked={h.completed}
-        onToggle={() => !h.completed && onCheckIn(h)}
+        onToggle={() => {
+          if (h.completed) {
+            onUndoCheckIn?.(h);
+          } else {
+            onCheckIn(h);
+          }
+        }}
         size={22}
-        disabled={isPending || h.completed}
-        aria-label={`Check in ${h.name}`}
+        disabled={isPending || isUndoPending || (h.completed && !onUndoCheckIn)}
+        aria-label={h.completed ? `Undo check-in for ${h.name}` : `Check in ${h.name}`}
       />
 
       {/* Name + frequency */}
@@ -74,6 +86,11 @@ export function HabitRow({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
+          {onLogDetails && (
+            <DropdownMenuItem onClick={() => onLogDetails(h)}>
+              <ClipboardList className="mr-2 h-4 w-4" /> Log details
+            </DropdownMenuItem>
+          )}
           <DropdownMenuItem onClick={() => onEdit(h)}>
             <Pencil className="mr-2 h-4 w-4" /> Edit
           </DropdownMenuItem>

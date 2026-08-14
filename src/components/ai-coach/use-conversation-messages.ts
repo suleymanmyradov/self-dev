@@ -99,7 +99,7 @@ export function useConversationMessages(conversationId?: string) {
             if (msg.content) {
                 parts.push({ type: 'text', text: msg.content });
             } else if (isThinkingPlaceholder) {
-                parts.push({ type: 'text', text: 'thinking...' });
+                parts.push({ type: 'text', text: 'Thinking...' });
             }
             return {
                 role: msg.role,
@@ -114,7 +114,7 @@ export function useConversationMessages(conversationId?: string) {
 
         return {
             role: msg.role,
-            content: isThinkingPlaceholder ? 'thinking...' : msg.content,
+            content: isThinkingPlaceholder ? 'Thinking...' : msg.content,
             id: msg.id,
             status:
                 msg.status === 'running'

@@ -52,15 +52,15 @@ export function useGoalForm(initial?: Partial<GoalFormValues>) {
     setForm((f) => ({ ...f, measurement }));
   }, []);
 
-  const setStartValue = useCallback((startValue: number) => {
+  const setStartValue = useCallback((startValue: number | undefined) => {
     setForm((f) => ({ ...f, startValue }));
   }, []);
 
-  const setCurrentValue = useCallback((currentValue: number) => {
+  const setCurrentValue = useCallback((currentValue: number | undefined) => {
     setForm((f) => ({ ...f, currentValue }));
   }, []);
 
-  const setTargetValue = useCallback((targetValue: number) => {
+  const setTargetValue = useCallback((targetValue: number | undefined) => {
     setForm((f) => ({ ...f, targetValue }));
   }, []);
 

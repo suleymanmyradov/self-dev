@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Plus, MoreHorizontal, Pencil, Trash2, CheckCircle2, CheckSquare, Square, X } from "lucide-react";
+import { Plus, MoreHorizontal, Pencil, Trash2, CheckCircle2, CheckSquare, Square, X, Calendar } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { HabitRow } from "@/components/habits/habit-row";
 import type { Habit, Goal } from "@/api";
@@ -15,9 +15,12 @@ interface GoalCardProps {
   habits: Habit[];
   visibleHabits: Habit[];
   isCheckInPending?: boolean;
+  isUndoPending?: boolean;
   onCheckIn: (habit: Habit) => void;
+  onUndoCheckIn?: (habit: Habit) => void;
   onEditHabit: (habit: Habit) => void;
   onDeleteHabit: (id: string) => void;
+  onLogDetails?: (habit: Habit) => void;
   onEditGoal: (goal: Goal) => void;
   onDeleteGoal: (id: string) => void;
   onToggleGoal: (id: string) => void;
@@ -33,9 +36,12 @@ export function GoalCard({
   habits,
   visibleHabits,
   isCheckInPending = false,
+  isUndoPending = false,
   onCheckIn,
+  onUndoCheckIn,
   onEditHabit,
   onDeleteHabit,
+  onLogDetails,
   onEditGoal,
   onDeleteGoal,
   onToggleGoal,
@@ -92,6 +98,12 @@ export function GoalCard({
           <p className="mt-1 text-sm text-muted-foreground leading-relaxed" style={{ maxWidth: '62ch' }}>
             {goal.description}
           </p>
+          {goal.dueDate && (
+            <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Calendar className="h-3.5 w-3.5" />
+              Due {new Date(goal.dueDate).toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+            </p>
+          )}
         </div>
 
         {/* Goal progress (right side) + actions — type-driven */}
@@ -117,11 +129,15 @@ export function GoalCard({
             ) : (
               <>
                 <span className="font-mono text-lg tabular-nums">{goal.progress}%</span>
-                {showHabitSection && habits.length > 0 && (
-                  <span className="text-xs text-muted-foreground">
-                    {habits.filter((h) => h.completed).length} / {habits.length} today
-                  </span>
-                )}
+                {showHabitSection && habits.length > 0 && (() => {
+                  const done = habits.filter((h) => h.completed).length;
+                  const pct = Math.round((done / habits.length) * 100);
+                  return (
+                    <span className="text-xs text-muted-foreground tabular-nums">
+                      {done} / {habits.length} today · {pct}%
+                    </span>
+                  );
+                })()}
                 <div className="mt-1 h-1 w-full overflow-hidden rounded-full bg-muted">
                   <div
                     className="h-full rounded-full bg-success transition-[width] duration-300"
@@ -131,6 +147,16 @@ export function GoalCard({
               </>
             )}
           </div>
+          <Button
+            variant={isCompleted ? "default" : "outline"}
+            size="sm"
+            onClick={() => onToggleGoal(goal.id)}
+            className="shrink-0 gap-1.5"
+            aria-label={isCompleted ? 'Mark incomplete' : 'Mark complete'}
+          >
+            <CheckCircle2 className="h-4 w-4" />
+            {isCompleted ? 'Done' : 'Active'}
+          </Button>
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="icon-sm" className="h-8 w-8 shrink-0" aria-label="Open goal actions">
@@ -281,9 +307,12 @@ export function GoalCard({
               key={h.id}
               habit={h}
               onCheckIn={onCheckIn}
+              onUndoCheckIn={onUndoCheckIn}
               onEdit={onEditHabit}
               onDelete={onDeleteHabit}
+              onLogDetails={onLogDetails}
               isPending={isCheckInPending}
+              isUndoPending={isUndoPending}
             />
           ))}
         </div>

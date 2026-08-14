@@ -4,13 +4,14 @@ import { useCallback, useMemo, useState } from "react";
 import type { Habit } from "@/api";
 
 export type StatusFilter = 'all' | 'active';
+export type SortBy = 'streak' | 'name';
 
-export function useHabitsFilters(habits: Habit[]) {
+export function useHabitsFilters(habits: Habit[], initialSortBy?: SortBy) {
   // Status filter (pill chips)
   const [statusFilter, setStatusFilter] = useState<StatusFilter>('all');
   // Category + sort filters
   const [categoryFilter, setCategoryFilter] = useState('all');
-  const [sortBy, setSortBy] = useState<'streak' | 'name'>('streak');
+  const [sortBy, setSortBy] = useState<SortBy>(initialSortBy ?? 'streak');
 
   // Apply filters + sort to a list of habits
   const filterAndSort = useCallback((list: Habit[]): Habit[] => {

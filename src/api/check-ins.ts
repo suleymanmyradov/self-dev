@@ -2,13 +2,15 @@ import api from './axios-client';
 import {
   CreateCheckInRequestSchema,
   CreateCheckInResponseDataSchema,
+  DeleteCheckInResponseDataSchema,
   CheckInsResponseSchema,
 } from '@/lib/validation';
-import type { CheckIn, CreateCheckInRequest, CreateCheckInResponseData, PageParams, ApiResponse } from './types';
+import type { CheckIn, CreateCheckInRequest, CreateCheckInResponseData, DeleteCheckInResponseData, PageParams, ApiResponse } from './types';
 
 const ENDPOINTS = {
   CHECK_INS: '/check-ins',
   TODAY: '/check-ins/today',
+  TODAY_HABIT: (habitId: string) => `/check-ins/today/${encodeURIComponent(habitId)}`,
   HISTORY: '/check-ins/history',
 };
 
@@ -27,4 +29,10 @@ export async function getTodayCheckIns(): Promise<ApiResponse<CheckIn[]>> {
 export async function getCheckInHistory(params: { habitId?: string } & PageParams): Promise<ApiResponse<CheckIn[]>> {
   const response = await api.get<unknown>(ENDPOINTS.HISTORY, params);
   return CheckInsResponseSchema.parse(response);
+}
+
+export async function deleteCheckIn(habitId: string): Promise<ApiResponse<DeleteCheckInResponseData>> {
+  const response = await api.delete<unknown>(ENDPOINTS.TODAY_HABIT(habitId));
+  const parsed = DeleteCheckInResponseDataSchema.parse(response);
+  return { data: parsed };
 }

@@ -20,6 +20,7 @@ import {
     useDeleteConversation,
 } from '@/hooks';
 import { getMessages } from '@/api/conversations';
+import { coachAttachmentAdapter } from '@/components/ai-coach/attachment-adapter';
 
 export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     const router = useRouter();
@@ -122,7 +123,10 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
         convertMessage,
         onNew,
         onCancel,
-        adapters: { threadList: threadListAdapter },
+        adapters: {
+            threadList: threadListAdapter,
+            attachments: coachAttachmentAdapter,
+        },
     });
 
     return (
@@ -140,7 +144,7 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                 />
 
                 {/* Main chat area */}
-                <main className="relative flex min-w-0 flex-1 flex-col overflow-hidden">
+                <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                     {/* Header bar */}
                     <ConversationHeader
                         title={activeConversation?.title}
