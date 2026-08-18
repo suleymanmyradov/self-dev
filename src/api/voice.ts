@@ -45,7 +45,8 @@ export async function transcribeAudio(
 
   if (!res.ok) {
     const text = await res.text().catch(() => 'Transcription failed');
-    throw new Error(text);
+    console.error('[transcribe] HTTP error', res.status, text);
+    throw new Error(VOICE_ERROR_GENERIC);
   }
   return res.json() as Promise<TranscribeResponse>;
 }
@@ -100,11 +101,13 @@ export function streamVoiceTurn(
 
       if (!res.ok) {
         const text = await res.text().catch(() => 'Voice turn failed');
-        callbacks.onError?.(text);
+        console.error('[voice-stream] HTTP error', res.status, text);
+        callbacks.onError?.(VOICE_ERROR_GENERIC);
         return;
       }
       if (!res.body) {
-        callbacks.onError?.('Response body is null');
+        console.error('[voice-stream] response body is null');
+        callbacks.onError?.(VOICE_ERROR_GENERIC);
         return;
       }
 
@@ -115,7 +118,8 @@ export function streamVoiceTurn(
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          callbacks.onError?.('Stream ended unexpectedly');
+          console.error('[voice-stream] stream ended without ready event');
+          callbacks.onError?.(VOICE_ERROR_GENERIC);
           return;
         }
         buffer += decoder.decode(value, { stream: true });
@@ -153,7 +157,7 @@ export function streamVoiceTurn(
                 callbacks.onReady?.();
                 return;
               case 'error':
-                callbacks.onError?.(data.message ?? 'Unknown error');
+                callbacks.onError?.(data.message ?? VOICE_ERROR_GENERIC);
                 break;
             }
           } catch (parseErr) {
@@ -164,7 +168,8 @@ export function streamVoiceTurn(
       }
     } catch (err) {
       if ((err as Error).name === 'AbortError') return;
-      callbacks.onError?.((err as Error).message);
+      console.error('[voice-stream] fetch failed', err);
+      callbacks.onError?.(VOICE_ERROR_GENERIC);
     }
   })();
 
@@ -172,6 +177,14 @@ export function streamVoiceTurn(
 }
 
 // --- helpers ---
+
+/**
+ * Generic user-facing error message for voice/transcribe failures that don't
+ * come with a server-provided message. Technical details are logged to the
+ * console for debugging; the user only sees this friendly fallback.
+ */
+const VOICE_ERROR_GENERIC =
+  "I couldn't process your audio. Please try again.";
 
 /** Derive a filename extension from a MediaRecorder MIME type. */
 function audioExtensionFor(mimeType: string): string {

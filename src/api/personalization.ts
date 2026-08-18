@@ -215,12 +215,14 @@ export function streamPersonalizedCoaching(
 
       if (!response.ok) {
         const text = await response.text().catch(() => 'Request failed');
-        callbacks.onError(text);
+        console.error('[coaching-stream] HTTP error', response.status, text);
+        callbacks.onError(COACHING_ERROR_GENERIC);
         return;
       }
 
       if (!response.body) {
-        callbacks.onError('Response body is null');
+        console.error('[coaching-stream] response body is null');
+        callbacks.onError(COACHING_ERROR_GENERIC);
         return;
       }
 
@@ -231,7 +233,8 @@ export function streamPersonalizedCoaching(
       while (true) {
         const { done, value } = await reader.read();
         if (done) {
-          callbacks.onError('Stream ended unexpectedly');
+          console.error('[coaching-stream] stream ended without complete event');
+          callbacks.onError(COACHING_ERROR_GENERIC);
           return;
         }
 
@@ -268,7 +271,8 @@ export function streamPersonalizedCoaching(
               return;
             }
           } catch (parseErr) {
-            callbacks.onError((parseErr as Error).message || 'Invalid stream payload');
+            console.error('[coaching-stream] failed to parse SSE event', parseErr, event);
+            callbacks.onError(COACHING_ERROR_GENERIC);
             return;
           }
         }
@@ -277,12 +281,22 @@ export function streamPersonalizedCoaching(
       if ((err as Error).name === 'AbortError') {
         return;
       }
-      callbacks.onError((err as Error).message || 'Stream failed');
+      console.error('[coaching-stream] fetch failed', err);
+      callbacks.onError(COACHING_ERROR_GENERIC);
     }
   })();
 
   return controller;
 }
+
+/**
+ * Generic user-facing error message for coaching stream failures that don't
+ * come with a server-provided message (HTTP errors, network failures, parse
+ * errors, unexpected stream termination). The technical details are logged to
+ * the console for debugging; the user only sees this friendly fallback.
+ */
+const COACHING_ERROR_GENERIC =
+  "Something went wrong on my end. Please try sending your message again.";
 
 function parseCoachingSSEEvent(raw: string): { type: string; data: string } | null {
   let type = 'message';

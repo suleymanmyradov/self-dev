@@ -3,12 +3,14 @@ import { connection } from 'next/server';
 import { ExploreClient } from '@/components/explore/explore-client';
 import {
   listArticlesCached,
+  listCategoriesCached,
   getExploreSettingsCached,
   getFeaturedArticleCached,
   getExploreTemplatesCached,
 } from '@/api/server-cache';
+import { swallowOptional } from '@/lib/server-data';
 import { ExploreSkeleton } from '@/components/explore/explore-skeleton';
-import type { Article, HabitTemplateItem, GoalTemplateItem } from '@/api';
+import type { Article, CategoriesResponse, HabitTemplateItem, GoalTemplateItem } from '@/api';
 import type { HabitTemplate, GoalTemplate } from '@/types/explore';
 
 // Skip prerendering when the gateway is not reachable at build time.
@@ -40,6 +42,13 @@ export default async function ExplorePage() {
   }
 
   const articlesPromise = listArticlesCached({ limit: 20 });
+  // Category chips are driven by the DB categories table so the filter list
+  // stays in sync with what articles are actually tagged with. Non-critical —
+  // the client falls back to "All" only if the fetch fails.
+  const categoriesPromise = swallowOptional(
+    listCategoriesCached('article'),
+    { data: [] } as CategoriesResponse,
+  );
   const [settings, featuredArticleResp, templates] = await Promise.all([
     getExploreSettingsCached(),
     getFeaturedArticleCached().catch(() => null),
@@ -54,6 +63,7 @@ export default async function ExplorePage() {
     <Suspense fallback={<ExploreSkeleton />}>
       <ExploreClient
         articlesPromise={articlesPromise}
+        categoriesPromise={categoriesPromise}
         settings={settings}
         featuredArticle={featuredArticle}
         habitTemplates={habitTemplates}

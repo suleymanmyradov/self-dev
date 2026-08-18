@@ -35,7 +35,7 @@ export function HomeClient({ categoriesPromise, articlesPromise }: HomeClientPro
   const { data: articles = [] } = useArticles(undefined, initialArticlesData);
 
   // Habits + check-ins
-  const { data: habits = [] } = useHabits();
+  const { data: habits = [], isLoading: habitsLoading } = useHabits();
   const createCheckIn = useCreateCheckIn();
   const checkInAll = useCheckInAll();
 
@@ -66,17 +66,26 @@ export function HomeClient({ categoriesPromise, articlesPromise }: HomeClientPro
   const completedCount = completedHabits.length;
   const totalCount = habits.length;
   const remainingCount = pendingHabits.length;
+  const allDone = totalCount > 0 && remainingCount === 0;
 
-  const headline = remainingCount === 0
-    ? `All done${firstName ? ', ' + firstName : ''}.`
-    : `${remainingCount} left${firstName ? ', ' + firstName : ''}.`;
+  const headline = habitsLoading
+    ? ''
+    : allDone
+      ? `All done${firstName ? ', ' + firstName : ''}.`
+      : totalCount === 0
+        ? `Welcome${firstName ? ', ' + firstName : ''}.`
+        : `${remainingCount} left${firstName ? ', ' + firstName : ''}.`;
 
   const subtitle =
-    remainingCount === 0
-      ? "Everything's checked in for today. Nice work."
-      : pendingHabits.length <= 2
-        ? "Neither takes long. Pick one and keep the streak alive."
-        : "A few left to check in. Knock them out one by one.";
+    habitsLoading
+      ? ''
+      : allDone
+        ? "Everything's checked in for today. Nice work."
+        : totalCount === 0
+          ? 'Add a habit to start tracking your daily check-ins.'
+          : pendingHabits.length <= 2
+            ? "Neither takes long. Pick one and keep the streak alive."
+            : 'A few left to check in. Knock them out one by one.';
 
   const weekCounts = getWeeklyCheckInCounts(habits);
   const maxWeekCount = Math.max(1, ...weekCounts);
@@ -229,7 +238,7 @@ export function HomeClient({ categoriesPromise, articlesPromise }: HomeClientPro
                     })}
                   </div>
                   <p className="mt-4 text-xs text-muted-foreground leading-relaxed">
-                    {remainingCount === 0
+                    {allDone
                       ? "Perfect week so far. Keep the momentum going."
                       : weekTotal === 0
                         ? "No check-ins yet this week. Today's a good day to start."

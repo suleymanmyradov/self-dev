@@ -7,7 +7,7 @@ import { Search } from "lucide-react";
 import { useSearchParamState } from "@/lib/url-state";
 import { useCreateHabit, useCreateGoal, useArticles, useSavedItems, useSavedItemsDetailed, useSaveItem, useRemoveSavedItem, useSearch } from "@/hooks";
 import { toast } from "@/components/ui/sonner";
-import type { ArticlesResponse, ExploreSettings, Article, SavedItemDetailed, SearchResult } from "@/api";
+import type { ArticlesResponse, CategoriesResponse, ExploreSettings, Article, SavedItemDetailed, SearchResult } from "@/api";
 import type { HabitTemplate, GoalTemplate } from "@/types/explore";
 import { ExploreTab } from "./explore-tab";
 import { SavedTab } from "./saved-tab";
@@ -16,6 +16,7 @@ import { CommunityTab } from "./community-tab";
 
 interface ExploreClientProps {
   articlesPromise: Promise<ArticlesResponse>;
+  categoriesPromise: Promise<CategoriesResponse>;
   settings: ExploreSettings;
   featuredArticle: Article | null;
   habitTemplates: HabitTemplate[];
@@ -33,7 +34,7 @@ function useDebounceValue<T>(value: T, delay: number): T {
   return debounced;
 }
 
-export function ExploreClient({ articlesPromise, settings, featuredArticle, habitTemplates, goalTemplates }: ExploreClientProps) {
+export function ExploreClient({ articlesPromise, categoriesPromise, settings, featuredArticle, habitTemplates, goalTemplates }: ExploreClientProps) {
   // Resolve the server-fetched promise as initialData for the react-query hook.
   // This keeps the library page's article data in the same react-query cache as
   // the home page and article detail page, so optimistic updates from
@@ -42,6 +43,16 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
   // (isLiked, isSaved) are correct.
   const initialArticlesData = use(articlesPromise);
   const { data: articlesList = [] } = useArticles(undefined, initialArticlesData);
+
+  // Category chips come from the DB categories table (SSR-hydrated) so the
+  // filter list reflects what articles are actually tagged with, not a
+  // hardcoded literal.
+  const categoriesData = use(categoriesPromise);
+  const categories = useMemo(
+    () =>
+      [...(categoriesData.data ?? [])].sort((a, b) => a.sortOrder - b.sortOrder),
+    [categoriesData],
+  );
 
   const createHabit = useCreateHabit().mutate;
   const createGoal = useCreateGoal().mutate;
@@ -231,6 +242,7 @@ export function ExploreClient({ articlesPromise, settings, featuredArticle, habi
                 trimmedQuery={trimmedQuery}
                 category={category}
                 setCategory={setCategory}
+                categories={categories}
                 nonArticleResults={nonArticleResults}
                 habitTemplates={habitTemplates}
                 getIsSaved={getIsSaved}

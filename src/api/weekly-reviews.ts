@@ -66,13 +66,13 @@ export function generateWeeklyReviewStream(
       if (!response.ok) {
         const text = await response.text().catch(() => 'Request failed');
         console.error('[weekly-review stream] HTTP error:', response.status, text);
-        callbacks.onError(text);
+        callbacks.onError(WEEKLY_REVIEW_ERROR_GENERIC);
         return;
       }
 
       if (!response.body) {
         console.error('[weekly-review stream] response.body is null');
-        callbacks.onError('Response body is null');
+        callbacks.onError(WEEKLY_REVIEW_ERROR_GENERIC);
         return;
       }
 
@@ -86,7 +86,7 @@ export function generateWeeklyReviewStream(
           // Stream ended without a complete event — treat as error.
           const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
           console.error(`[weekly-review stream] stream ended (done=true) after ${elapsed}s, ${deltaCount} deltas, ${totalDeltaChars} chars — no complete event`);
-          callbacks.onError('Stream ended unexpectedly');
+          callbacks.onError(WEEKLY_REVIEW_ERROR_GENERIC);
           return;
         }
 
@@ -146,7 +146,7 @@ export function generateWeeklyReviewStream(
             }
           } catch (parseErr) {
             console.error(`[weekly-review stream] parse error at ${eventTime}s, event type="${event.event}", data="${event.data.substring(0, 200)}":`, parseErr);
-            callbacks.onError((parseErr as Error).message || 'Invalid stream payload');
+            callbacks.onError(WEEKLY_REVIEW_ERROR_GENERIC);
             return;
           }
         }
@@ -158,7 +158,7 @@ export function generateWeeklyReviewStream(
       }
       const elapsed = ((performance.now() - startTime) / 1000).toFixed(2);
       console.error(`[weekly-review stream] fetch error after ${elapsed}s, ${deltaCount} deltas:`, err);
-      callbacks.onError((err as Error).message || 'Stream failed');
+      callbacks.onError(WEEKLY_REVIEW_ERROR_GENERIC);
     }
   })();
 
@@ -169,6 +169,14 @@ export async function getCurrentWeeklyReview(): Promise<ApiResponse<WeeklyReview
   const response = await api.get<unknown>(ENDPOINTS.CURRENT);
   return WeeklyReviewResponseSchema.parse(response);
 }
+
+/**
+ * Generic user-facing error message for weekly review stream failures that
+ * don't come with a server-provided message. Technical details are logged to
+ * the console for debugging; the user only sees this friendly fallback.
+ */
+const WEEKLY_REVIEW_ERROR_GENERIC =
+  'Something went wrong while generating your weekly review. Please try again.';
 
 export async function getWeeklyReview(weekStart: string): Promise<ApiResponse<WeeklyReview>> {
   const response = await api.get<unknown>(`${ENDPOINTS.WEEKLY_REVIEWS}/${encodeURIComponent(weekStart)}`);

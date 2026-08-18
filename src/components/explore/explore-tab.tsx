@@ -3,18 +3,9 @@
 import Link from "next/link";
 import { ArrowRight, Search } from "lucide-react";
 import { ArticleCard, FeaturedCard } from "@/components/explore";
-import type { Article, SearchResult } from "@/api";
+import type { Article, Category, SearchResult } from "@/api";
 import type { HabitTemplate } from "@/types/explore";
 import { cn } from "@/lib/utils";
-
-const CATEGORY_CHIPS = [
-  "All",
-  "Philosophy",
-  "Habits",
-  "Relationships",
-  "Productivity",
-  "Self-knowledge",
-] as const;
 
 const SEARCH_RESULT_HREF: Record<SearchResult['type'], (id: string) => string> = {
   article: (id) => `/article/${id}`,
@@ -58,6 +49,7 @@ interface ExploreTabProps {
   trimmedQuery: string;
   category: string;
   setCategory: (category: string) => void;
+  categories: Category[];
   nonArticleResults: SearchResult[];
   habitTemplates: HabitTemplate[];
   getIsSaved: (article: Article) => boolean;
@@ -73,17 +65,22 @@ export function ExploreTab({
   trimmedQuery,
   category,
   setCategory,
+  categories,
   nonArticleResults,
   habitTemplates,
   getIsSaved,
   onToggleSave,
   onViewAllTemplates,
 }: ExploreTabProps) {
+  // Chips are derived from the DB categories table (passed in from the client,
+  // which resolves the SSR-hydrated promise). "All" is always first.
+  const categoryChips = ["All", ...categories.map((c) => c.name)];
+
   return (
     <>
       {/* Category chips (pill shape, NOT underline) */}
       <div className="flex flex-wrap gap-2">
-        {CATEGORY_CHIPS.map((chip) => (
+        {categoryChips.map((chip) => (
           <button
             key={chip}
             onClick={() => setCategory(chip)}

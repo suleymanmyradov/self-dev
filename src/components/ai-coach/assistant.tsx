@@ -53,6 +53,14 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
         return conversations?.find(conversation => conversation.id === currentConversationId);
     }, [conversations, currentConversationId]);
 
+    const handleDelete = (id: string) => {
+        if (!window.confirm('Delete this conversation? This cannot be undone.')) return;
+        deleteMutation.mutate(id);
+        if (id === currentConversationId) {
+            router.push('/coach');
+        }
+    };
+
     return (
         <ChatProvider key={conversationId ?? 'new'} state={conversationState}>
             <div className="relative flex h-full overflow-hidden bg-background text-foreground">
@@ -66,12 +74,7 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                     onSelectConversation={id => router.push(`/coach/${id}`)}
                     onArchive={id => archiveMutation.mutate(id)}
                     onUnarchive={id => unarchiveMutation.mutate(id)}
-                    onDelete={id => {
-                        deleteMutation.mutate(id);
-                        if (id === currentConversationId) {
-                            router.push('/coach');
-                        }
-                    }}
+                    onDelete={handleDelete}
                     isSidebarOpen={isSidebarOpen}
                     onToggleSidebar={setIsSidebarOpen}
                     isMobileSidebarOpen={isMobileSidebarOpen}
@@ -88,12 +91,7 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                         isArchived={activeConversation?.archived}
                         onArchive={id => archiveMutation.mutate(id)}
                         onUnarchive={id => unarchiveMutation.mutate(id)}
-                        onDelete={id => {
-                            deleteMutation.mutate(id);
-                            if (id === currentConversationId) {
-                                router.push('/coach');
-                            }
-                        }}
+                        onDelete={handleDelete}
                     />
                     <Thread />
                 </main>

@@ -7,7 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Checkbox } from "@/components/ui/checkbox";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { ChevronDown, Link2, Search, X } from "lucide-react";
+import { ChevronDown, GripVertical, Link2, Search, X } from "lucide-react";
+import { Reorder, useDragControls } from "motion/react";
 import type { GoalFormValues } from "@/lib/validators/goal";
 import type { Category, Habit, GoalMeasurement } from "@/api";
 import { useGoalForm } from "@/hooks";
@@ -68,6 +69,13 @@ export function GoalFormDialog({
   const [habitQuery, setHabitQuery] = useState("");
   const [habitVisible, setHabitVisible] = useState(HABIT_PAGE_SIZE);
 
+  // Milestone drag-to-reorder: motion's Reorder needs stable per-item
+  // identity. Milestone entries from the form have no guaranteed unique key
+  // (new ones have id: undefined), so we keep a parallel array of generated
+  // keys, managed imperatively alongside form.milestones (add/remove/reset).
+  const [milestoneKeys, setMilestoneKeys] = useState<string[]>([]);
+  const milestones = useMemo(() => form.milestones ?? [], [form.milestones]);
+
   // Reset form only when the dialog opens (false -> true), not on every
   // initialValues change while open. The parent rebuilds initialValues as an
   // inline object each render, so resetting on every change would clobber
@@ -78,6 +86,10 @@ export function GoalFormDialog({
       reset(initialValues);
       setHabitQuery("");
       setHabitVisible(HABIT_PAGE_SIZE);
+      // Rebuild drag-reorder keys to match the freshly loaded milestones.
+      setMilestoneKeys(
+        Array.from({ length: (initialValues?.milestones ?? []).length }, () => genMilestoneKey())
+      );
     }
     prevOpenRef.current = open;
   }, [open, initialValues, reset]);
@@ -100,6 +112,37 @@ export function GoalFormDialog({
   const visibleHabits = filteredHabits.slice(0, habitVisible);
   const hasMoreHabits = filteredHabits.length > habitVisible;
 
+  const handleMilestoneReorder = useCallback((nextKeys: string[]) => {
+    const reordered = nextKeys
+      .map((k) => milestoneKeys.indexOf(k))
+      .map((idx) => (idx >= 0 ? milestones[idx] : undefined))
+      .filter((m): m is { id?: string; title: string } => m !== undefined);
+    setMilestoneKeys(nextKeys);
+    setMilestones(reordered);
+  }, [milestoneKeys, milestones, setMilestoneKeys, setMilestones]);
+
+  const updateMilestoneTitle = useCallback((key: string, title: string) => {
+    const idx = milestoneKeys.indexOf(key);
+    if (idx < 0) return;
+    const next = [...milestones];
+    next[idx] = { ...next[idx], title };
+    setMilestones(next);
+  }, [milestoneKeys, milestones, setMilestones]);
+
+  const removeMilestone = useCallback((key: string) => {
+    const idx = milestoneKeys.indexOf(key);
+    if (idx < 0) return;
+    const next = [...milestones];
+    next.splice(idx, 1);
+    setMilestones(next);
+    setMilestoneKeys((prev) => prev.filter((k) => k !== key));
+  }, [milestoneKeys, milestones, setMilestoneKeys, setMilestones]);
+
+  const addMilestone = useCallback(() => {
+    setMilestones([...milestones, { id: undefined, title: "" }]);
+    setMilestoneKeys((prev) => [...prev, genMilestoneKey()]);
+  }, [milestones, setMilestoneKeys, setMilestones]);
+
   const handleSubmit = useCallback(() => {
     const validated = validate();
     if (validated) {
@@ -109,14 +152,14 @@ export function GoalFormDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-md" aria-describedby={undefined}>
+      <DialogContent className="sm:max-w-md max-h-[85vh] flex flex-col overflow-hidden" aria-describedby={undefined}>
         <DialogHeader>
           <DialogTitle>{mode === "create" ? "New goal" : "Edit goal"}</DialogTitle>
           <DialogDescription className="sr-only">
             {mode === "create" ? "Create a new goal" : "Edit your goal"}
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-3 py-2">
+        <div className="grid gap-3 py-2 overflow-y-auto pr-1 min-h-0">
           <div className="grid gap-1">
             <label className="text-sm font-medium">Title</label>
             <Input
@@ -233,42 +276,32 @@ export function GoalFormDialog({
               </div>
             </div>
           )}
-          {/* Milestone steps editor */}
+          {/* Milestone steps editor — drag the grip handle to reorder */}
           {measurement === "milestone" && (
             <div className="grid gap-1.5">
               <label className="text-sm font-medium">Milestone steps</label>
-              {(form.milestones ?? []).map((ms, i) => (
-                <div key={i} className="flex items-center gap-2">
-                  <Input
-                    type="text"
-                    value={ms.title}
-                    onChange={(e) => {
-                      const next = [...(form.milestones ?? [])];
-                      next[i] = { ...next[i], title: e.target.value };
-                      setMilestones(next);
-                    }}
-                    placeholder={`Step ${i + 1}`}
+              <Reorder.Group
+                axis="y"
+                values={milestoneKeys}
+                onReorder={handleMilestoneReorder}
+                className="grid gap-1.5"
+              >
+                {milestones.map((ms, i) => (
+                  <MilestoneRow
+                    key={milestoneKeys[i]}
+                    milestoneKey={milestoneKeys[i]}
+                    index={i}
+                    title={ms.title}
+                    onTitleChange={(title) => updateMilestoneTitle(milestoneKeys[i], title)}
+                    onRemove={() => removeMilestone(milestoneKeys[i])}
                   />
-                  <Button
-                    type="button"
-                    variant="ghost"
-                    size="icon-sm"
-                    onClick={() => {
-                      const next = [...(form.milestones ?? [])];
-                      next.splice(i, 1);
-                      setMilestones(next);
-                    }}
-                    aria-label="Remove step"
-                  >
-                    <X className="h-4 w-4" />
-                  </Button>
-                </div>
-              ))}
+                ))}
+              </Reorder.Group>
               <Button
                 type="button"
                 variant="outline"
                 size="sm"
-                onClick={() => setMilestones([...(form.milestones ?? []), { id: undefined, title: "" }])}
+                onClick={addMilestone}
               >
                 Add step
               </Button>
@@ -398,7 +431,7 @@ export function GoalFormDialog({
           )}
           {error && <p className="text-sm text-destructive">{error}</p>}
         </div>
-        <DialogFooter>
+        <DialogFooter className="shrink-0">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Cancel
           </Button>
@@ -408,5 +441,58 @@ export function GoalFormDialog({
         </DialogFooter>
       </DialogContent>
     </Dialog>
+  );
+}
+
+let milestoneKeyCounter = 0;
+function genMilestoneKey(): string {
+  milestoneKeyCounter += 1;
+  return `ms-${Date.now().toString(36)}-${milestoneKeyCounter}`;
+}
+
+type MilestoneRowProps = {
+  milestoneKey: string;
+  index: number;
+  title: string;
+  onTitleChange: (title: string) => void;
+  onRemove: () => void;
+};
+
+function MilestoneRow({ milestoneKey, index, title, onTitleChange, onRemove }: MilestoneRowProps) {
+  // Drag only from the grip handle so the text input stays usable.
+  const controls = useDragControls();
+  return (
+    <Reorder.Item
+      value={milestoneKey}
+      dragControls={controls}
+      dragListener={false}
+      className="list-none"
+    >
+      <div className="flex items-center gap-2 rounded-md bg-background">
+        <button
+          type="button"
+          onPointerDown={(e) => controls.start(e)}
+          aria-label="Drag to reorder"
+          className="flex h-9 w-5 shrink-0 cursor-grab touch-none items-center justify-center text-muted-foreground hover:text-foreground active:cursor-grabbing"
+        >
+          <GripVertical className="h-4 w-4" />
+        </button>
+        <Input
+          type="text"
+          value={title}
+          onChange={(e) => onTitleChange(e.target.value)}
+          placeholder={`Step ${index + 1}`}
+        />
+        <Button
+          type="button"
+          variant="ghost"
+          size="icon-sm"
+          onClick={onRemove}
+          aria-label="Remove step"
+        >
+          <X className="h-4 w-4" />
+        </Button>
+      </div>
+    </Reorder.Item>
   );
 }
