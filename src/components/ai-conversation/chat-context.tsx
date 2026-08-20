@@ -19,6 +19,7 @@ import {
 import {
     ATTACHMENT_ACCEPT,
     createAttachment,
+    isPDF,
     readAttachmentText,
     revokeAttachmentPreview,
     type ChatAttachment,
@@ -83,8 +84,12 @@ async function buildMessageText(text: string, attachments: ChatAttachment[]): Pr
 
     const chunks = await Promise.all(
         attachments.map(async attachment => {
+            // Images and PDFs are forwarded as base64 multimodal parts; only
+            // text documents need their body embedded in the prompt string.
+            if (attachment.type === 'image') return '';
             const body = await readAttachmentText(attachment.file);
-            const label = attachment.type === 'image' ? 'Image' : 'Attachment';
+            if (isPDF(attachment)) return body ? `\n\n${body}` : '';
+            const label = 'Attachment';
             return body
                 ? `\n\n[${label}: ${attachment.name}]\n${body}`
                 : `\n\n[${label}: ${attachment.name}]`;

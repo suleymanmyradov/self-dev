@@ -34,6 +34,11 @@ export default defineConfig({
       name: 'chromium',
       use: { ...devices['Desktop Chrome'] },
     },
+    {
+      name: 'chromium-mobile-coach',
+      testMatch: /ai-coach\.spec\.ts/,
+      use: { ...devices['Pixel 5'] },
+    },
   ],
   // Don't start the web server automatically — the developer should have
   // the full stack running. This avoids port conflicts and lets us test

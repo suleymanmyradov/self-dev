@@ -693,9 +693,17 @@ export const ApplyPlanAdjustmentSuggestionRequestSchema = z.object({
   id: z.string(),
 });
 
+export const StreamAttachmentSchema = z.object({
+  attachmentType: z.enum(['image', 'document']),
+  name: z.string().min(1),
+  contentType: z.string().min(1),
+  data: z.string().min(1),
+});
+
 export const GeneratePersonalizedCoachingRequestSchema = z.object({
   userMessage: z.string().min(1).max(5000),
   context: z.string().optional(),
+  attachments: z.array(StreamAttachmentSchema).optional(),
 });
 
 export const GeneratePersonalizedCoachingResponseSchema = z.object({

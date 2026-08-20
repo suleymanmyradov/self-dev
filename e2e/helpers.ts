@@ -9,7 +9,12 @@ import { randomUUID } from 'crypto';
  *
  * Returns { accessToken, refreshToken } that can be set as cookies.
  */
-export async function generateTestTokens(): Promise<{
+export interface TestAuthOptions {
+  userId?: string;
+  username?: string;
+}
+
+export async function generateTestTokens(options: TestAuthOptions = {}): Promise<{
   accessToken: string;
   refreshToken: string;
 }> {
@@ -20,7 +25,8 @@ export async function generateTestTokens(): Promise<{
   const issuer = process.env.JWT_ISSUER || 'growth-auth';
   const audience = process.env.JWT_AUDIENCE || 'growth-api';
 
-  const userId = randomUUID();
+  const userId = options.userId ?? randomUUID();
+  const username = options.username ?? 'e2e-test-user';
   const sessionId = randomUUID();
   const now = Math.floor(Date.now() / 1000);
 
@@ -28,7 +34,7 @@ export async function generateTestTokens(): Promise<{
     jti: randomUUID(),
     sub: userId,
     sid: sessionId,
-    usr: 'e2e-test-user',
+    usr: username,
     rls: ['user'],
     typ: 'access',
   })
@@ -44,7 +50,7 @@ export async function generateTestTokens(): Promise<{
     jti: randomUUID(),
     sub: userId,
     sid: sessionId,
-    usr: 'e2e-test-user',
+    usr: username,
     rls: ['user'],
     typ: 'refresh',
   })
@@ -64,8 +70,9 @@ export async function generateTestTokens(): Promise<{
  */
 export async function setAuthCookies(
   page: import('@playwright/test').Page,
+  options: TestAuthOptions = {},
 ): Promise<void> {
-  const { accessToken, refreshToken } = await generateTestTokens();
+  const { accessToken, refreshToken } = await generateTestTokens(options);
   await page.context().addCookies([
     {
       name: 'auth-token',

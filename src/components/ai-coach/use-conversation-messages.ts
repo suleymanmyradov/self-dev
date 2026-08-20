@@ -4,7 +4,8 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { streamPersonalizedCoaching, type CoachingProposal } from '@/api/personalization';
 import { startConversation, getMessages } from '@/api/conversations';
-import type { ChatAttachment } from '@/components/ai-coach/attachment-adapter';
+import type { StreamAttachment } from '@/api/types';
+import { prepareAttachmentForApi, type ChatAttachment } from '@/components/ai-coach/attachment-adapter';
 
 export interface CoachingMessage {
     id: string;
@@ -108,10 +109,18 @@ export function useConversationMessages(conversationId?: string) {
                 }
             }
 
+            const apiAttachments: StreamAttachment[] | undefined =
+                options?.attachments && options.attachments.length > 0
+                    ? (await Promise.all(options.attachments.map(prepareAttachmentForApi))).filter(
+                          (a): a is StreamAttachment => a !== null,
+                      )
+                    : undefined;
+
             abortRef.current = streamPersonalizedCoaching(
                 {
                     userMessage: text,
                     conversationId: convId,
+                    attachments: apiAttachments,
                 },
                 {
                     onThinking: message => {

@@ -8,6 +8,15 @@ import { VoiceMode } from '@/components/ai-coach/voice-mode';
 import { ConversationSidebar } from '@/components/ai-coach/conversation-sidebar';
 import { ConversationHeader } from '@/components/ai-coach/conversation-header';
 import { useConversationMessages } from '@/components/ai-coach/use-conversation-messages';
+import { Button } from '@/components/ui/button';
+import {
+    Dialog,
+    DialogContent,
+    DialogDescription,
+    DialogFooter,
+    DialogHeader,
+    DialogTitle,
+} from '@/components/ui/dialog';
 import {
     useBillingOverview,
     useConversations,
@@ -23,6 +32,7 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
     const [isVoiceMode, setIsVoiceMode] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
+    const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null);
     const { data: billing } = useBillingOverview();
     const isPro = billing?.subscription?.planCode === 'pro';
 
@@ -54,10 +64,20 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     }, [conversations, currentConversationId]);
 
     const handleDelete = (id: string) => {
-        if (!window.confirm('Delete this conversation? This cannot be undone.')) return;
-        deleteMutation.mutate(id);
-        if (id === currentConversationId) {
-            router.push('/coach');
+        setDeleteTargetId(id);
+    };
+
+    const confirmDelete = async () => {
+        if (!deleteTargetId) return;
+        const id = deleteTargetId;
+        try {
+            await deleteMutation.mutateAsync(id);
+            if (id === currentConversationId) {
+                router.push('/coach');
+            }
+            setDeleteTargetId(null);
+        } catch {
+            // Keep the dialog open and let the mutation's error handling surface the issue.
         }
     };
 
@@ -120,6 +140,41 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                     onClose={() => setIsVoiceMode(false)}
                 />
             )}
+
+            <Dialog
+                open={deleteTargetId !== null}
+                onOpenChange={open => {
+                    if (!open) setDeleteTargetId(null);
+                }}
+            >
+                <DialogContent className="sm:max-w-md">
+                    <DialogHeader>
+                        <DialogTitle>Delete conversation?</DialogTitle>
+                        <DialogDescription>
+                            This permanently removes the conversation and all its messages.
+                            This action cannot be undone.
+                        </DialogDescription>
+                    </DialogHeader>
+                    <DialogFooter>
+                        <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => setDeleteTargetId(null)}
+                            disabled={deleteMutation.isPending}
+                        >
+                            Cancel
+                        </Button>
+                        <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={confirmDelete}
+                            disabled={deleteMutation.isPending}
+                        >
+                            {deleteMutation.isPending ? 'Deleting…' : 'Delete'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </ChatProvider>
     );
 };

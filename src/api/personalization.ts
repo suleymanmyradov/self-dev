@@ -24,6 +24,7 @@ import type {
   ApplyPlanAdjustmentSuggestionRequest,
   GeneratePersonalizedCoachingRequest,
   GeneratePersonalizedCoachingResponse,
+  StreamAttachment,
   GenerateOnboardingHabitsRequest,
   OnboardingHabitSuggestion,
 } from './types';
@@ -193,14 +194,26 @@ export interface CoachingProposal {
  * insights) and builds the system prompt server-side. The frontend has zero
  * prompt logic.
  */
+export interface StreamCoachingRequest {
+  userMessage: string;
+  context?: string;
+  conversationId?: string;
+  attachments?: StreamAttachment[];
+}
+
 export function streamPersonalizedCoaching(
-  data: { userMessage: string; context?: string; conversationId?: string },
+  data: StreamCoachingRequest,
   callbacks: CoachingStreamCallbacks,
 ): AbortController {
   const controller = new AbortController();
 
   (async () => {
     try {
+      const validated = GeneratePersonalizedCoachingRequestSchema.parse({
+        userMessage: data.userMessage,
+        context: data.context,
+        attachments: data.attachments,
+      });
       const streamUrl = `${config.apiUrl}${ENDPOINTS.COACHING_STREAM}`;
       const response = await fetch(streamUrl, {
         method: 'POST',
@@ -208,7 +221,7 @@ export function streamPersonalizedCoaching(
           'Content-Type': 'application/json',
           Accept: 'text/event-stream',
         },
-        body: JSON.stringify(data),
+        body: JSON.stringify({ ...validated, conversationId: data.conversationId }),
         credentials: 'include',
         signal: controller.signal,
       });

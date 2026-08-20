@@ -12,6 +12,7 @@ import {
     useUpdateHabit,
     useDeleteHabit,
 } from '@/hooks';
+import { CreateGoalRequestSchema, CreateHabitRequestSchema } from '@/lib/validation';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -59,10 +60,41 @@ export const ProposalCard: FC<ProposalCardProps> = ({ proposal }) => {
     const icon = actionIcons[proposal.action] ?? '?';
 
     const handleConfirm = () => {
-        setStatus('applying');
         setErrorMsg(null);
 
         const p = proposal.payload;
+
+        // Validate create proposals against the same CRUD schemas so the user
+        // sees the error on the card instead of after pressing Confirm.
+        if (proposal.action === 'create_goal') {
+            const result = CreateGoalRequestSchema.safeParse({
+                title: String(p.title ?? ''),
+                description: String(p.description ?? ''),
+                category: String(p.category ?? ''),
+                dueDate: p.dueDate ? String(p.dueDate) : undefined,
+                relatedHabitIds: Array.isArray(p.relatedHabitIds)
+                    ? (p.relatedHabitIds as string[])
+                    : undefined,
+            });
+            if (!result.success) {
+                setStatus('error');
+                setErrorMsg(result.error.errors[0]?.message ?? 'Invalid goal proposal');
+                return;
+            }
+        } else if (proposal.action === 'create_habit') {
+            const result = CreateHabitRequestSchema.safeParse({
+                name: String(p.name ?? ''),
+                description: String(p.description ?? ''),
+                category: String(p.category ?? ''),
+            });
+            if (!result.success) {
+                setStatus('error');
+                setErrorMsg(result.error.errors[0]?.message ?? 'Invalid habit proposal');
+                return;
+            }
+        }
+
+        setStatus('applying');
         let promise: Promise<unknown>;
 
         switch (proposal.action) {

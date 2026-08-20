@@ -785,9 +785,17 @@ export interface ApplyPlanAdjustmentSuggestionRequest {
   id: string;
 }
 
+export interface StreamAttachment {
+  attachmentType: 'image' | 'document';
+  name: string;
+  contentType: string;
+  data: string;
+}
+
 export interface GeneratePersonalizedCoachingRequest {
   userMessage: string;
   context?: string;
+  attachments?: StreamAttachment[];
 }
 
 export interface GeneratePersonalizedCoachingResponse {
