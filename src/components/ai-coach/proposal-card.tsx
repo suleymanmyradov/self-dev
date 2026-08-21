@@ -4,6 +4,7 @@ import { useState, type FC } from 'react';
 import { CheckIcon, Loader2Icon, XIcon, AlertCircleIcon } from 'lucide-react';
 
 import type { CoachingProposal, ProposalAction } from '@/api/personalization';
+import type { GoalMeasurement } from '@/api/types';
 import {
     useCreateGoal,
     useUpdateGoal,
@@ -38,7 +39,7 @@ const actionIcons: Record<ProposalAction, string> = {
     delete_habit: '-',
 };
 
-type CardStatus = 'pending' | 'applying' | 'applied' | 'error';
+type CardStatus = 'pending' | 'applying' | 'applied' | 'error' | 'dismissed';
 
 /**
  * Renders a single agent proposal as an inline confirm/cancel card inside
@@ -75,6 +76,14 @@ export const ProposalCard: FC<ProposalCardProps> = ({ proposal }) => {
                 relatedHabitIds: Array.isArray(p.relatedHabitIds)
                     ? (p.relatedHabitIds as string[])
                     : undefined,
+                measurement: p.measurement ? (String(p.measurement) as GoalMeasurement) : undefined,
+                startValue: typeof p.startValue === 'number' ? p.startValue : undefined,
+                currentValue: typeof p.currentValue === 'number' ? p.currentValue : undefined,
+                targetValue: typeof p.targetValue === 'number' ? p.targetValue : undefined,
+                unit: p.unit ? String(p.unit) : undefined,
+                milestoneTitles: Array.isArray(p.milestoneTitles)
+                    ? (p.milestoneTitles as string[])
+                    : undefined,
             });
             if (!result.success) {
                 setStatus('error');
@@ -109,6 +118,14 @@ export const ProposalCard: FC<ProposalCardProps> = ({ proposal }) => {
                             relatedHabitIds: Array.isArray(p.relatedHabitIds)
                                 ? (p.relatedHabitIds as string[])
                                 : undefined,
+                            measurement: p.measurement ? (String(p.measurement) as GoalMeasurement) : undefined,
+                            startValue: typeof p.startValue === 'number' ? p.startValue : undefined,
+                            currentValue: typeof p.currentValue === 'number' ? p.currentValue : undefined,
+                            targetValue: typeof p.targetValue === 'number' ? p.targetValue : undefined,
+                            unit: p.unit ? String(p.unit) : undefined,
+                            milestoneTitles: Array.isArray(p.milestoneTitles)
+                                ? (p.milestoneTitles as string[])
+                                : undefined,
                         },
                         { onSuccess: resolve, onError: reject },
                     );
@@ -126,6 +143,14 @@ export const ProposalCard: FC<ProposalCardProps> = ({ proposal }) => {
                                 dueDate: p.dueDate ? String(p.dueDate) : undefined,
                                 relatedHabitIds: Array.isArray(p.relatedHabitIds)
                                     ? (p.relatedHabitIds as string[])
+                                    : undefined,
+                                measurement: p.measurement ? (String(p.measurement) as GoalMeasurement) : undefined,
+                                startValue: typeof p.startValue === 'number' ? p.startValue : undefined,
+                                currentValue: typeof p.currentValue === 'number' ? p.currentValue : undefined,
+                                targetValue: typeof p.targetValue === 'number' ? p.targetValue : undefined,
+                                unit: p.unit ? String(p.unit) : undefined,
+                                milestones: Array.isArray(p.milestones)
+                                    ? (p.milestones as { id?: string; title: string }[])
                                     : undefined,
                             },
                         },
@@ -191,9 +216,11 @@ export const ProposalCard: FC<ProposalCardProps> = ({ proposal }) => {
     };
 
     const handleCancel = () => {
-        setStatus('pending');
+        setStatus('dismissed');
         setErrorMsg(null);
     };
+
+    if (status === 'dismissed') return null;
 
     if (status === 'applied') {
         return (
@@ -284,6 +311,29 @@ const ProposalSummary: FC<{ action: ProposalAction; payload: Record<string, unkn
             push('Category', payload.category);
             push('Due', payload.dueDate);
             if (payload.description) push('Description', payload.description);
+            if (payload.measurement) {
+                const labels: Record<string, string> = {
+                    binary: 'Binary (done/not-done)',
+                    numeric: 'Numeric target',
+                    milestone: 'Milestone checklist',
+                    habit: 'Habit-linked',
+                    manual: 'Manual progress',
+                };
+                push('Type', labels[String(payload.measurement)] ?? String(payload.measurement));
+            }
+            if (typeof payload.targetValue === 'number' && typeof payload.startValue === 'number') {
+                const unit = payload.unit ? ` ${payload.unit}` : '';
+                push('Target', `${payload.startValue} → ${payload.targetValue}${unit}`);
+            } else if (typeof payload.targetValue === 'number') {
+                const unit = payload.unit ? ` ${payload.unit}` : '';
+                push('Target', `${payload.targetValue}${unit}`);
+            }
+            if (Array.isArray(payload.milestoneTitles) && payload.milestoneTitles.length > 0) {
+                fields.push(`Steps: ${(payload.milestoneTitles as string[]).join(', ')}`);
+            } else if (Array.isArray(payload.milestones) && payload.milestones.length > 0) {
+                const steps = (payload.milestones as { title: string }[]).map((m) => m.title);
+                fields.push(`Steps: ${steps.join(', ')}`);
+            }
             break;
         case 'delete_goal':
             push('Goal ID', payload.goalId);

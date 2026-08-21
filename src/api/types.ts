@@ -46,7 +46,7 @@ export interface GoalMilestone {
 }
 
 export interface MilestoneInput {
-  id?: string;  // empty/undefined = new milestone
+  id?: string; // empty/undefined = new milestone
   title: string;
 }
 
@@ -355,7 +355,14 @@ export interface GetAuthorArticlesParams extends PageParams {
 // Activity Types
 // ============================================
 
-export type ActivityType = 'habit_completed' | 'goal_created' | 'goal_completed' | 'article_saved' | 'check_in_completed' | 'check_in_missed' | 'weekly_review_generated';
+export type ActivityType =
+  | 'habit_completed'
+  | 'goal_created'
+  | 'goal_completed'
+  | 'article_saved'
+  | 'check_in_completed'
+  | 'check_in_missed'
+  | 'weekly_review_generated';
 
 export interface Activity {
   id: string;
@@ -536,7 +543,15 @@ export interface WeeklyReview {
   generatedAt: string;
 }
 
-export type NotificationType = 'habit_reminder' | 'goal_deadline' | 'achievement' | 'system' | 'missed_check_in' | 'weekly_review' | 'encouragement' | 'ai_feedback';
+export type NotificationType =
+  | 'habit_reminder'
+  | 'goal_deadline'
+  | 'achievement'
+  | 'system'
+  | 'missed_check_in'
+  | 'weekly_review'
+  | 'encouragement'
+  | 'ai_feedback';
 
 export interface Notification {
   id: string;
@@ -718,7 +733,13 @@ export interface GoalTemplatesResponse {
 export type AccountabilityStyle = 'gentle' | 'balanced' | 'strict';
 export type PreferredTone = 'supportive' | 'direct' | 'warm' | 'practical' | 'challenging';
 export type DifficultyPreference = 'easy' | 'adaptive' | 'ambitious';
-export type AdjustmentType = 'reduce_difficulty' | 'increase_difficulty' | 'change_time' | 'clarify_plan' | 'pause' | 'keep_same';
+export type AdjustmentType =
+  | 'reduce_difficulty'
+  | 'increase_difficulty'
+  | 'change_time'
+  | 'clarify_plan'
+  | 'pause'
+  | 'keep_same';
 export type SuggestionStatus = 'pending' | 'accepted' | 'dismissed' | 'applied';
 export type SuggestionSource = 'check_in' | 'weekly_review' | 'assistant' | 'pattern_analysis';
 
@@ -795,6 +816,7 @@ export interface StreamAttachment {
 export interface GeneratePersonalizedCoachingRequest {
   userMessage: string;
   context?: string;
+  goalId?: string;
   attachments?: StreamAttachment[];
 }
 
@@ -895,9 +917,23 @@ export interface BillingOverview {
   billingMode: 'disabled' | 'fake_door' | 'stripe_test' | 'stripe_live';
 }
 
-export type UpgradeEventType = 'prompt_viewed' | 'prompt_clicked' | 'prompt_dismissed' | 'checkout_started' | 'checkout_completed' | 'checkout_canceled';
+export type UpgradeEventType =
+  | 'prompt_viewed'
+  | 'prompt_clicked'
+  | 'prompt_dismissed'
+  | 'checkout_started'
+  | 'checkout_completed'
+  | 'checkout_canceled';
 
-export type UpgradeSurface = 'pricing_page' | 'settings_billing' | 'goal_create_limit' | 'habit_create_limit' | 'weekly_review_history' | 'assistant_personalization' | 'plan_adjustments' | 'weekly_review_value_moment';
+export type UpgradeSurface =
+  | 'pricing_page'
+  | 'settings_billing'
+  | 'goal_create_limit'
+  | 'habit_create_limit'
+  | 'weekly_review_history'
+  | 'assistant_personalization'
+  | 'plan_adjustments'
+  | 'weekly_review_value_moment';
 
 export type UpgradeTrigger = 'goal_limit' | 'habit_limit' | 'weekly_history' | 'personalized_ai' | 'plan_adjustments';
 

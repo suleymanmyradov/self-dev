@@ -4,10 +4,12 @@ import { z } from 'zod';
 // Common Schemas
 // ============================================
 
-export const PageParamsSchema = z.object({
-  page: z.number().int().positive().optional(),
-  limit: z.number().int().positive().max(100).optional(),
-}).catchall(z.union([z.string(), z.number(), z.boolean(), z.undefined()]));
+export const PageParamsSchema = z
+  .object({
+    page: z.number().int().positive().optional(),
+    limit: z.number().int().positive().max(100).optional(),
+  })
+  .catchall(z.union([z.string(), z.number(), z.boolean(), z.undefined()]));
 
 export const PageResponseSchema = z.object({
   total: z.number().int().nonnegative(),
@@ -38,12 +40,17 @@ export const GoogleLoginRequestSchema = z.object({
 });
 
 export const RegisterRequestSchema = z.object({
-  username: z.string()
+  username: z
+    .string()
     .min(3, 'Username must be at least 3 characters')
     .max(30, 'Username too long')
-    .regex(/^[a-z][a-z0-9_-]*$/, 'Username must be lowercase, start with a letter, and only contain letters, numbers, underscores, or hyphens'),
+    .regex(
+      /^[a-z][a-z0-9_-]*$/,
+      'Username must be lowercase, start with a letter, and only contain letters, numbers, underscores, or hyphens',
+    ),
   email: z.string().email('Invalid email address'),
-  password: z.string()
+  password: z
+    .string()
     .min(8, 'Password must be at least 8 characters')
     .max(128, 'Password too long')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
@@ -61,7 +68,11 @@ export const ProfileSchema = z.object({
   bio: z.string().optional(),
   location: z.string().optional(),
   website: z.string().optional(),
-  interests: z.array(z.string()).nullable().optional().transform((v) => v ?? []),
+  interests: z
+    .array(z.string())
+    .nullable()
+    .optional()
+    .transform(v => v ?? []),
   avatarUrl: z.string().optional(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -105,7 +116,8 @@ export const ForgotPasswordRequestSchema = z.object({
 
 export const ResetPasswordRequestSchema = z.object({
   token: z.string().min(1, 'Token is required'),
-  newPassword: z.string()
+  newPassword: z
+    .string()
     .min(8, 'Password must be at least 8 characters')
     .max(128, 'Password too long')
     .regex(/[A-Z]/, 'Password must contain at least one uppercase letter')
@@ -141,10 +153,7 @@ export const GoalSchema = z.object({
   dueDate: z.string().optional(),
   progress: z.number().min(0).max(100),
   completed: z.boolean(),
-  relatedHabitIds: z.preprocess(
-    (v) => (v === null ? undefined : v),
-    z.array(z.string()).optional()
-  ),
+  relatedHabitIds: z.preprocess(v => (v === null ? undefined : v), z.array(z.string()).optional()),
   // measurement defaults to 'manual' so pre-deploy cached responses (missing
   // the field) parse without throwing — existing goals behave as before.
   measurement: GoalMeasurementSchema,
@@ -152,10 +161,7 @@ export const GoalSchema = z.object({
   currentValue: z.number().optional(),
   targetValue: z.number().optional(),
   unit: z.string().optional(),
-  milestones: z.preprocess(
-    (v) => (v === null ? undefined : v),
-    z.array(GoalMilestoneSchema).optional()
-  ),
+  milestones: z.preprocess(v => (v === null ? undefined : v), z.array(GoalMilestoneSchema).optional()),
   userId: z.string(),
   createdAt: z.string(),
   updatedAt: z.string(),
@@ -187,10 +193,14 @@ export const UpdateGoalRequestSchema = z.object({
   targetValue: z.number().optional(),
   unit: z.string().max(32).optional(),
   milestoneTitles: z.array(z.string()).optional(),
-  milestones: z.array(z.object({
-    id: z.string().optional(),
-    title: z.string().min(1).max(200),
-  })).optional(),
+  milestones: z
+    .array(
+      z.object({
+        id: z.string().optional(),
+        title: z.string().min(1).max(200),
+      }),
+    )
+    .optional(),
 });
 
 export const UpdateGoalProgressRequestSchema = z.object({
@@ -236,10 +246,7 @@ export const HabitSchema = z.object({
   // The Go backend serializes unset `[]bool` fields as `null` (go-zero's
   // `optional` tag is not `omitempty`). Normalize null → undefined so the
   // parsed type stays `boolean[] | undefined`.
-  recentHistory: z.preprocess(
-    (v) => (v === null ? undefined : v),
-    z.array(z.boolean()).optional(),
-  ),
+  recentHistory: z.preprocess(v => (v === null ? undefined : v), z.array(z.boolean()).optional()),
   createdAt: z.string(),
   updatedAt: z.string(),
 });
@@ -269,13 +276,19 @@ export const HabitResponseSchema = ApiResponseSchema(HabitSchema);
 export const CheckInStatusSchema = z.enum(['completed', 'missed']);
 export const CheckInMoodSchema = z.enum(['great', 'okay', 'low', 'stressed']);
 export const CheckInEnergySchema = z.enum(['high', 'medium', 'low']);
-export const CheckInBlockerSchema = z.enum(['lack_of_time', 'low_motivation', 'too_distracted', 'unclear_plan', 'other']);
+export const CheckInBlockerSchema = z.enum([
+  'lack_of_time',
+  'low_motivation',
+  'too_distracted',
+  'unclear_plan',
+  'other',
+]);
 
 // The Go backend serializes unset optional enum fields as empty strings ("")
 // because go-zero's `optional` struct tag is not `omitempty`. Normalize "" to
 // undefined so Zod's enum schemas accept the response.
 const optionalEnum = <T extends z.ZodTypeAny>(schema: T) =>
-  z.preprocess((v) => (v === '' || v === null ? undefined : v), schema.optional());
+  z.preprocess(v => (v === '' || v === null ? undefined : v), schema.optional());
 
 export const CheckInSchema = z.object({
   id: z.string(),
@@ -312,7 +325,7 @@ export const DeleteCheckInResponseDataSchema = z.object({
 // { data: [...] }. Accept both shapes and normalize to { data: [...] }.
 export const CheckInsResponseSchema = z.union([
   ApiResponseSchema(z.array(CheckInSchema)),
-  z.object({ checkIns: z.array(CheckInSchema) }).transform((v) => ({ data: v.checkIns })),
+  z.object({ checkIns: z.array(CheckInSchema) }).transform(v => ({ data: v.checkIns })),
 ]);
 export const CheckInResponseSchema = ApiResponseSchema(CheckInSchema);
 
@@ -369,8 +382,13 @@ export const ShareArticleResponseSchema = z.object({
 // ============================================
 
 export const ActivityTypeSchema = z.enum([
-  'habit_completed', 'goal_created', 'goal_completed', 'article_saved',
-  'check_in_completed', 'check_in_missed', 'weekly_review_generated',
+  'habit_completed',
+  'goal_created',
+  'goal_completed',
+  'article_saved',
+  'check_in_completed',
+  'check_in_missed',
+  'weekly_review_generated',
 ]);
 
 export const ActivitySchema = z.object({
@@ -447,16 +465,10 @@ export const MessageResponseSchema = ApiResponseSchema(MessageSchema);
 export const SettingsSchema = z.object({
   id: z.string(),
   // go-zero serializes unset optional enum fields as "" — coerce to the DB default.
-  theme: z.preprocess(
-    (v) => (v === '' ? 'system' : v),
-    z.enum(['light', 'dark', 'system']),
-  ),
+  theme: z.preprocess(v => (v === '' ? 'system' : v), z.enum(['light', 'dark', 'system'])),
   language: z.string(),
   timezone: z.string(),
-  accountabilityStyle: z.preprocess(
-    (v) => (v === '' ? 'balanced' : v),
-    z.enum(['gentle', 'balanced', 'strict']),
-  ),
+  accountabilityStyle: z.preprocess(v => (v === '' ? 'balanced' : v), z.enum(['gentle', 'balanced', 'strict'])),
   checkInTime: z.string(),
   onboardingCompleted: z.boolean(),
   userId: z.string(),
@@ -501,8 +513,14 @@ export const UnreadNotificationCountResponseSchema = z.object({
 // ============================================
 
 export const NotificationTypeSchema = z.enum([
-  'habit_reminder', 'goal_deadline', 'achievement', 'system',
-  'missed_check_in', 'weekly_review', 'encouragement', 'ai_feedback',
+  'habit_reminder',
+  'goal_deadline',
+  'achievement',
+  'system',
+  'missed_check_in',
+  'weekly_review',
+  'encouragement',
+  'ai_feedback',
 ]);
 
 export const NotificationSchema = z.object({
@@ -616,7 +634,14 @@ export const CategoriesResponseSchema = ApiResponseSchema(z.array(CategorySchema
 export const AccountabilityStyleSchema = z.enum(['gentle', 'balanced', 'strict']);
 export const PreferredToneSchema = z.enum(['supportive', 'direct', 'warm', 'practical', 'challenging']);
 export const DifficultyPreferenceSchema = z.enum(['easy', 'adaptive', 'ambitious']);
-export const AdjustmentTypeSchema = z.enum(['reduce_difficulty', 'increase_difficulty', 'change_time', 'clarify_plan', 'pause', 'keep_same']);
+export const AdjustmentTypeSchema = z.enum([
+  'reduce_difficulty',
+  'increase_difficulty',
+  'change_time',
+  'clarify_plan',
+  'pause',
+  'keep_same',
+]);
 export const SuggestionStatusSchema = z.enum(['pending', 'accepted', 'dismissed', 'applied']);
 export const SuggestionSourceSchema = z.enum(['check_in', 'weekly_review', 'assistant', 'pattern_analysis']);
 
@@ -624,18 +649,9 @@ export const CoachingProfileSchema = z.object({
   id: z.string(),
   userId: z.string(),
   // go-zero serializes unset optional enum fields as "" — coerce to the DB default.
-  accountabilityStyle: z.preprocess(
-    (v) => (v === '' ? 'balanced' : v),
-    AccountabilityStyleSchema,
-  ),
-  preferredTone: z.preprocess(
-    (v) => (v === '' ? 'supportive' : v),
-    PreferredToneSchema,
-  ),
-  difficultyPreference: z.preprocess(
-    (v) => (v === '' ? 'adaptive' : v),
-    DifficultyPreferenceSchema,
-  ),
+  accountabilityStyle: z.preprocess(v => (v === '' ? 'balanced' : v), AccountabilityStyleSchema),
+  preferredTone: z.preprocess(v => (v === '' ? 'supportive' : v), PreferredToneSchema),
+  difficultyPreference: z.preprocess(v => (v === '' ? 'adaptive' : v), DifficultyPreferenceSchema),
   primaryMotivation: z.string().optional(),
   commonBlockers: z.array(z.string()),
   coachingNotes: z.record(z.unknown()),
@@ -703,7 +719,9 @@ export const StreamAttachmentSchema = z.object({
 export const GeneratePersonalizedCoachingRequestSchema = z.object({
   userMessage: z.string().min(1).max(5000),
   context: z.string().optional(),
+  goalId: z.string().uuid().optional(),
   attachments: z.array(StreamAttachmentSchema).optional(),
+  regenerate: z.boolean().optional(),
 });
 
 export const GeneratePersonalizedCoachingResponseSchema = z.object({
@@ -713,7 +731,9 @@ export const GeneratePersonalizedCoachingResponseSchema = z.object({
 
 export const CoachingProfileResponseSchema = ApiResponseSchema(CoachingProfileSchema);
 export const PersonalizationContextResponseSchema = ApiResponseSchema(PersonalizationContextSchema);
-export const PlanAdjustmentSuggestionsResponseSchema = ApiResponseSchema(z.array(PlanAdjustmentSuggestionSchema)).extend({
+export const PlanAdjustmentSuggestionsResponseSchema = ApiResponseSchema(
+  z.array(PlanAdjustmentSuggestionSchema),
+).extend({
   total: z.number().int(),
 });
 export const PlanAdjustmentSuggestionResponseSchema = ApiResponseSchema(PlanAdjustmentSuggestionSchema);
@@ -744,7 +764,11 @@ export const GenerateOnboardingHabitsResponseSchema = ApiResponseSchema(z.array(
 // ============================================
 
 export const WeeklyReviewAdjustmentTypeSchema = z.enum([
-  'keep_same', 'reduce_difficulty', 'change_time', 'clarify_plan', 'pause_habit',
+  'keep_same',
+  'reduce_difficulty',
+  'change_time',
+  'clarify_plan',
+  'pause_habit',
 ]);
 
 export const WeeklyReviewHabitBreakdownSchema = z.object({
@@ -827,7 +851,10 @@ export const UserSubscriptionSchema = z.object({
   status: z.enum(['free', 'trialing', 'active', 'past_due', 'canceled', 'expired']),
   // Backend sends "" for unset optional fields (go-zero JSON marshaling);
   // accept empty string and treat it as absent via .transform.
-  billingInterval: z.union([z.enum(['monthly', 'annual']), z.literal('')]).optional().transform((v) => (v === '' ? undefined : v)),
+  billingInterval: z
+    .union([z.enum(['monthly', 'annual']), z.literal('')])
+    .optional()
+    .transform(v => (v === '' ? undefined : v)),
   currentPeriodStart: z.string().optional(),
   currentPeriodEnd: z.string().optional(),
   trialEnd: z.string().optional(),
@@ -862,17 +889,31 @@ export const BillingOverviewSchema = z.object({
 });
 
 export const UpgradeEventTypeSchema = z.enum([
-  'prompt_viewed', 'prompt_clicked', 'prompt_dismissed',
-  'checkout_started', 'checkout_completed', 'checkout_canceled',
+  'prompt_viewed',
+  'prompt_clicked',
+  'prompt_dismissed',
+  'checkout_started',
+  'checkout_completed',
+  'checkout_canceled',
 ]);
 
 export const UpgradeSurfaceSchema = z.enum([
-  'pricing_page', 'settings_billing', 'goal_create_limit', 'habit_create_limit',
-  'weekly_review_history', 'assistant_personalization', 'plan_adjustments', 'weekly_review_value_moment',
+  'pricing_page',
+  'settings_billing',
+  'goal_create_limit',
+  'habit_create_limit',
+  'weekly_review_history',
+  'assistant_personalization',
+  'plan_adjustments',
+  'weekly_review_value_moment',
 ]);
 
 export const UpgradeTriggerSchema = z.enum([
-  'goal_limit', 'habit_limit', 'weekly_history', 'personalized_ai', 'plan_adjustments',
+  'goal_limit',
+  'habit_limit',
+  'weekly_history',
+  'personalized_ai',
+  'plan_adjustments',
 ]);
 
 export const UpgradeEventRequestSchema = z.object({
@@ -942,7 +983,7 @@ export const TemplateCategorySchema = z.object({
 export const HabitTemplateItemSchema = z.object({
   id: z.string(),
   name: z.string(),
-  description: z.string().optional().default(""),
+  description: z.string().optional().default(''),
   category: TemplateCategorySchema.nullable().optional(),
   sortOrder: z.number().int().nonnegative(),
   createdAt: z.string(),
@@ -952,7 +993,7 @@ export const HabitTemplateItemSchema = z.object({
 export const GoalTemplateItemSchema = z.object({
   id: z.string(),
   title: z.string(),
-  description: z.string().optional().default(""),
+  description: z.string().optional().default(''),
   category: TemplateCategorySchema.nullable().optional(),
   sortOrder: z.number().int().nonnegative(),
   createdAt: z.string(),

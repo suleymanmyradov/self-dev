@@ -21,9 +21,9 @@ import { useUIStore } from "@/store/uiStore";
 import { useBillingUIStore } from "@/store/billing-ui";
 import { useShallow } from "zustand/react/shallow";
 
-const HabitFormDialog = dynamic(() => import("@/components/habits/habit-form-dialog").then((mod) => mod.HabitFormDialog));
-const GoalFormDialog = dynamic(() => import("@/components/goals/goal-form-dialog").then((mod) => mod.GoalFormDialog));
-const CheckInModal = dynamic(() => import("@/components/check-in/check-in-modal").then((mod) => mod.CheckInModal));
+const HabitFormDialog = dynamic(() => import("@/components/habits/habit-form-dialog").then(mod => mod.HabitFormDialog));
+const GoalFormDialog = dynamic(() => import("@/components/goals/goal-form-dialog").then(mod => mod.GoalFormDialog));
+const CheckInModal = dynamic(() => import("@/components/check-in/check-in-modal").then(mod => mod.CheckInModal));
 import {
   useHabits,
   useCreateHabit,
@@ -34,6 +34,7 @@ import {
   useConfirmDelete,
   useCreateCheckIn,
   useDeleteCheckIn,
+  useTodayCheckIns,
   useEntitlements,
   useTrackUpgradeEvent,
   useBillingOverview,
@@ -68,8 +69,8 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   const trackUpgradeEvent = useTrackUpgradeEvent();
 
   // Categories are fetched from the DB (source of truth) — not a hardcoded enum.
-  const { data: habitCategories = [] } = useCategories('habit');
-  const { data: goalCategories = [] } = useCategories('goal');
+  const { data: habitCategories = [] } = useCategories("habit");
+  const { data: goalCategories = [] } = useCategories("goal");
 
   // Mutations — habits
   const createHabitMutation = useCreateHabit();
@@ -90,61 +91,58 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   const logGoalValueMutation = useLogGoalValue();
 
   // Billing / upgrade UI from store
-  const { upgradePromptOpen, upgradeSurface, upgradeTrigger, showUpgradePrompt, dismissUpgradePrompt } =
-    useBillingUIStore(
-      useShallow((s) => ({
-        upgradePromptOpen: s.upgradePromptOpen,
-        upgradeSurface: s.upgradeSurface,
-        upgradeTrigger: s.upgradeTrigger,
-        showUpgradePrompt: s.showUpgradePrompt,
-        dismissUpgradePrompt: s.dismissUpgradePrompt,
-      }))
-    );
+  const { upgradePromptOpen, upgradeSurface, upgradeTrigger, showUpgradePrompt, dismissUpgradePrompt } = useBillingUIStore(
+    useShallow(s => ({
+      upgradePromptOpen: s.upgradePromptOpen,
+      upgradeSurface: s.upgradeSurface,
+      upgradeTrigger: s.upgradeTrigger,
+      showUpgradePrompt: s.showUpgradePrompt,
+      dismissUpgradePrompt: s.dismissUpgradePrompt,
+    })),
+  );
 
   // Check-in modal state from UI store (modal kept for retro check-ins from /progress)
   const { checkInModalOpen, checkInHabitId, openCheckInModal, closeCheckInModal } = useUIStore(
-    useShallow((s) => ({
+    useShallow(s => ({
       checkInModalOpen: s.checkInModalOpen,
       checkInHabitId: s.checkInHabitId,
       openCheckInModal: s.openCheckInModal,
       closeCheckInModal: s.closeCheckInModal,
-    }))
+    })),
   );
-  const checkInHabit = habits.find((h) => h.id === checkInHabitId);
+  const checkInHabit = habits.find(h => h.id === checkInHabitId);
+  // Fetch today's check-ins so the modal can pre-fill when reopening a habit
+  // that was already checked in (preserves saved mood/energy/note), and so
+  // habit rows can show a note indicator.
+  const { data: todayCheckIns = [] } = useTodayCheckIns();
+  const existingCheckIn = checkInHabitId ? todayCheckIns.find(ci => ci.habitId === checkInHabitId) : undefined;
+  const noteHabitIds = useMemo(() => new Set(todayCheckIns.filter(ci => ci.note).map(ci => ci.habitId)), [todayCheckIns]);
 
   // URL params: sort is persisted in the URL (?sort=streak|name) so it
   // survives refresh and can be shared. The article pre-fill params are
   // consumed once and then stripped.
   const searchParams = useSearchParams();
   const router = useRouter();
-  const urlSort = searchParams?.get('sort');
-  const initialSortBy: 'streak' | 'name' = urlSort === 'name' ? 'name' : 'streak';
+  const urlSort = searchParams?.get("sort");
+  const initialSortBy: "streak" | "name" = urlSort === "name" ? "name" : "streak";
 
-  const {
-    filterAndSort,
-    statusFilter,
-    setStatusFilter,
-    categoryFilter,
-    setCategoryFilter,
-    sortBy,
-    setSortBy,
-  } = useHabitsFilters(habits, initialSortBy);
+  const { filterAndSort, statusFilter, setStatusFilter, categoryFilter, setCategoryFilter, sortBy, setSortBy } = useHabitsFilters(habits, initialSortBy);
 
   // Sync sort changes back to the URL (replace, not push, so it doesn't
   // pollute browser history with every sort toggle). Guard against loops:
   // only write when sortBy actually differs from what's already in the URL.
   useEffect(() => {
-    const currentUrlSort = searchParams?.get('sort');
-    const urlValue = currentUrlSort === 'name' ? 'name' : 'streak';
+    const currentUrlSort = searchParams?.get("sort");
+    const urlValue = currentUrlSort === "name" ? "name" : "streak";
     if (sortBy === urlValue) return; // already in sync — don't write
-    const params = new URLSearchParams(searchParams?.toString() ?? '');
-    if (sortBy === 'streak') {
-      params.delete('sort');
+    const params = new URLSearchParams(searchParams?.toString() ?? "");
+    if (sortBy === "streak") {
+      params.delete("sort");
     } else {
-      params.set('sort', sortBy);
+      params.set("sort", sortBy);
     }
     const qs = params.toString();
-    router.replace(qs ? `/plan?${qs}` : '/plan', { scroll: false });
+    router.replace(qs ? `/plan?${qs}` : "/plan", { scroll: false });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [sortBy, router]);
 
@@ -157,15 +155,15 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   // with the article data and open the dialog. The query params are then
   // stripped from the URL so a refresh doesn't re-open the dialog.
   useEffect(() => {
-    if (searchParams?.get('newHabitFromArticle') !== '1') return;
+    if (searchParams?.get("newHabitFromArticle") !== "1") return;
     createForm.setForm({
-      name: searchParams.get('name') ?? '',
-      description: searchParams.get('description') ?? '',
-      category: searchParams.get('category') ?? '',
+      name: searchParams.get("name") ?? "",
+      description: searchParams.get("description") ?? "",
+      category: searchParams.get("category") ?? "",
     });
     createForm.setOpen(true);
     // Clear the query params so the dialog doesn't re-open on refresh/back.
-    router.replace('/plan');
+    router.replace("/plan");
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searchParams]);
 
@@ -189,7 +187,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
 
   // Archive dialog state (opened from the upgrade prompt's "Archive" button)
   const [archiveOpen, setArchiveOpen] = useState(false);
-  const [archiveMode, setArchiveMode] = useState<'habit' | 'goal'>('habit');
+  const [archiveMode, setArchiveMode] = useState<"habit" | "goal">("habit");
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
 
   // Goal delete confirmation
@@ -204,21 +202,30 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   };
 
   // Check-in handler — one-tap check-in, no modal
-  const handleCheckIn = useCallback((habit: Habit) => {
-    checkInMutation.mutate({ habitId: habit.id, status: 'completed' });
-  }, [checkInMutation]);
+  const handleCheckIn = useCallback(
+    (habit: Habit) => {
+      checkInMutation.mutate({ habitId: habit.id, status: "completed" });
+    },
+    [checkInMutation],
+  );
 
   // Undo check-in — deletes today's check-in for the habit
-  const handleUndoCheckIn = useCallback((habit: Habit) => {
-    undoCheckInMutation.mutate(habit.id);
-  }, [undoCheckInMutation]);
+  const handleUndoCheckIn = useCallback(
+    (habit: Habit) => {
+      undoCheckInMutation.mutate(habit.id);
+    },
+    [undoCheckInMutation],
+  );
 
   // Open the detailed check-in modal (mood/energy/blocker/note) from the
   // habit row dropdown. One-tap stays the default; this is the optional
   // "log details" path.
-  const handleLogDetails = useCallback((habit: Habit) => {
-    openCheckInModal(habit.id);
-  }, [openCheckInModal]);
+  const handleLogDetails = useCallback(
+    (habit: Habit) => {
+      openCheckInModal(habit.id);
+    },
+    [openCheckInModal],
+  );
 
   const handleSubmitCheckIn = (data: CheckInSubmitData) => {
     checkInMutation.mutate(data, {
@@ -226,9 +233,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         closeCheckInModal();
       },
       onError: (error: unknown) => {
-        const errorMessage = error instanceof Error && 'response' in error
-          ? (error as { response?: { data?: { message?: string } } }).response?.data?.message
-          : "Failed to submit check-in";
+        const errorMessage = error instanceof Error && "response" in error ? (error as { response?: { data?: { message?: string } } }).response?.data?.message : "Failed to submit check-in";
         toast.error(errorMessage);
       },
     });
@@ -237,9 +242,17 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   // Goal handlers
   const handleCreateGoal = useCallback(
     (validated: {
-      title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[];
-      measurement?: GoalMeasurement; startValue?: number; currentValue?: number;
-      targetValue?: number; unit?: string; milestones?: { id?: string; title: string }[];
+      title: string;
+      description: string;
+      category: string;
+      dueDate?: string;
+      relatedHabitIds: string[];
+      measurement?: GoalMeasurement;
+      startValue?: number;
+      currentValue?: number;
+      targetValue?: number;
+      unit?: string;
+      milestones?: { id?: string; title: string }[];
     }) => {
       if (entitlements && !entitlements.canCreateGoal) {
         setGoalCreateOpen(false);
@@ -254,23 +267,20 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
       }
       // Create uses milestoneTitles (no IDs yet — milestones don't exist).
       const { milestones, ...rest } = validated;
-      createGoalMutation.mutate(
-        { ...rest, milestoneTitles: milestones?.map((m) => m.title) } as CreateGoalRequest,
-        {
-          onSuccess: () => {
+      createGoalMutation.mutate({ ...rest, milestoneTitles: milestones?.map(m => m.title) } as CreateGoalRequest, {
+        onSuccess: () => {
+          setGoalCreateOpen(false);
+        },
+        onError: (error: unknown) => {
+          const err = error as { data?: { code?: string } };
+          if (err?.data?.code === "plan_limit_reached") {
             setGoalCreateOpen(false);
-          },
-          onError: (error: unknown) => {
-            const err = error as { data?: { code?: string } };
-            if (err?.data?.code === "plan_limit_reached") {
-              setGoalCreateOpen(false);
-              showUpgradePrompt("goal_create_limit", "goal_limit");
-            }
-          },
-        }
-      );
+            showUpgradePrompt("goal_create_limit", "goal_limit");
+          }
+        },
+      });
     },
-    [entitlements, showUpgradePrompt, trackUpgradeEvent, createGoalMutation, setGoalCreateOpen]
+    [entitlements, showUpgradePrompt, trackUpgradeEvent, createGoalMutation, setGoalCreateOpen],
   );
 
   const openEditGoal = useCallback((goal: Goal) => {
@@ -278,22 +288,35 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
     setGoalEditOpen(true);
   }, []);
 
+  const handleAnalyzeGoal = useCallback(
+    (goal: Goal) => {
+      const params = new URLSearchParams({ goalId: goal.id, goalTitle: goal.title });
+      router.push(`/coach?${params.toString()}`);
+    },
+    [router],
+  );
+
   const handleSaveEditGoal = useCallback(
     (validated: {
-      title: string; description: string; category: string; dueDate?: string; relatedHabitIds: string[];
-      measurement?: GoalMeasurement; startValue?: number; currentValue?: number;
-      targetValue?: number; unit?: string; milestones?: { id?: string; title: string }[];
+      title: string;
+      description: string;
+      category: string;
+      dueDate?: string;
+      relatedHabitIds: string[];
+      measurement?: GoalMeasurement;
+      startValue?: number;
+      currentValue?: number;
+      targetValue?: number;
+      unit?: string;
+      milestones?: { id?: string; title: string }[];
     }) => {
       if (!editingGoal) return;
       // Pass milestones straight through — the form state is a single list of
       // {id?, title} objects, so there's no zipping or index alignment to get
       // wrong. The backend reconciles by ID (preserving done_at on rename).
-      updateGoalMutation.mutate(
-        { id: editingGoal.id, data: validated as UpdateGoalRequest },
-        { onSuccess: () => setGoalEditOpen(false) }
-      );
+      updateGoalMutation.mutate({ id: editingGoal.id, data: validated as UpdateGoalRequest }, { onSuccess: () => setGoalEditOpen(false) });
     },
-    [editingGoal, updateGoalMutation]
+    [editingGoal, updateGoalMutation],
   );
 
   const handleProgressChange = useCallback(
@@ -301,28 +324,43 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
       if (!editingGoal) return;
       updateGoalProgressMutation.mutate({ id: editingGoal.id, progress });
     },
-    [editingGoal, updateGoalProgressMutation]
+    [editingGoal, updateGoalProgressMutation],
   );
 
-  const handleToggleGoal = useCallback((id: string) => {
-    toggleGoalMutation.mutate(id);
-  }, [toggleGoalMutation]);
+  const handleToggleGoal = useCallback(
+    (id: string) => {
+      toggleGoalMutation.mutate(id);
+    },
+    [toggleGoalMutation],
+  );
 
-  const handleToggleMilestone = useCallback((goalId: string, milestoneId: string) => {
-    toggleMilestoneMutation.mutate({ id: goalId, milestoneId });
-  }, [toggleMilestoneMutation]);
+  const handleToggleMilestone = useCallback(
+    (goalId: string, milestoneId: string) => {
+      toggleMilestoneMutation.mutate({ id: goalId, milestoneId });
+    },
+    [toggleMilestoneMutation],
+  );
 
-  const handleAddMilestone = useCallback((goalId: string, title: string) => {
-    createMilestoneMutation.mutate({ id: goalId, title });
-  }, [createMilestoneMutation]);
+  const handleAddMilestone = useCallback(
+    (goalId: string, title: string) => {
+      createMilestoneMutation.mutate({ id: goalId, title });
+    },
+    [createMilestoneMutation],
+  );
 
-  const handleDeleteMilestone = useCallback((goalId: string, milestoneId: string) => {
-    deleteMilestoneMutation.mutate({ id: goalId, milestoneId });
-  }, [deleteMilestoneMutation]);
+  const handleDeleteMilestone = useCallback(
+    (goalId: string, milestoneId: string) => {
+      deleteMilestoneMutation.mutate({ id: goalId, milestoneId });
+    },
+    [deleteMilestoneMutation],
+  );
 
-  const handleLogValue = useCallback((goalId: string, value: number) => {
-    logGoalValueMutation.mutate({ id: goalId, value });
-  }, [logGoalValueMutation]);
+  const handleLogValue = useCallback(
+    (goalId: string, value: number) => {
+      logGoalValueMutation.mutate({ id: goalId, value });
+    },
+    [logGoalValueMutation],
+  );
 
   // Group habits by their parent goal.
   // Goals link to habits via `relatedHabitIds`; habits do not have a `goalId` field.
@@ -336,15 +374,13 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         byGoal.set(goal.id, []);
         continue;
       }
-      const byId = new Map(habits.map((h) => [h.id, h]));
-      const linked = ids
-        .map((id) => byId.get(id))
-        .filter((h): h is Habit => h !== undefined);
+      const byId = new Map(habits.map(h => [h.id, h]));
+      const linked = ids.map(id => byId.get(id)).filter((h): h is Habit => h !== undefined);
       byGoal.set(goal.id, linked);
-      linked.forEach((h) => assignedIds.add(h.id));
+      linked.forEach(h => assignedIds.add(h.id));
     }
 
-    const unassigned = habits.filter((h) => !assignedIds.has(h.id));
+    const unassigned = habits.filter(h => !assignedIds.has(h.id));
     return { habitsByGoalId: byGoal, unassignedHabits: unassigned };
   }, [habits, goals]);
 
@@ -356,12 +392,12 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
   const atGoalLimit = !isPro && goalsUsed >= goalLimit;
 
   // Today's overall habit completion percentage (across all habits).
-  const todayCompleted = habits.filter((h) => h.completed).length;
+  const todayCompleted = habits.filter(h => h.completed).length;
   const todayPct = habits.length > 0 ? Math.round((todayCompleted / habits.length) * 100) : 0;
 
   const statusPills: { label: string; value: StatusFilter }[] = [
-    { label: 'All', value: 'all' },
-    { label: 'Active', value: 'active' },
+    { label: "All", value: "all" },
+    { label: "Active", value: "active" },
   ];
 
   return (
@@ -374,9 +410,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
               <div>
                 <h1 className="font-display text-3xl font-bold tracking-tight">Plan</h1>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {habits.length > 0
-                    ? `${todayCompleted} of ${habits.length} habits done today · ${todayPct}%`
-                    : 'Three goals, nine habits. A habit without a goal is just a chore.'}
+                  {habits.length > 0 ? `${todayCompleted} of ${habits.length} habits done today · ${todayPct}%` : "Three goals, nine habits. A habit without a goal is just a chore."}
                 </p>
               </div>
               <div className="flex items-center gap-2 shrink-0">
@@ -394,16 +428,14 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
           <section className="mb-6 flex flex-wrap items-center gap-3 text-sm">
             {/* Status pill chips */}
             <div className="flex items-center gap-1.5">
-              {statusPills.map((pill) => (
+              {statusPills.map(pill => (
                 <button
                   key={pill.value}
                   type="button"
                   onClick={() => setStatusFilter(pill.value)}
                   className={cn(
                     "rounded-full px-3 py-1.5 text-xs font-medium transition-colors",
-                    statusFilter === pill.value
-                      ? "bg-foreground text-background"
-                      : "text-muted-foreground hover:text-foreground hover:bg-muted"
+                    statusFilter === pill.value ? "bg-foreground text-background" : "text-muted-foreground hover:text-foreground hover:bg-muted",
                   )}
                 >
                   {pill.label}
@@ -417,22 +449,29 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
             {/* Category select */}
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
               <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 border-border text-xs">
-                    <span className="text-muted-foreground">Category:</span>
-                    <SelectValue />
+                <span className="text-muted-foreground">Category:</span>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">all</SelectItem>
-                {habitCategories.map((c) => (
-                  <SelectItem key={c.slug} value={c.slug} className="capitalize">{c.name}</SelectItem>
+                {habitCategories.map(c => (
+                  <SelectItem key={c.slug} value={c.slug} className="capitalize">
+                    {c.name}
+                  </SelectItem>
                 ))}
               </SelectContent>
             </Select>
 
             {/* Sort select */}
-            <Select value={sortBy} onValueChange={(v) => { if (v === 'streak' || v === 'name') setSortBy(v); }}>
+            <Select
+              value={sortBy}
+              onValueChange={v => {
+                if (v === "streak" || v === "name") setSortBy(v);
+              }}
+            >
               <SelectTrigger size="sm" className="h-8 w-auto gap-1.5 border-border text-xs">
-                    <span className="text-muted-foreground">Sort:</span>
-                    <SelectValue />
+                <span className="text-muted-foreground">Sort:</span>
+                <SelectValue />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="streak">streak</SelectItem>
@@ -443,7 +482,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
 
           {/* Goal cards with nested habits */}
           <section className="space-y-4">
-            {goals.map((goal) => {
+            {goals.map(goal => {
               const goalHabits = habitsByGoalId.get(goal.id) ?? [];
               const visibleGoalHabits = filterAndSort(goalHabits);
 
@@ -463,11 +502,13 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
                   onEditGoal={openEditGoal}
                   onDeleteGoal={goalDeleteConfirm.confirmDelete}
                   onToggleGoal={handleToggleGoal}
+                  onAnalyzeGoal={handleAnalyzeGoal}
                   onAddHabit={() => createForm.setOpen(true)}
-                  onToggleMilestone={(milestoneId) => handleToggleMilestone(goal.id, milestoneId)}
-                  onAddMilestone={(title) => handleAddMilestone(goal.id, title)}
-                  onDeleteMilestone={(milestoneId) => handleDeleteMilestone(goal.id, milestoneId)}
-                  onLogValue={(value) => handleLogValue(goal.id, value)}
+                  onToggleMilestone={milestoneId => handleToggleMilestone(goal.id, milestoneId)}
+                  onAddMilestone={title => handleAddMilestone(goal.id, title)}
+                  onDeleteMilestone={milestoneId => handleDeleteMilestone(goal.id, milestoneId)}
+                  onLogValue={value => handleLogValue(goal.id, value)}
+                  noteHabitIds={noteHabitIds}
                 />
               );
             })}
@@ -479,14 +520,12 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
               <div className="rounded-xl border border-border bg-card p-5">
                 <h2 className="font-display text-lg font-semibold">Habits without a goal</h2>
                 <p className="mt-1 text-sm text-muted-foreground">
-                  {visibleUnassigned.map((h) => h.name).join(' · ')}
-                  {visibleUnassigned.length > 0 && ' — '}
-                  {visibleUnassigned.length === 1
-                    ? 'one habit with no goal behind it.'
-                    : `${visibleUnassigned.length} habits with no goal behind them.`}
+                  {visibleUnassigned.map(h => h.name).join(" · ")}
+                  {visibleUnassigned.length > 0 && " — "}
+                  {visibleUnassigned.length === 1 ? "one habit with no goal behind it." : `${visibleUnassigned.length} habits with no goal behind them.`}
                 </p>
                 <div className="mt-4 divide-y divide-border border-t border-border">
-                  {visibleUnassigned.map((h) => (
+                  {visibleUnassigned.map(h => (
                     <HabitRow
                       key={h.id}
                       habit={h}
@@ -495,6 +534,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
                       onEdit={editForm.openEdit}
                       onDelete={habitDeleteConfirm.confirmDelete}
                       onLogDetails={handleLogDetails}
+                      hasNote={noteHabitIds.has(h.id)}
                       isPending={checkInMutation.isPending}
                       isUndoPending={undoCheckInMutation.isPending}
                     />
@@ -509,7 +549,9 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
             <section className="mt-4">
               <div className="flex items-center justify-between rounded-xl border border-dashed border-border p-5">
                 <div>
-                  <p className="text-sm font-medium">Free plan · {goalsUsed} of {goalLimit} goals used</p>
+                  <p className="text-sm font-medium">
+                    Free plan · {goalsUsed} of {goalLimit} goals used
+                  </p>
                   <p className="mt-0.5 text-xs text-muted-foreground">Upgrade to Pro for unlimited goals.</p>
                 </div>
                 <Button size="sm" variant="outline" onClick={() => showUpgradePrompt("goal_create_limit", "goal_limit")}>
@@ -523,9 +565,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
           {goals.length === 0 && habits.length === 0 && (
             <div className="flex flex-col items-center justify-center py-16 text-center">
               <h3 className="font-display text-lg font-semibold">Nothing planned yet</h3>
-              <p className="mt-1 max-w-sm text-sm text-muted-foreground">
-                Create your first goal and add habits to it. A habit without a goal is just a chore.
-              </p>
+              <p className="mt-1 max-w-sm text-sm text-muted-foreground">Create your first goal and add habits to it. A habit without a goal is just a chore.</p>
               <div className="mt-4 flex items-center gap-2">
                 <Button variant="outline" size="sm" onClick={() => createForm.setOpen(true)}>
                   <Plus className="mr-2 h-4 w-4" /> New habit
@@ -545,7 +585,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
             isPro={isPro}
             onDismiss={dismissUpgradePrompt}
             onArchive={() => {
-              setArchiveMode(upgradeTrigger === 'goal_limit' ? 'goal' : 'habit');
+              setArchiveMode(upgradeTrigger === "goal_limit" ? "goal" : "habit");
               setArchiveOpen(true);
               dismissUpgradePrompt();
             }}
@@ -559,7 +599,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         title="New habit"
         onOpenChange={createForm.setOpen}
         initialValues={createForm.form}
-        onSubmit={(vals) => {
+        onSubmit={vals => {
           // Check entitlement before creating
           if (entitlements && !entitlements.canCreateHabit) {
             showUpgradePrompt("habit_create_limit", "habit_limit");
@@ -584,7 +624,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
                   showUpgradePrompt("habit_create_limit", "habit_limit");
                 }
               },
-            }
+            },
           );
           createForm.reset();
         }}
@@ -597,7 +637,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         title="Edit habit"
         onOpenChange={editForm.setOpen}
         initialValues={editForm.form}
-        onSubmit={(vals) => {
+        onSubmit={vals => {
           if (editForm.editingId) {
             updateHabitMutation.mutate({
               id: editForm.editingId,
@@ -614,14 +654,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
       />
 
       {/* Create Goal Dialog */}
-      <GoalFormDialog
-        open={goalCreateOpen}
-        onOpenChange={setGoalCreateOpen}
-        mode="create"
-        categories={goalCategories}
-        habits={habits}
-        onSubmit={handleCreateGoal}
-      />
+      <GoalFormDialog open={goalCreateOpen} onOpenChange={setGoalCreateOpen} mode="create" categories={goalCategories} habits={habits} onSubmit={handleCreateGoal} />
 
       {/* Edit Goal Dialog */}
       <GoalFormDialog
@@ -630,20 +663,28 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         mode="edit"
         categories={goalCategories}
         habits={habits}
-        initialValues={editingGoal ? {
-          title: editingGoal.title,
-          description: editingGoal.description,
-          category: editingGoal.category,
-          dueDate: editingGoal.dueDate ? editingGoal.dueDate.split('T')[0] : undefined,
-          progress: editingGoal.progress,
-          relatedHabitIds: editingGoal.relatedHabitIds ?? [],
-          measurement: editingGoal.measurement ?? "manual",
-          startValue: editingGoal.startValue ?? 0,
-          currentValue: editingGoal.currentValue ?? 0,
-          targetValue: editingGoal.targetValue ?? 0,
-          unit: editingGoal.unit ?? "",
-          milestones: editingGoal.milestones?.map((m) => ({ id: m.id, title: m.title })) ?? [],
-        } : undefined}
+        initialValues={
+          editingGoal
+            ? {
+                title: editingGoal.title,
+                description: editingGoal.description,
+                category: editingGoal.category,
+                dueDate: editingGoal.dueDate ? editingGoal.dueDate.split("T")[0] : undefined,
+                progress: editingGoal.progress,
+                relatedHabitIds: editingGoal.relatedHabitIds ?? [],
+                measurement: editingGoal.measurement ?? "manual",
+                startValue: editingGoal.startValue ?? 0,
+                currentValue: editingGoal.currentValue ?? 0,
+                targetValue: editingGoal.targetValue ?? 0,
+                unit: editingGoal.unit ?? "",
+                milestones:
+                  editingGoal.milestones?.map(m => ({
+                    id: m.id,
+                    title: m.title,
+                  })) ?? [],
+              }
+            : undefined
+        }
         onProgressChange={handleProgressChange}
         onSubmit={handleSaveEditGoal}
       />
@@ -653,13 +694,15 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete habit</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this habit? This action cannot be undone.
-            </DialogDescription>
+            <DialogDescription>Are you sure you want to delete this habit? This action cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => habitDeleteConfirm.setOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleHabitDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => habitDeleteConfirm.setOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleHabitDelete}>
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -669,13 +712,15 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         <DialogContent className="sm:max-w-md">
           <DialogHeader>
             <DialogTitle>Delete goal</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to delete this goal? This action cannot be undone.
-            </DialogDescription>
+            <DialogDescription>Are you sure you want to delete this goal? This action cannot be undone.</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={() => goalDeleteConfirm.setOpen(false)}>Cancel</Button>
-            <Button variant="destructive" onClick={handleGoalDelete}>Delete</Button>
+            <Button variant="outline" onClick={() => goalDeleteConfirm.setOpen(false)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" onClick={handleGoalDelete}>
+              Delete
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -685,6 +730,7 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         open={checkInModalOpen}
         onOpenChange={closeCheckInModal}
         habit={checkInHabit}
+        existingCheckIn={existingCheckIn}
         onSubmit={handleSubmitCheckIn}
         isSubmitting={checkInMutation.isPending}
       />
@@ -696,8 +742,8 @@ export function HabitsClient({ habitsPromise, goalsPromise }: HabitsClientProps)
         mode={archiveMode}
         habits={habits}
         goals={goals}
-        onDeleteHabit={(id) => deleteHabitMutation.mutate(id)}
-        onDeleteGoal={(id) => deleteGoalMutation.mutate(id)}
+        onDeleteHabit={id => deleteHabitMutation.mutate(id)}
+        onDeleteGoal={id => deleteGoalMutation.mutate(id)}
       />
     </div>
   );

@@ -16,6 +16,12 @@ const Assistant = dynamic(
     },
 );
 
-export function AssistantLoader() {
-    return <Assistant />;
+export function AssistantLoader({
+    initialGoalId,
+    initialGoalTitle,
+}: {
+    initialGoalId?: string;
+    initialGoalTitle?: string;
+}) {
+    return <Assistant initialGoalId={initialGoalId} initialGoalTitle={initialGoalTitle} />;
 }

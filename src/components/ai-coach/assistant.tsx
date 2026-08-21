@@ -1,6 +1,6 @@
 'use client';
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Thread } from '@/components/ai-conversation/thread';
 import { ChatProvider } from '@/components/ai-conversation/chat-context';
@@ -26,7 +26,15 @@ import {
 } from '@/hooks';
 import { getMessages } from '@/api/conversations';
 
-export const Assistant = ({ conversationId }: { conversationId?: string }) => {
+export const Assistant = ({
+    conversationId,
+    initialGoalId,
+    initialGoalTitle,
+}: {
+    conversationId?: string;
+    initialGoalId?: string;
+    initialGoalTitle?: string;
+}) => {
     const router = useRouter();
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
@@ -45,7 +53,22 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
     const unarchiveMutation = useUnarchiveConversation();
     const deleteMutation = useDeleteConversation();
     const conversationState = useConversationMessages(conversationId);
-    const { setMessages, currentConversationId, setCurrentConversationId } = conversationState;
+    const { setMessages, currentConversationId, setCurrentConversationId, onNew, onReset } =
+        conversationState;
+    const initialGoalStartedRef = useRef(false);
+
+    useEffect(() => {
+        if (conversationId || !initialGoalId || initialGoalStartedRef.current) return;
+        initialGoalStartedRef.current = true;
+        const goalTitle = initialGoalTitle?.trim() || 'this goal';
+        void onNew(
+            `Analyze my progress for goal "${goalTitle}" (Goal ID: ${initialGoalId}). Review its linked habits and recent check-in notes, identify patterns, and suggest the most useful next step.`,
+            {
+                displayText: `Analyze my progress for ${goalTitle}`,
+                goalId: initialGoalId,
+            },
+        );
+    }, [conversationId, initialGoalId, initialGoalTitle, onNew]);
 
     const filteredConversations = useMemo(() => {
         const all = conversations ?? [];
@@ -90,7 +113,10 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                     searchQuery={searchQuery}
                     onSearchChange={setSearchQuery}
                     activeConversationId={currentConversationId}
-                    onNewChat={() => router.push('/coach')}
+                    onNewChat={() => {
+                        onReset();
+                        router.push('/coach');
+                    }}
                     onSelectConversation={id => router.push(`/coach/${id}`)}
                     onArchive={id => archiveMutation.mutate(id)}
                     onUnarchive={id => unarchiveMutation.mutate(id)}
@@ -151,8 +177,8 @@ export const Assistant = ({ conversationId }: { conversationId?: string }) => {
                     <DialogHeader>
                         <DialogTitle>Delete conversation?</DialogTitle>
                         <DialogDescription>
-                            This permanently removes the conversation and all its messages.
-                            This action cannot be undone.
+                            This permanently removes the conversation and all its messages. This
+                            action cannot be undone.
                         </DialogDescription>
                     </DialogHeader>
                     <DialogFooter>

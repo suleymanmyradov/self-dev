@@ -3,7 +3,6 @@
 import { useState, type FC } from 'react';
 import {
     CheckIcon,
-    ChevronDownIcon,
     CopyIcon,
     Loader2Icon,
     PencilIcon,
@@ -26,7 +25,7 @@ interface AssistantMessageProps {
 
 export const AssistantMessage: FC<AssistantMessageProps> = ({ message, isLast }) => {
     const { thinkingMessage } = useChatThread();
-    const isThinking = message.status === 'running' && !message.content && !message.reasoning;
+    const isThinking = message.status === 'running' && !message.content;
 
     return (
         <div
@@ -37,7 +36,6 @@ export const AssistantMessage: FC<AssistantMessageProps> = ({ message, isLast })
             data-role="assistant"
         >
             <div className="aui-assistant-message-content card-elevated mx-1 rounded-xl px-5 py-4 text-sm leading-6 break-words text-foreground md:mx-2">
-                {message.reasoning && <ReasoningSection reasoning={message.reasoning} />}
                 {message.content ? (
                     <MarkdownText text={message.content} />
                 ) : (
@@ -73,20 +71,6 @@ export const AssistantMessage: FC<AssistantMessageProps> = ({ message, isLast })
                 </div>
             )}
         </div>
-    );
-};
-
-const ReasoningSection: FC<{ reasoning: string }> = ({ reasoning }) => {
-    return (
-        <details className="aui-reasoning-root group/reasoning mb-3 rounded-lg border border-border/40 bg-muted/30">
-            <summary className="aui-reasoning-trigger flex cursor-pointer list-none items-center gap-2 px-3 py-2 text-xs font-medium text-muted-foreground transition-colors hover:text-foreground [&::-webkit-details-marker]:hidden">
-                <ChevronDownIcon className="aui-reasoning-chevron size-3.5 shrink-0 -rotate-90 transition-transform group-open/reasoning:rotate-0" />
-                <span>Thinking</span>
-            </summary>
-            <div className="aui-reasoning-content whitespace-pre-wrap px-3 pb-3 text-xs leading-relaxed text-muted-foreground">
-                {reasoning}
-            </div>
-        </details>
     );
 };
 

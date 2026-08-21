@@ -187,12 +187,13 @@ export function ChatProvider({
                 .reverse()
                 .find(message => message.role === 'user');
             if (!previousUserMessage) return;
-            await submitMessage(
-                previousUserMessage.content,
-                previousUserMessage.attachments ?? [],
-            );
+            await onNew(previousUserMessage.content, {
+                displayText: previousUserMessage.content,
+                attachments: previousUserMessage.attachments,
+                regenerateMessageId: messageId,
+            });
         },
-        [isRunning, messages, submitMessage],
+        [isRunning, messages, onNew],
     );
 
     const startEditing = useCallback((message: CoachingMessage) => {

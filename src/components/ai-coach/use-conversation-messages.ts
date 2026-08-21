@@ -5,13 +5,15 @@ import { useQueryClient } from '@tanstack/react-query';
 import { streamPersonalizedCoaching, type CoachingProposal } from '@/api/personalization';
 import { startConversation, getMessages } from '@/api/conversations';
 import type { StreamAttachment } from '@/api/types';
-import { prepareAttachmentForApi, type ChatAttachment } from '@/components/ai-coach/attachment-adapter';
+import {
+    prepareAttachmentForApi,
+    type ChatAttachment,
+} from '@/components/ai-coach/attachment-adapter';
 
 export interface CoachingMessage {
     id: string;
     role: 'user' | 'assistant';
     content: string;
-    reasoning?: string;
     status: 'complete' | 'running';
     error?: string;
     attachments?: ChatAttachment[];
@@ -21,7 +23,9 @@ export interface CoachingMessage {
 export interface SendMessageOptions {
     /** Text shown in the user bubble. Defaults to the streamed `text`. */
     displayText?: string;
+    goalId?: string;
     attachments?: ChatAttachment[];
+    regenerateMessageId?: string;
 }
 
 let messageCounter = 0;
@@ -38,16 +42,18 @@ export function useConversationMessages(conversationId?: string) {
         conversationId,
     );
     const abortRef = useRef<AbortController | null>(null);
+    const stateVersionRef = useRef(0);
 
     // Load conversation history when a conversationId is provided
     useEffect(() => {
         if (!conversationId) return;
 
+        const loadVersion = ++stateVersionRef.current;
         let cancelled = false;
         (async () => {
             try {
                 const resp = await getMessages(conversationId);
-                if (cancelled) return;
+                if (cancelled || loadVersion !== stateVersionRef.current) return;
                 const loaded: CoachingMessage[] = resp.data.map(m => ({
                     id: m.id,
                     role: m.role,
@@ -68,6 +74,7 @@ export function useConversationMessages(conversationId?: string) {
 
     const onNew = useCallback(
         async (text: string, options?: SendMessageOptions) => {
+            const requestVersion = ++stateVersionRef.current;
             const userText = options?.displayText ?? text;
             const userMsg: CoachingMessage = {
                 id: generateId(),
@@ -81,11 +88,17 @@ export function useConversationMessages(conversationId?: string) {
                 id: assistantId,
                 role: 'assistant',
                 content: '',
-                reasoning: '',
                 status: 'running',
             };
 
-            setMessages(prev => [...prev, userMsg, assistantMsg]);
+            setMessages(prev => {
+                if (!options?.regenerateMessageId) return [...prev, userMsg, assistantMsg];
+                const assistantIndex = prev.findIndex(
+                    message => message.id === options.regenerateMessageId,
+                );
+                if (assistantIndex < 0) return prev;
+                return [...prev.slice(0, assistantIndex), assistantMsg];
+            });
             setIsRunning(true);
             setThinkingMessage(null);
 
@@ -98,6 +111,7 @@ export function useConversationMessages(conversationId?: string) {
                         type: 'coach',
                         title: userText || text,
                     });
+                    if (requestVersion !== stateVersionRef.current) return;
                     convId = resp.data.id;
                     createdConversationId = convId;
                     setCurrentConversationId(convId);
@@ -109,6 +123,8 @@ export function useConversationMessages(conversationId?: string) {
                 }
             }
 
+            if (requestVersion !== stateVersionRef.current) return;
+
             const apiAttachments: StreamAttachment[] | undefined =
                 options?.attachments && options.attachments.length > 0
                     ? (await Promise.all(options.attachments.map(prepareAttachmentForApi))).filter(
@@ -116,36 +132,48 @@ export function useConversationMessages(conversationId?: string) {
                       )
                     : undefined;
 
+            if (requestVersion !== stateVersionRef.current) return;
+
             abortRef.current = streamPersonalizedCoaching(
                 {
                     userMessage: text,
                     conversationId: convId,
                     attachments: apiAttachments,
+                    ...(options?.goalId ? { goalId: options.goalId } : {}),
+                    ...(options?.regenerateMessageId ? { regenerate: true } : {}),
                 },
                 {
                     onThinking: message => {
+                        if (requestVersion !== stateVersionRef.current) return;
                         setThinkingMessage(message);
                     },
                     onProposal: proposal => {
+                        if (requestVersion !== stateVersionRef.current) return;
                         setMessages(prev =>
-                            prev.map(m =>
-                                m.id === assistantId
-                                    ? { ...m, proposals: [...(m.proposals ?? []), proposal] }
-                                    : m,
-                            ),
+                            prev.map(m => {
+                                if (m.id !== assistantId) return m;
+                                const proposals = m.proposals ?? [];
+                                const existingIndex = proposals.findIndex(
+                                    item => item.id === proposal.id,
+                                );
+                                if (existingIndex < 0) {
+                                    return { ...m, proposals: [...proposals, proposal] };
+                                }
+                                return {
+                                    ...m,
+                                    proposals: proposals.map((item, index) =>
+                                        index === existingIndex ? proposal : item,
+                                    ),
+                                };
+                            }),
                         );
                     },
-                    onReasoning: chunk => {
+                    onReasoning: () => {
+                        if (requestVersion !== stateVersionRef.current) return;
                         setThinkingMessage(null);
-                        setMessages(prev =>
-                            prev.map(m =>
-                                m.id === assistantId
-                                    ? { ...m, reasoning: (m.reasoning ?? '') + chunk }
-                                    : m,
-                            ),
-                        );
                     },
                     onDelta: chunk => {
+                        if (requestVersion !== stateVersionRef.current) return;
                         setThinkingMessage(null);
                         setMessages(prev =>
                             prev.map(m =>
@@ -154,6 +182,7 @@ export function useConversationMessages(conversationId?: string) {
                         );
                     },
                     onComplete: fullResponse => {
+                        if (requestVersion !== stateVersionRef.current) return;
                         setThinkingMessage(null);
                         setMessages(prev =>
                             prev.map(m =>
@@ -180,6 +209,7 @@ export function useConversationMessages(conversationId?: string) {
                         }
                     },
                     onError: errorMessage => {
+                        if (requestVersion !== stateVersionRef.current) return;
                         setThinkingMessage(null);
                         setMessages(prev =>
                             prev.map(m =>
@@ -210,6 +240,7 @@ export function useConversationMessages(conversationId?: string) {
     );
 
     const onCancel = useCallback(async () => {
+        stateVersionRef.current++;
         abortRef.current?.abort();
         abortRef.current = null;
         setIsRunning(false);
@@ -219,13 +250,26 @@ export function useConversationMessages(conversationId?: string) {
         );
     }, []);
 
+    const onReset = useCallback(() => {
+        stateVersionRef.current++;
+        abortRef.current?.abort();
+        abortRef.current = null;
+        setMessages([]);
+        setIsRunning(false);
+        setThinkingMessage(null);
+        setCurrentConversationId(undefined);
+    }, []);
+
     // Abort any in-flight stream when the component unmounts (e.g. navigating
     // away mid-stream). Without this, stream callbacks keep firing setMessages
     // / setIsRunning on an unmounted component.
     useEffect(() => {
+        const stateVersion = stateVersionRef;
+        const abortController = abortRef;
         return () => {
-            abortRef.current?.abort();
-            abortRef.current = null;
+            stateVersion.current++;
+            abortController.current?.abort();
+            abortController.current = null;
         };
     }, []);
 
@@ -238,5 +282,6 @@ export function useConversationMessages(conversationId?: string) {
         setCurrentConversationId,
         onNew,
         onCancel,
+        onReset,
     };
 }

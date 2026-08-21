@@ -46,13 +46,22 @@ test.describe('AI Coach deterministic journeys', () => {
       });
     });
     await page.route('**/api/v1/personalization/coaching-stream', async route => {
+      const request = route.request().postDataJSON() as { userMessage: string };
+      const firstTurn = request.userMessage === 'Help me begin';
       await route.fulfill({
         contentType: 'text/event-stream',
-        body:
-          sse('thinking', { message: 'Reviewing your goals...' }) +
-          sse('reasoning', { text: 'Checking context.' }) +
-          sse('delta', { text: 'Choose one small action.' }) +
-          sse('complete', { fullResponse: 'Choose one small action.' }),
+        body: firstTurn
+          ? sse('thinking', { message: 'Reviewing your goals...' }) +
+            sse('reasoning', { text: 'Checking context.' }) +
+            sse('proposal', {
+              id: 'proposal-1',
+              action: 'create_goal',
+              payload: { title: 'Take one step', description: '', category: 'growth' },
+            }) +
+            sse('delta', { text: 'Choose one small action.' }) +
+            sse('complete', { fullResponse: 'Choose one small action.' })
+          : sse('delta', { text: 'Then keep that action small.' }) +
+            sse('complete', { fullResponse: 'Then keep that action small.' }),
       });
     });
 
@@ -63,7 +72,17 @@ test.describe('AI Coach deterministic journeys', () => {
 
     await expect(page.getByText('Help me begin')).toBeVisible();
     await expect(page.getByText('Choose one small action.')).toBeVisible();
+    await expect(page.getByText('Title: Take one step')).toBeVisible();
+    await expect(page.getByText('Checking context.')).not.toBeVisible();
     await expect(page).toHaveURL(new RegExp(`/coach/${COACH_CONVERSATION_ID}$`));
+
+    await input.fill('What next?');
+    await input.press('Enter');
+
+    await expect(page.getByText('Then keep that action small.')).toBeVisible();
+    await expect(page.getByText('Choose one small action.')).toBeVisible();
+    await expect(page.getByText('Title: Take one step')).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Confirm' })).toBeVisible();
   });
 
   test('loads persisted messages for an existing conversation', async ({ page }) => {

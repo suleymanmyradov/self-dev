@@ -60,9 +60,7 @@ export async function getCoachingProfile(): Promise<CoachingProfile> {
 /**
  * Upsert coaching profile
  */
-export async function upsertCoachingProfile(
-  data: UpsertCoachingProfileRequest
-): Promise<CoachingProfile> {
+export async function upsertCoachingProfile(data: UpsertCoachingProfileRequest): Promise<CoachingProfile> {
   const response = await api.post<unknown>(ENDPOINTS.COACHING_PROFILE, data);
   const parsed = CoachingProfileResponseSchema.parse(response);
   return parsed.data;
@@ -72,7 +70,7 @@ export async function upsertCoachingProfile(
  * Update coaching profile preferences
  */
 export async function updateCoachingProfilePreferences(
-  data: UpdateCoachingProfilePreferencesRequest
+  data: UpdateCoachingProfilePreferencesRequest,
 ): Promise<CoachingProfile> {
   const validated = UpdateCoachingProfilePreferencesRequestSchema.parse(data);
   const response = await api.put<unknown>(ENDPOINTS.COACHING_PROFILE_PREFERENCES, validated);
@@ -84,10 +82,7 @@ export async function updateCoachingProfilePreferences(
  * Get personalization context
  */
 export async function getPersonalizationContext(forceRefresh = false): Promise<PersonalizationContext> {
-  const response = await api.get<unknown>(
-    ENDPOINTS.PERSONALIZATION_CONTEXT,
-    { forceRefresh }
-  );
+  const response = await api.get<unknown>(ENDPOINTS.PERSONALIZATION_CONTEXT, { forceRefresh });
   const parsed = PersonalizationContextResponseSchema.parse(response);
   return parsed.data;
 }
@@ -105,7 +100,7 @@ export async function getPendingPlanAdjustmentSuggestions(): Promise<PlanAdjustm
  * Create plan adjustment suggestion
  */
 export async function createPlanAdjustmentSuggestion(
-  data: CreatePlanAdjustmentSuggestionRequest
+  data: CreatePlanAdjustmentSuggestionRequest,
 ): Promise<PlanAdjustmentSuggestion> {
   const validated = CreatePlanAdjustmentSuggestionRequestSchema.parse(data);
   const response = await api.post<unknown>(ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS, validated);
@@ -118,12 +113,12 @@ export async function createPlanAdjustmentSuggestion(
  */
 export async function updatePlanAdjustmentSuggestionStatus(
   suggestionId: string,
-  data: UpdatePlanAdjustmentSuggestionStatusRequest
+  data: UpdatePlanAdjustmentSuggestionStatusRequest,
 ): Promise<PlanAdjustmentSuggestion> {
   const validated = UpdatePlanAdjustmentSuggestionStatusRequestSchema.parse(data);
   const response = await api.put<unknown>(
     `${ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS}/${encodeURIComponent(suggestionId)}/status`,
-    validated
+    validated,
   );
   const parsed = PlanAdjustmentSuggestionResponseSchema.parse(response);
   return parsed.data;
@@ -133,11 +128,11 @@ export async function updatePlanAdjustmentSuggestionStatus(
  * Apply plan adjustment suggestion
  */
 export async function applyPlanAdjustmentSuggestion(
-  data: ApplyPlanAdjustmentSuggestionRequest
+  data: ApplyPlanAdjustmentSuggestionRequest,
 ): Promise<PlanAdjustmentSuggestion> {
   const validated = ApplyPlanAdjustmentSuggestionRequestSchema.parse(data);
   const response = await api.post<unknown>(
-    `${ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS}/${encodeURIComponent(validated.id)}/apply`
+    `${ENDPOINTS.PLAN_ADJUSTMENT_SUGGESTIONS}/${encodeURIComponent(validated.id)}/apply`,
   );
   const parsed = PlanAdjustmentSuggestionResponseSchema.parse(response);
   return parsed.data;
@@ -147,7 +142,7 @@ export async function applyPlanAdjustmentSuggestion(
  * Generate personalized coaching response
  */
 export async function generatePersonalizedCoaching(
-  data: GeneratePersonalizedCoachingRequest
+  data: GeneratePersonalizedCoachingRequest,
 ): Promise<GeneratePersonalizedCoachingResponse> {
   const validated = GeneratePersonalizedCoachingRequestSchema.parse(data);
   const response = await api.post<unknown>(ENDPOINTS.PERSONALIZED_COACHING, validated);
@@ -198,7 +193,9 @@ export interface StreamCoachingRequest {
   userMessage: string;
   context?: string;
   conversationId?: string;
+  goalId?: string;
   attachments?: StreamAttachment[];
+  regenerate?: boolean;
 }
 
 export function streamPersonalizedCoaching(
@@ -212,7 +209,9 @@ export function streamPersonalizedCoaching(
       const validated = GeneratePersonalizedCoachingRequestSchema.parse({
         userMessage: data.userMessage,
         context: data.context,
+        goalId: data.goalId,
         attachments: data.attachments,
+        regenerate: data.regenerate,
       });
       const streamUrl = `${config.apiUrl}${ENDPOINTS.COACHING_STREAM}`;
       const response = await fetch(streamUrl, {
@@ -308,8 +307,7 @@ export function streamPersonalizedCoaching(
  * errors, unexpected stream termination). The technical details are logged to
  * the console for debugging; the user only sees this friendly fallback.
  */
-const COACHING_ERROR_GENERIC =
-  "Something went wrong on my end. Please try sending your message again.";
+const COACHING_ERROR_GENERIC = 'Something went wrong on my end. Please try sending your message again.';
 
 function parseCoachingSSEEvent(raw: string): { type: string; data: string } | null {
   let type = 'message';
@@ -334,7 +332,7 @@ function parseCoachingSSEEvent(raw: string): { type: string; data: string } | nu
  * and returns validated structured JSON.
  */
 export async function generateOnboardingHabits(
-  data: GenerateOnboardingHabitsRequest
+  data: GenerateOnboardingHabitsRequest,
 ): Promise<OnboardingHabitSuggestion[]> {
   const validated = GenerateOnboardingHabitsRequestSchema.parse(data);
   const response = await api.post<unknown>(ENDPOINTS.ONBOARDING_HABITS, validated);

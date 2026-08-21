@@ -8,7 +8,7 @@ import { Badge } from "@/components/ui/badge";
 import { Check, X, Smile, Meh, Frown, AlertTriangle, Zap, Battery, BatteryLow } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
-import type { Habit, CheckInMood, CheckInEnergy, CheckInBlocker } from "@/api";
+import type { Habit, CheckIn, CheckInMood, CheckInEnergy, CheckInBlocker } from "@/api";
 import { useCheckInForm } from "@/hooks";
 
 export type CheckInSubmitData = {
@@ -24,6 +24,8 @@ export type CheckInModalProps = {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   habit?: Habit;
+  /** Today's existing check-in for this habit, if any. Pre-fills the form. */
+  existingCheckIn?: CheckIn;
   onSubmit: (data: CheckInSubmitData) => void;
   isSubmitting?: boolean;
 };
@@ -49,17 +51,21 @@ const BLOCKER_OPTIONS: { value: CheckInBlocker; label: string }[] = [
   { value: 'other', label: 'Other' },
 ];
 
-export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting }: CheckInModalProps) {
-  const { form, updateField, reset, canSubmit, finalNote } = useCheckInForm();
+export function CheckInModal({ open, onOpenChange, habit, existingCheckIn, onSubmit, isSubmitting }: CheckInModalProps) {
+  const { form, updateField, reset, hydrate, canSubmit, finalNote } = useCheckInForm();
 
-  // Reset to step 1 every time the modal opens, regardless of how it was
-  // closed previously (X button, backdrop, successful submit, parent-driven
-  // close). Without this, the form retains stale state from the last session.
+  // When the modal opens, pre-fill from an existing check-in if one exists
+  // (so reopening a habit that was already checked in shows the saved
+  // mood/energy/note instead of a blank form). Otherwise reset to blank.
   useEffect(() => {
     if (open) {
-      reset();
+      if (existingCheckIn) {
+        hydrate(existingCheckIn);
+      } else {
+        reset();
+      }
     }
-  }, [open, reset]);
+  }, [open, existingCheckIn, hydrate, reset]);
 
   const handleSubmit = () => {
     if (!habit || !form.status) return;
@@ -123,18 +129,19 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
         ) : form.status === 'completed' ? (
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium mb-2">How are you feeling?</p>
+              <p className="text-sm font-medium mb-2">How are you feeling? <span className="text-muted-foreground font-normal">(optional)</span></p>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {MOOD_OPTIONS.map((option) => {
                   const Icon = option.icon;
+                  const selected = form.mood === option.value;
                   return (
                     <Button
                       key={option.value}
-                      variant={form.mood === option.value ? "default" : "outline"}
+                      variant={selected ? "default" : "outline"}
                       size="sm"
-                      className={cn(form.mood === option.value ? option.color : "")}
-                      onClick={() => updateField('mood', option.value)}
-                      aria-pressed={form.mood === option.value}
+                      className={cn(selected ? option.color : "")}
+                      onClick={() => updateField('mood', selected ? null : option.value)}
+                      aria-pressed={selected}
                     >
                       <Icon className="mr-2 h-4 w-4" aria-hidden="true" />
                       {option.label}
@@ -145,18 +152,19 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
             </div>
 
             <div>
-              <p className="text-sm font-medium mb-2">Energy level?</p>
+              <p className="text-sm font-medium mb-2">Energy level? <span className="text-muted-foreground font-normal">(optional)</span></p>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 {ENERGY_OPTIONS.map((option) => {
                   const Icon = option.icon;
+                  const selected = form.energy === option.value;
                   return (
                     <Button
                       key={option.value}
-                      variant={form.energy === option.value ? "default" : "outline"}
+                      variant={selected ? "default" : "outline"}
                       size="sm"
-                      className={cn(form.energy === option.value ? option.color : "")}
-                      onClick={() => updateField('energy', option.value)}
-                      aria-pressed={form.energy === option.value}
+                      className={cn(selected ? option.color : "")}
+                      onClick={() => updateField('energy', selected ? null : option.value)}
+                      aria-pressed={selected}
                     >
                       <Icon className="mr-2 h-4 w-4" aria-hidden="true" />
                       {option.label}
@@ -193,20 +201,23 @@ export function CheckInModal({ open, onOpenChange, habit, onSubmit, isSubmitting
         ) : (
           <div className="space-y-4">
             <div>
-              <p className="text-sm font-medium mb-2">What stopped you?</p>
+              <p className="text-sm font-medium mb-2">What stopped you? <span className="text-muted-foreground font-normal">(optional)</span></p>
               <div className="space-y-2">
-                {BLOCKER_OPTIONS.map((option) => (
-                  <Button
-                    key={option.value}
-                    variant={form.blocker === option.value ? "default" : "outline"}
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => updateField('blocker', option.value)}
-                    aria-pressed={form.blocker === option.value}
-                  >
-                    {option.label}
-                  </Button>
-                ))}
+                {BLOCKER_OPTIONS.map((option) => {
+                  const selected = form.blocker === option.value;
+                  return (
+                    <Button
+                      key={option.value}
+                      variant={selected ? "default" : "outline"}
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => updateField('blocker', selected ? null : option.value)}
+                      aria-pressed={selected}
+                    >
+                      {option.label}
+                    </Button>
+                  );
+                })}
               </div>
             </div>
 

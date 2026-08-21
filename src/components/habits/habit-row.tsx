@@ -7,9 +7,9 @@ import {
   DropdownMenuItem,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import { CheckInControl } from "@/components/shared/check-in-control";
+import { SplitCheckInControl } from "@/components/shared/split-check-in-control";
 import { StreakBar } from "@/components/shared/streak-bar";
-import { MoreHorizontal, Pencil, Trash2, ClipboardList } from "lucide-react";
+import { MoreHorizontal, Pencil, Trash2, StickyNote } from "lucide-react";
 import type { Habit } from "@/api";
 import { cn } from "@/lib/utils";
 
@@ -24,6 +24,7 @@ export function HabitRow({
   onEdit,
   onDelete,
   onLogDetails,
+  hasNote = false,
   isPending = false,
   isUndoPending = false,
 }: {
@@ -33,6 +34,8 @@ export function HabitRow({
   onEdit: (habit: Habit) => void;
   onDelete: (id: string) => void;
   onLogDetails?: (habit: Habit) => void;
+  /** Whether today's check-in for this habit has a note attached. */
+  hasNote?: boolean;
   isPending?: boolean;
   isUndoPending?: boolean;
 }) {
@@ -40,29 +43,39 @@ export function HabitRow({
 
   return (
     <div className="flex items-center gap-3 py-2.5">
-      {/* Check-in control — toggleable: click to check in, click again to undo */}
-      <CheckInControl
+      {/* Check-in control — split: left = fast one-tap check-in / undo,
+          right = open the detailed check-in modal (mood / energy / note) */}
+      <SplitCheckInControl
         checked={h.completed}
-        onToggle={() => {
+        onCheckIn={() => {
           if (h.completed) {
             onUndoCheckIn?.(h);
           } else {
             onCheckIn(h);
           }
         }}
-        size={22}
+        onLogDetails={() => onLogDetails?.(h)}
         disabled={isPending || isUndoPending || (h.completed && !onUndoCheckIn)}
-        aria-label={h.completed ? `Undo check-in for ${h.name}` : `Check in ${h.name}`}
+        hideDetails={!onLogDetails}
+        aria-label={h.name}
       />
 
       {/* Name + frequency */}
       <div className="min-w-0 flex-1">
-        <p className={cn(
-          "truncate text-sm font-medium",
-          h.completed && "text-success"
-        )}>
-          {h.name}
-        </p>
+        <div className="flex items-center gap-1.5">
+          <p className={cn(
+            "truncate text-sm font-medium",
+            h.completed && "text-success"
+          )}>
+            {h.name}
+          </p>
+          {hasNote && (
+            <StickyNote
+              className="h-3 w-3 shrink-0 text-muted-foreground"
+              aria-label="Has a note"
+            />
+          )}
+        </div>
         <p className="truncate text-xs text-muted-foreground">
           {h.category ? h.category : 'uncategorized'} · daily
         </p>
@@ -86,11 +99,6 @@ export function HabitRow({
           </Button>
         </DropdownMenuTrigger>
         <DropdownMenuContent align="end">
-          {onLogDetails && (
-            <DropdownMenuItem onClick={() => onLogDetails(h)}>
-              <ClipboardList className="mr-2 h-4 w-4" /> Log details
-            </DropdownMenuItem>
-          )}
           <DropdownMenuItem onClick={() => onEdit(h)}>
             <Pencil className="mr-2 h-4 w-4" /> Edit
           </DropdownMenuItem>

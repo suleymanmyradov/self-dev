@@ -18,6 +18,7 @@ function createState(overrides: Record<string, unknown> = {}): TestState {
     setCurrentConversationId: vi.fn(),
     onNew: vi.fn().mockResolvedValue(undefined),
     onCancel: vi.fn().mockResolvedValue(undefined),
+    onReset: vi.fn(),
     ...overrides,
   };
 }
@@ -105,6 +106,9 @@ describe('ChatProvider', () => {
     });
 
     await act(async () => result.current.retry('a'));
-    expect(state.onNew).toHaveBeenCalledWith('Original', expect.objectContaining({ displayText: 'Original' }));
+    expect(state.onNew).toHaveBeenCalledWith(
+      'Original',
+      expect.objectContaining({ displayText: 'Original', regenerateMessageId: 'a' }),
+    );
   });
 });

@@ -61,6 +61,23 @@ describe('ProposalCard', () => {
     expect(screen.getByText(/required/i)).toBeVisible();
   });
 
+  it('dismisses a cancelled proposal', async () => {
+    render(
+      <ProposalCard
+        proposal={{
+          id: 'proposal-cancel',
+          action: 'create_goal',
+          payload: { title: 'Read', description: '', category: 'learning' },
+        }}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /cancel/i }));
+
+    expect(screen.queryByText('Title: Read')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /confirm/i })).not.toBeInTheDocument();
+  });
+
   it('recovers from mutation failure and allows retry', async () => {
     let attempts = 0;
     mutations.deleteGoal.mutate.mockImplementation((_id, options) => {

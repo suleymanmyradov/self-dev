@@ -1,5 +1,5 @@
 import { useState, useCallback, useMemo } from 'react';
-import type { CheckInStatus, CheckInMood, CheckInEnergy, CheckInBlocker } from '@/api';
+import type { CheckInStatus, CheckInMood, CheckInEnergy, CheckInBlocker, CheckIn } from '@/api';
 
 export type CheckInFormState = {
   status: CheckInStatus | null;
@@ -30,13 +30,33 @@ export function useCheckInForm() {
     setForm({ ...initialState });
   }, []);
 
-  const canSubmit = useMemo(() =>
-    form.status && (
-      form.status === 'completed'
-        ? form.mood && form.energy
-        : form.blocker && (form.blocker !== 'other' || form.otherBlocker.trim())
-    ),
-  [form.status, form.mood, form.energy, form.blocker, form.otherBlocker]);
+  // Pre-fill the form from an existing check-in (e.g. when reopening the
+  // modal for a habit that was already checked in today). Strips the
+  // "Blocker: ..." prefix that finalNote adds so the raw user note is
+  // restored to the note field.
+  const hydrate = useCallback((checkIn: CheckIn) => {
+    let note = checkIn.note ?? '';
+    let otherBlocker = '';
+    const blocker = checkIn.blocker ?? null;
+    if (note.startsWith('Blocker: ')) {
+      const parts = note.split('\n\n', 2);
+      otherBlocker = parts[0].replace('Blocker: ', '');
+      note = parts[1] ?? '';
+    }
+    setForm({
+      status: checkIn.status,
+      mood: checkIn.mood ?? null,
+      energy: checkIn.energy ?? null,
+      blocker,
+      otherBlocker,
+      note,
+    });
+  }, []);
+
+  // Only status is required — mood, energy, blocker, and note are all
+  // optional. Not every habit has a meaningful "energy level" or "mood",
+  // and users should be able to check in with just a note or nothing at all.
+  const canSubmit = useMemo(() => Boolean(form.status), [form.status]);
 
   const finalNote = useMemo(() =>
     form.blocker === 'other' && form.otherBlocker.trim()
@@ -48,6 +68,7 @@ export function useCheckInForm() {
     form,
     updateField,
     reset,
+    hydrate,
     canSubmit,
     finalNote,
   };
