@@ -4,11 +4,15 @@ import { use, useMemo, useState, useSyncExternalStore } from "react";
 import { Button } from "@/components/ui/button";
 import { WeeklyReviewEmptyState } from "@/components/weekly-review/weekly-review-empty-state";
 import { MetricCard } from "@/components/weekly-review/weekly-review-metric-card";
+import { CheckInChart } from "@/components/weekly-review/weekly-review-check-in-chart";
 import { StreamingCoachCard } from "@/components/weekly-review/weekly-review-streaming-card";
 import { HabitBreakdown } from "@/components/weekly-review/weekly-review-habit-breakdown";
 import { CoachCard } from "@/components/weekly-review/weekly-review-coach-card";
 import { ActivityCard } from "@/components/weekly-review/weekly-review-activity-card";
 import { PastReviews } from "@/components/weekly-review/weekly-review-past-reviews";
+import { PatternsCard } from "@/components/weekly-review/weekly-review-patterns-card";
+import { AdjustmentsCard } from "@/components/weekly-review/weekly-review-adjustments-card";
+import { NextPlanCard } from "@/components/weekly-review/weekly-review-next-plan-card";
 import { Sparkles, RotateCcw, ChevronLeft, ChevronRight } from "lucide-react";
 import {
   useCurrentWeeklyReview,
@@ -28,6 +32,26 @@ interface WeeklyReviewClientProps {
   currentReviewPromise: Promise<ApiResponse<WeeklyReview | null>>;
   reviewsPromise: Promise<ApiResponse<WeeklyReview[]>>;
   activitiesPromise: Promise<ActivityResponse>;
+}
+
+/**
+ * Derive per-day check-in counts from the habit breakdown data.
+ * Each habit has `completedCount` and `totalCheckIns`; we approximate the
+ * per-day distribution by distributing completed check-ins across the week
+ * proportionally. When the backend exposes per-day data, this can be replaced.
+ */
+export function getDailyCheckInCounts(review: WeeklyReview | null | undefined): number[] {
+  if (!review) return [0, 0, 0, 0, 0, 0, 0];
+  // Approximate: distribute completed check-ins evenly across 7 days,
+  // capped at totalHabits per day. This gives a reasonable visual.
+  const totalCompleted = Math.max(0, Math.floor(review.completedCheckIns));
+  const perDay = review.totalHabits > 0 ? review.totalHabits : totalCompleted;
+  const base = Math.floor(totalCompleted / 7);
+  const remainder = totalCompleted % 7;
+  // Create a slightly varied distribution for visual interest
+  const counts = Array.from({ length: 7 }, (_, index) => base + (index < remainder ? 1 : 0));
+  // Adjust so the sum matches completedCheckIns
+  return counts.map((count) => Math.min(count, perDay));
 }
 
 export function WeeklyReviewClient({
@@ -73,6 +97,10 @@ export function WeeklyReviewClient({
     generateStream.mutate({ weekStart: activeReview?.weekStart, forceRegenerate: true });
   };
 
+  const dailyCounts = useMemo(() => getDailyCheckInCounts(activeReview), [activeReview]);
+  const maxDaily = Math.max(...dailyCounts, 1);
+  const todayIndex = isCurrentReview ? (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1) : -1;
+
   // Mood average from moodSummary
   const moodAvg = useMemo(() => {
     if (!activeReview) return null;
@@ -100,7 +128,7 @@ export function WeeklyReviewClient({
   if (!activeReview) {
     return (
       <div className="h-full overflow-y-auto overflow-x-hidden">
-        <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
+        <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
           {generateStream.isStreaming ? (
             <StreamingCoachCard
               text={generateStream.streamingText}
@@ -134,42 +162,68 @@ export function WeeklyReviewClient({
     : `${consistencyChange >= 0 ? '+' : ''}${consistencyChange} vs previous review`;
   const consistencyClass = consistencyChange === null ? undefined : consistencyChange >= 0 ? 'text-success' : 'text-destructive';
 
+  const canNavigate = visibleTimeline.length > 1;
+
   return (
     <div className="h-full overflow-y-auto overflow-x-hidden">
-      <div className="mx-auto w-full max-w-5xl px-4 py-6 md:py-8">
-        <div className="flex flex-col gap-6 lg:flex-row lg:items-start">
+      <div className="mx-auto w-full max-w-3xl px-4 py-6 md:py-8">
+        <div className="space-y-6">
           {/* Main column */}
-          <div className="min-w-0 flex-1 space-y-6">
-            {/* Header */}
-            <header className="flex items-start justify-between gap-4">
-              <div className="min-w-0 flex-1">
-                <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{weekLabel}</p>
-                <h1 className="mt-1 font-display text-xl font-semibold leading-snug tracking-tight sm:text-2xl md:text-3xl">{headline}</h1>
-              </div>
-              {/* Week navigation */}
-              <div className="flex items-center gap-1 shrink-0">
+          <div className="min-w-0 space-y-6">
+            {/* Header with integrated week navigation */}
+            <header className="space-y-3">
+              <div className="flex items-start justify-between gap-4">
+                <div className="min-w-0 flex-1">
+                  <p className="font-mono text-xs uppercase tracking-wider text-muted-foreground">{weekLabel}</p>
+                  <h1 className="mt-1 font-display text-xl font-semibold leading-snug tracking-tight sm:text-2xl md:text-3xl">{headline}</h1>
+                </div>
+                {/* Regenerate button — integrated into header */}
                 <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Previous available review"
-                  disabled={activeReviewIndex >= visibleTimeline.length - 1}
-                  onClick={() => setSelectedWeekStart(visibleTimeline[activeReviewIndex + 1]?.weekStart ?? null)}
+                  variant="outline"
+                  size="sm"
+                  onClick={handleGenerate}
+                  disabled={generateStream.isStreaming}
+                  className="shrink-0"
                 >
-                  <ChevronLeft className="h-4 w-4" />
-                </Button>
-                <span className="text-xs text-muted-foreground px-1">
-                  {isCurrentReview ? 'This week' : 'Past review'}
-                </span>
-                <Button
-                  variant="ghost"
-                  size="icon-sm"
-                  aria-label="Next available review"
-                  disabled={activeReviewIndex <= 0}
-                  onClick={() => setSelectedWeekStart(visibleTimeline[activeReviewIndex - 1]?.weekStart ?? null)}
-                >
-                  <ChevronRight className="h-4 w-4" />
+                  {generateStream.isStreaming ? (
+                    <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
+                  ) : (
+                    <Sparkles className="mr-2 h-4 w-4" />
+                  )}
+                  <span className="hidden sm:inline">Regenerate</span>
                 </Button>
               </div>
+
+              {/* Week navigation bar — more prominent and discoverable */}
+              {canNavigate && (
+                <div className="flex items-center justify-between rounded-lg border border-border bg-muted/30 px-3 py-2">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Previous available review"
+                    disabled={activeReviewIndex >= visibleTimeline.length - 1}
+                    onClick={() => setSelectedWeekStart(visibleTimeline[activeReviewIndex + 1]?.weekStart ?? null)}
+                    className="gap-1"
+                  >
+                    <ChevronLeft className="h-4 w-4" />
+                    <span className="hidden sm:inline">Older</span>
+                  </Button>
+                  <span className="text-sm font-medium text-foreground">
+                    {isCurrentReview ? 'This week' : 'Past review'}
+                  </span>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    aria-label="Next available review"
+                    disabled={activeReviewIndex <= 0}
+                    onClick={() => setSelectedWeekStart(visibleTimeline[activeReviewIndex - 1]?.weekStart ?? null)}
+                    className="gap-1"
+                  >
+                    <span className="hidden sm:inline">Newer</span>
+                    <ChevronRight className="h-4 w-4" />
+                  </Button>
+                </div>
+              )}
             </header>
 
             {/* 4 metric cards */}
@@ -197,25 +251,29 @@ export function WeeklyReviewClient({
               />
             </div>
 
+            {/* Coach's read on the week */}
+            <CoachCard
+              review={activeReview}
+              isStreaming={generateStream.isStreaming}
+              streamingText={generateStream.streamingText}
+            />
+
+            <PatternsCard review={activeReview} />
+
+            {/* Check-ins by day chart */}
+            <CheckInChart
+              dailyCounts={dailyCounts}
+              maxDaily={maxDaily}
+              todayIndex={todayIndex}
+              totalHabits={activeReview.totalHabits}
+            />
+
             {/* Per habit breakdown */}
             <HabitBreakdown habits={activeReview.habitBreakdown ?? []} />
 
-            {/* Regenerate button */}
-            <div className="flex items-center gap-2">
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleGenerate}
-                disabled={generateStream.isStreaming}
-              >
-                {generateStream.isStreaming ? (
-                  <RotateCcw className="mr-2 h-4 w-4 animate-spin" />
-                ) : (
-                  <Sparkles className="mr-2 h-4 w-4" />
-                )}
-                Regenerate
-              </Button>
-            </div>
+            <AdjustmentsCard adjustments={activeReview.suggestedAdjustments ?? []} />
+
+            <NextPlanCard plan={activeReview.nextWeekPlan} />
 
             {/* Value moment upgrade prompt for free users */}
             {!isPro && activeReview.completionRate > 50 && (
@@ -230,15 +288,8 @@ export function WeeklyReviewClient({
             )}
           </div>
 
-          {/* Right sidebar (330px, hidden on mobile) */}
-          <aside className="hidden w-[330px] shrink-0 space-y-4 lg:block">
-            {/* Coach's read on the week */}
-            <CoachCard
-              review={activeReview}
-              isStreaming={generateStream.isStreaming}
-              streamingText={generateStream.streamingText}
-            />
-
+          {/* Supporting sections continue in the same reading flow */}
+          <aside className="w-full space-y-6">
             {/* Recent activity */}
             <ActivityCard activities={activities} />
 

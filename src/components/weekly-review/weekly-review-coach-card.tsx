@@ -1,6 +1,6 @@
 import type { WeeklyReview } from "@/api";
 
-/** Dark "Coach's read on the week" sidebar card with AI summary + adjustments. */
+/** Dark "Coach's read on the week" card with the AI summary. */
 export function CoachCard({
   review,
   isStreaming,
@@ -25,11 +25,6 @@ export function CoachCard({
         <p className="mt-3 text-sm leading-relaxed whitespace-pre-wrap">{review.aiSummary}</p>
       ) : (
         <p className="mt-3 text-sm text-background/60">No coach analysis available yet.</p>
-      )}
-      {review.suggestedAdjustments?.length > 0 && (
-        <p className="mt-3 text-sm text-background/80">
-          {review.suggestedAdjustments[0].suggestion}
-        </p>
       )}
     </div>
   );
