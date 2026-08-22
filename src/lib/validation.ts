@@ -505,7 +505,7 @@ export const UpdateNotificationPreferencesRequestSchema = z.object({
 });
 
 export const UnreadNotificationCountResponseSchema = z.object({
-  count: z.number(),
+  count: z.number().int().nonnegative(),
 });
 
 // ============================================
@@ -521,6 +521,7 @@ export const NotificationTypeSchema = z.enum([
   'weekly_review',
   'encouragement',
   'ai_feedback',
+  'streak_warning',
 ]);
 
 export const NotificationSchema = z.object({
@@ -531,6 +532,9 @@ export const NotificationSchema = z.object({
   read: z.boolean(),
   userId: z.string(),
   createdAt: z.string(),
+  destination: z.string().optional(),
+  resourceId: z.string().optional(),
+  metadata: z.string().optional(),
 });
 
 export const NotificationsResponseSchema = ApiResponseSchema(z.array(NotificationSchema)).extend({

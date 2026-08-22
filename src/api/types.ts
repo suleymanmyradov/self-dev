@@ -551,7 +551,8 @@ export type NotificationType =
   | 'missed_check_in'
   | 'weekly_review'
   | 'encouragement'
-  | 'ai_feedback';
+  | 'ai_feedback'
+  | 'streak_warning';
 
 export interface Notification {
   id: string;
@@ -561,6 +562,9 @@ export interface Notification {
   read: boolean;
   userId: string;
   createdAt: string;
+  destination?: string;
+  resourceId?: string;
+  metadata?: string;
 }
 
 export interface NotificationsResponse extends ApiResponse<Notification[]> {

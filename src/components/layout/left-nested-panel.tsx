@@ -7,7 +7,8 @@ import { useShallow } from "zustand/react/shallow"
 import { useNotifications, useConversations, useMarkAllNotificationsRead, useMarkNotificationRead } from "@/hooks"
 import Link from "next/link"
 import { cn } from "@/lib/utils"
-import { X, MessageSquare, Bell, CheckCheck, Target, CalendarCheck, Trophy, AlertCircle, Sparkles, Info } from "lucide-react"
+import { notificationDestination } from "@/lib/notification-destination"
+import { X, MessageSquare, Bell, CheckCheck, Target, CalendarCheck, Trophy, AlertCircle, Sparkles, Info, Flame } from "lucide-react"
 import type { LucideIcon } from "lucide-react"
 import type { NotificationType } from "@/api"
 
@@ -20,6 +21,7 @@ const typeIcon: Record<NotificationType, LucideIcon> = {
   weekly_review: CalendarCheck,
   encouragement: Sparkles,
   ai_feedback: Sparkles,
+  streak_warning: Flame,
 }
 
 export function LeftNestedPanel() {
@@ -234,11 +236,12 @@ export function NotificationsList({ onClose }: { onClose?: () => void }) {
             </>
           )
 
-          if (n.type === 'weekly_review') {
+          const destination = notificationDestination(n)
+          if (destination) {
             return (
               <Link
                 key={n.id}
-                href="/progress"
+                href={destination}
                 onClick={() => {
                   handleMarkRead(n.id, n.read)
                   handleClose()
