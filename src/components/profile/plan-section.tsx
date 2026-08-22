@@ -257,7 +257,7 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
               </Button>
               <Button
                 variant="outline"
-                className="w-full border-background/20 text-background hover:bg-background/10"
+                className="w-full border-background/20 bg-transparent text-background hover:bg-background/10 hover:text-background"
                 onClick={handleManageBilling}
                 disabled={portalMutation.isPending}
               >

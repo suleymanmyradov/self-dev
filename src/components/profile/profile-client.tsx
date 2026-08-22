@@ -115,6 +115,14 @@ export function ProfileClient({
     [notifAction, emailEnabled, pushEnabled, habitReminders, goalReminders, streakWarnings, sundayReview],
   );
 
+  const handleEmailToggle = useCallback(
+    (value: boolean) => submitPrefs({ emailEnabled: value }),
+    [submitPrefs],
+  );
+  const handlePushToggle = useCallback(
+    (value: boolean) => submitPrefs({ pushEnabled: value }),
+    [submitPrefs],
+  );
   const handleHabitRemindersToggle = useCallback(
     (value: boolean) => submitPrefs({ habitRemindersEnabled: value }),
     [submitPrefs],
@@ -260,7 +268,8 @@ export function ProfileClient({
             <NotificationsSection
               notificationPreferences={notificationPreferences}
               notifPending={notifPending}
-              onHabitRemindersToggle={handleHabitRemindersToggle}
+              onEmailToggle={handleEmailToggle}
+              onPushToggle={handlePushToggle}
             />
           )}
 

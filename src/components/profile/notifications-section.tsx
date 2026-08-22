@@ -6,11 +6,13 @@ import type { NotificationPreferences } from "@/api";
 export function NotificationsSection({
   notificationPreferences,
   notifPending,
-  onHabitRemindersToggle,
+  onEmailToggle,
+  onPushToggle,
 }: {
   notificationPreferences: NotificationPreferences | null;
   notifPending: boolean;
-  onHabitRemindersToggle: (value: boolean) => void;
+  onEmailToggle: (value: boolean) => void;
+  onPushToggle: (value: boolean) => void;
 }) {
   return (
     <div className="space-y-6">
@@ -20,7 +22,7 @@ export function NotificationsSection({
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium">In-app notifications</p>
-            <p className="text-xs text-muted-foreground">Receive notifications in the app</p>
+            <p className="text-xs text-muted-foreground">Important updates always appear in your notification panel</p>
           </div>
           <Switch checked disabled />
         </div>
@@ -29,12 +31,12 @@ export function NotificationsSection({
 
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-sm font-medium">Habit reminders</p>
-            <p className="text-xs text-muted-foreground">Get reminded to complete your daily habits</p>
+            <p className="text-sm font-medium">Email notifications</p>
+            <p className="text-xs text-muted-foreground">Receive enabled reminders at your verified email address</p>
           </div>
           <Switch
-            checked={notificationPreferences?.habitRemindersEnabled ?? true}
-            onCheckedChange={onHabitRemindersToggle}
+            checked={notificationPreferences?.emailEnabled ?? false}
+            onCheckedChange={onEmailToggle}
             disabled={notifPending}
           />
         </div>
@@ -43,30 +45,14 @@ export function NotificationsSection({
 
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-sm font-medium">Email notifications</p>
-            <p className="text-xs text-muted-foreground">Coming soon</p>
+            <p className="text-sm font-medium">Mobile push</p>
+            <p className="text-xs text-muted-foreground">Allow Growth to send enabled reminders to registered mobile devices</p>
           </div>
-          <Switch checked={false} disabled />
-        </div>
-
-        <div className="h-px bg-border" />
-
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">Browser push</p>
-            <p className="text-xs text-muted-foreground">Coming soon</p>
-          </div>
-          <Switch checked={false} disabled />
-        </div>
-
-        <div className="h-px bg-border" />
-
-        <div className="flex items-center justify-between gap-4">
-          <div className="min-w-0">
-            <p className="text-sm font-medium">Goal deadline reminders</p>
-            <p className="text-xs text-muted-foreground">Coming soon</p>
-          </div>
-          <Switch checked={false} disabled />
+          <Switch
+            checked={notificationPreferences?.pushEnabled ?? false}
+            onCheckedChange={onPushToggle}
+            disabled={notifPending}
+          />
         </div>
       </div>
     </div>

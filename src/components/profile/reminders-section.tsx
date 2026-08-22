@@ -50,8 +50,8 @@ export function RemindersSection({
         {/* Sunday review email */}
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
-            <p className="text-sm font-medium">Sunday review email</p>
-            <p className="text-xs text-muted-foreground">Your week, written by the coach</p>
+            <p className="text-sm font-medium">Weekly review</p>
+            <p className="text-xs text-muted-foreground">A Sunday invitation to reflect and plan the week ahead</p>
           </div>
           <Switch
             checked={sundayReview}
