@@ -9,9 +9,10 @@ interface ArticleCardProps {
   article: Article;
   isSaved: boolean;
   onToggleSave: () => void;
+  isSavePending?: boolean;
 }
 
-export function ArticleCard({ article, isSaved, onToggleSave }: ArticleCardProps) {
+export function ArticleCard({ article, isSaved, onToggleSave, isSavePending = false }: ArticleCardProps) {
   return (
     <Card className="overflow-hidden rounded-xl border-border">
       {article.imageUrl ? (
@@ -60,11 +61,14 @@ export function ArticleCard({ article, isSaved, onToggleSave }: ArticleCardProps
             )}
           </span>
           <button
+            type="button"
             onClick={onToggleSave}
-            className="text-xs text-success transition-[color] hover:text-success/80"
+            disabled={isSavePending}
+            className="text-xs text-success transition-[color] hover:text-success/80 disabled:cursor-not-allowed disabled:opacity-50"
             aria-label={isSaved ? "Unsave article" : "Save article"}
+            aria-pressed={isSaved}
           >
-            {isSaved ? 'Saved' : 'Save'}
+            {isSavePending ? 'Saving…' : isSaved ? 'Saved' : 'Save'}
           </button>
         </div>
       </div>

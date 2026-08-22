@@ -4,14 +4,16 @@ import type { HabitTemplate, GoalTemplate } from '@/types/explore';
 interface HabitTemplateCardProps {
   template: HabitTemplate;
   onAdd: (data: { name: string; description: string; category: string }) => void;
+  isAdding?: boolean;
 }
 
 interface GoalTemplateCardProps {
   template: GoalTemplate;
   onAdd: (data: { title: string; description: string; category: string }) => void;
+  isAdding?: boolean;
 }
 
-export function HabitTemplateCard({ template, onAdd }: HabitTemplateCardProps) {
+export function HabitTemplateCard({ template, onAdd, isAdding = false }: HabitTemplateCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-2 font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
@@ -28,6 +30,7 @@ export function HabitTemplateCard({ template, onAdd }: HabitTemplateCardProps) {
           size="sm"
           variant="success"
           className="h-8 rounded-lg text-xs"
+          disabled={isAdding}
           onClick={() =>
             onAdd({
               name: template.name,
@@ -36,14 +39,14 @@ export function HabitTemplateCard({ template, onAdd }: HabitTemplateCardProps) {
             })
           }
         >
-          Add to Habits
+          {isAdding ? 'Adding…' : 'Add to Habits'}
         </Button>
       </div>
     </div>
   );
 }
 
-export function GoalTemplateCard({ template, onAdd }: GoalTemplateCardProps) {
+export function GoalTemplateCard({ template, onAdd, isAdding = false }: GoalTemplateCardProps) {
   return (
     <div className="rounded-xl border border-border bg-card p-4">
       <div className="mb-2 font-mono text-[9px] tracking-wider text-muted-foreground uppercase">
@@ -59,6 +62,7 @@ export function GoalTemplateCard({ template, onAdd }: GoalTemplateCardProps) {
         <Button
           size="sm"
           className="h-8 rounded-lg text-xs"
+          disabled={isAdding}
           onClick={() =>
             onAdd({
               title: template.title,
@@ -67,7 +71,7 @@ export function GoalTemplateCard({ template, onAdd }: GoalTemplateCardProps) {
             })
           }
         >
-          Add to Goals
+          {isAdding ? 'Adding…' : 'Add to Goals'}
         </Button>
       </div>
     </div>

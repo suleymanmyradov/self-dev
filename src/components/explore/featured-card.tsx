@@ -9,9 +9,10 @@ interface FeaturedCardProps {
   article: Article;
   isSaved?: boolean;
   onToggleSave?: () => void;
+  isSavePending?: boolean;
 }
 
-export function FeaturedCard({ article, isSaved, onToggleSave }: FeaturedCardProps) {
+export function FeaturedCard({ article, isSaved, onToggleSave, isSavePending = false }: FeaturedCardProps) {
   return (
     <Card className="flex flex-col overflow-hidden rounded-xl border-border md:flex-row">
       {article.imageUrl ? (
@@ -65,11 +66,12 @@ export function FeaturedCard({ article, isSaved, onToggleSave }: FeaturedCardPro
             variant="outline"
             className="h-8 gap-1.5 rounded-lg text-xs"
             onClick={onToggleSave}
+            disabled={isSavePending}
             aria-label={isSaved ? 'Unsave article' : 'Save article'}
             aria-pressed={isSaved}
           >
             <Bookmark className={isSaved ? 'size-3.5 fill-current' : 'size-3.5'} />
-            {isSaved ? 'Saved' : 'Save for tonight'}
+            {isSavePending ? 'Saving…' : isSaved ? 'Saved' : 'Save'}
           </Button>
         </div>
       </div>

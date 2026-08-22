@@ -9,19 +9,19 @@ interface CommunityTabProps {
 
 export function CommunityTab({ settings }: CommunityTabProps) {
   return (
-    <div className="rounded-xl border border-border bg-card p-8 text-center">
-      <h3 className="font-display text-lg font-normal text-foreground">People on the same goal</h3>
-      <p className="mt-2 text-sm text-muted-foreground">
-        Community features are coming soon. You&apos;ll be able to follow people working on similar habits and goals.
-      </p>
-      <div className="mt-4">
-        <CommunityCard
-          title={settings.community.title}
-          description={settings.community.description}
-          discordUrl={settings.community.discordUrl}
-          xUrl={settings.community.xUrl}
-        />
+    <div className="mx-auto max-w-2xl space-y-5 py-2">
+      <div className="text-center">
+        <h2 className="font-display text-2xl font-normal text-foreground">Grow with others</h2>
+        <p className="mx-auto mt-2 max-w-lg text-sm leading-relaxed text-muted-foreground">
+          Join the wider Growth community to share progress, exchange ideas, and stay connected.
+        </p>
       </div>
+      <CommunityCard
+        title={settings.community.title}
+        description={settings.community.description}
+        discordUrl={settings.community.discordUrl}
+        xUrl={settings.community.xUrl}
+      />
     </div>
   );
 }

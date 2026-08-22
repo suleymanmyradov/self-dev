@@ -1,13 +1,12 @@
 "use client";
 
-import { use, useState, useMemo, useEffect, useCallback } from "react";
+import { use, useState, useMemo, useEffect, useCallback, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Input } from "@/components/ui/input";
 import { Search } from "lucide-react";
-import { useSearchParamState } from "@/lib/url-state";
+import { useSearchParamEnum, useSearchParamState } from "@/lib/url-state";
 import { useCreateHabit, useCreateGoal, useArticles, useSavedItems, useSavedItemsDetailed, useSaveItem, useRemoveSavedItem, useSearch } from "@/hooks";
-import { toast } from "@/components/ui/sonner";
-import type { ArticlesResponse, CategoriesResponse, ExploreSettings, Article, SavedItemDetailed, SearchResult } from "@/api";
+import type { ArticlesResponse, CategoriesResponse, ExploreSettings, Article, SavedItemDetailed } from "@/api";
 import type { HabitTemplate, GoalTemplate } from "@/types/explore";
 import { ExploreTab } from "./explore-tab";
 import { SavedTab } from "./saved-tab";
@@ -54,14 +53,15 @@ export function ExploreClient({ articlesPromise, categoriesPromise, settings, fe
     [categoriesData],
   );
 
-  const createHabit = useCreateHabit().mutate;
-  const createGoal = useCreateGoal().mutate;
+  const createHabit = useCreateHabit();
+  const createGoal = useCreateGoal();
 
-  const [tab, setTab] = useSearchParamState("tab", "explore");
+  const [tab, setTab] = useSearchParamEnum("tab", ["explore", "saved", "templates", "community"] as const, "explore");
   const [query, setQuery] = useSearchParamState("q");
   const [category, setCategory] = useState<string>("All");
 
   const [inputValue, setInputValue] = useState(query);
+  const searchInputRef = useRef<HTMLInputElement>(null);
   const debouncedInput = useDebounceValue(inputValue, 300);
 
   // Push debounced input to URL
@@ -70,6 +70,28 @@ export function ExploreClient({ articlesPromise, categoriesPromise, settings, fe
       setQuery(debouncedInput);
     }
   }, [debouncedInput, query, setQuery]);
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      const target = event.target as HTMLElement;
+      if (
+        event.key === "/" &&
+        !event.metaKey &&
+        !event.ctrlKey &&
+        !event.altKey &&
+        target.tagName !== "INPUT" &&
+        target.tagName !== "TEXTAREA" &&
+        target.tagName !== "SELECT" &&
+        !target.isContentEditable
+      ) {
+        event.preventDefault();
+        searchInputRef.current?.focus();
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => window.removeEventListener("keydown", handleKeyDown);
+  }, []);
 
   const trimmedQuery = query.trim();
   const isSearching = trimmedQuery.length > 0;
@@ -83,34 +105,15 @@ export function ExploreClient({ articlesPromise, categoriesPromise, settings, fe
   });
 
   const articles = useMemo(() => {
-    const allArticles = articlesList;
-    if (!isSearching) {
-      let filtered = allArticles;
-      if (category !== "All") {
-        filtered = filtered.filter((a) =>
-          a.category?.name?.toLowerCase() === category.toLowerCase(),
-        );
-      }
-      return filtered;
-    }
-    // Map article-type search results back to Article objects from the loaded
-    // list (so images/category/save state resolve). Results not in the loaded
-    // list are surfaced separately via nonArticleResults below.
-    const byId = new Map(allArticles.map((a) => [a.id, a]));
-    return (searchResults ?? [])
-      .filter((r) => r.type === 'article')
-      .map((r) => byId.get(r.id))
-      .filter((a): a is Article => !!a);
-  }, [isSearching, searchResults, articlesList, category]);
-
-  const nonArticleResults = useMemo<SearchResult[]>(
-    () => (isSearching ? (searchResults ?? []).filter((r) => r.type !== 'article') : []),
-    [isSearching, searchResults],
-  );
+    if (category === "All") return articlesList;
+    return articlesList.filter((article) =>
+      article.category?.name?.toLowerCase() === category.toLowerCase(),
+    );
+  }, [articlesList, category]);
 
   // Saved items — fetched once at parent level, passed down to cards
-  const { data: savedItems } = useSavedItems({ page: 1, limit: 100 });
-  const { data: savedItemsDetailed } = useSavedItemsDetailed({ page: 1, limit: 100 });
+  const { data: savedItems, isLoading: isSavedItemsLoading } = useSavedItems({ page: 1, limit: 100 });
+  const { data: savedItemsDetailed, isLoading: isSavedDetailsLoading } = useSavedItemsDetailed({ page: 1, limit: 100 });
   const saveItem = useSaveItem();
   const removeSavedItem = useRemoveSavedItem();
 
@@ -149,79 +152,71 @@ export function ExploreClient({ articlesPromise, categoriesPromise, settings, fe
   }, [savedItemsDetailed]);
 
   const handleRemoveSavedById = useCallback(
-    async (savedItemId: string) => {
-      try {
-        await removeSavedItem.mutateAsync(savedItemId);
-        toast.success('Removed from saved');
-      } catch {
-        toast.error('Failed to remove item');
-      }
-    },
+    (savedItemId: string) => removeSavedItem.mutate(savedItemId),
     [removeSavedItem],
   );
 
   const getIsSaved = useCallback(
-    (article: typeof articles[number]) => {
-      if (article.isSaved !== undefined) return article.isSaved;
-      return savedArticleMap.has(article.id);
-    },
+    (article: typeof articles[number]) =>
+      savedArticleMap.has(article.id) || article.isSaved === true,
     [savedArticleMap]
   );
 
   const handleToggleSave = useCallback(
-    async (articleId: string) => {
+    (articleId: string) => {
       const savedItemId = savedArticleMap.get(articleId);
-
       if (savedItemId) {
-        try {
-          await removeSavedItem.mutateAsync(savedItemId);
-          toast.success('Article removed from saved');
-        } catch {
-          toast.error('Failed to remove article');
-        }
+        removeSavedItem.mutate(savedItemId);
       } else {
-        try {
-          await saveItem.mutateAsync({ itemType: 'article', itemId: articleId });
-          toast.success('Article saved');
-        } catch {
-          toast.error('Failed to save article');
-        }
+        saveItem.mutate({ itemType: 'article', itemId: articleId });
       }
     },
     [savedArticleMap, saveItem, removeSavedItem]
   );
 
-  const savedCount = savedArticleMap.size;
+  const savedCount = savedItems?.length ?? 0;
+  const isSavePending = saveItem.isPending || removeSavedItem.isPending;
+  const handleSearchChange = (value: string) => {
+    setInputValue(value);
+    if (value.trim()) setTab("explore");
+  };
+  const handleClearSearch = () => {
+    setInputValue("");
+    searchInputRef.current?.focus();
+  };
 
   return (
     <div className="h-full flex flex-col relative">
       <div className="relative flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
         <div className="mx-auto w-full max-w-5xl px-6 py-8 md:py-10">
           {/* Header */}
-          <header className="mb-8 flex items-start justify-between gap-6">
+          <header className="mb-8 flex flex-col gap-5 md:flex-row md:items-start md:justify-between md:gap-6">
             <div className="min-w-0 flex-1">
               <h1 className="font-display text-3xl font-normal tracking-tight text-foreground">Library</h1>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                Reading, habit templates, and the people doing the same work.
+                Curated ideas and practical templates for your next step.
               </p>
             </div>
             {/* Search field */}
-            <div className="relative hidden w-[300px] shrink-0 md:block">
+            <div className="relative w-full shrink-0 md:w-[340px]">
               <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
               <Input
-                placeholder="Search articles, templates, people"
+                ref={searchInputRef}
+                type="search"
+                aria-label="Search the library"
+                placeholder="Search articles, habits, goals, conversations"
                 value={inputValue}
-                onChange={(e) => setInputValue(e.target.value)}
-                className="h-9 rounded-lg border-border bg-card pl-9 pr-10 text-sm placeholder:text-muted-foreground"
+                onChange={(e) => handleSearchChange(e.target.value)}
+                className="h-10 rounded-lg border-border bg-card pl-9 pr-10 text-sm placeholder:text-muted-foreground"
               />
-              <kbd className="absolute right-3 top-1/2 -translate-y-1/2 rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground">
+              <kbd className="absolute right-3 top-1/2 hidden -translate-y-1/2 rounded border border-border bg-secondary px-1.5 py-0.5 font-mono text-[10px] text-muted-foreground sm:block">
                 /
               </kbd>
             </div>
           </header>
 
           {/* Tabs (underline style) */}
-          <Tabs value={tab} onValueChange={setTab} className="w-full">
+          <Tabs value={tab} onValueChange={(value) => setTab(value as typeof tab)} className="w-full">
             <TabsList className="mb-6 flex-wrap h-auto gap-6">
               <TabsTrigger value="explore">Explore</TabsTrigger>
               <TabsTrigger value="saved" className="gap-1.5">
@@ -229,7 +224,7 @@ export function ExploreClient({ articlesPromise, categoriesPromise, settings, fe
                 <span className="font-mono text-xs tabular-nums text-muted-foreground">{savedCount}</span>
               </TabsTrigger>
               <TabsTrigger value="templates">Templates</TabsTrigger>
-              <TabsTrigger value="people">People</TabsTrigger>
+              <TabsTrigger value="community">Community</TabsTrigger>
             </TabsList>
 
             {/* Explore tab */}
@@ -243,11 +238,14 @@ export function ExploreClient({ articlesPromise, categoriesPromise, settings, fe
                 category={category}
                 setCategory={setCategory}
                 categories={categories}
-                nonArticleResults={nonArticleResults}
+                searchResults={searchResults ?? []}
                 habitTemplates={habitTemplates}
                 getIsSaved={getIsSaved}
                 onToggleSave={handleToggleSave}
+                onClearSearch={handleClearSearch}
+                onClearCategory={() => setCategory("All")}
                 onViewAllTemplates={() => setTab("templates")}
+                isSavePending={isSavePending}
               />
             </TabsContent>
 
@@ -259,6 +257,9 @@ export function ExploreClient({ articlesPromise, categoriesPromise, settings, fe
                 savedGoals={savedGoals}
                 onToggleSave={handleToggleSave}
                 onRemoveSavedById={handleRemoveSavedById}
+                onExplore={() => setTab("explore")}
+                isLoading={isSavedItemsLoading || isSavedDetailsLoading}
+                isRemoving={removeSavedItem.isPending}
               />
             </TabsContent>
 
@@ -267,13 +268,15 @@ export function ExploreClient({ articlesPromise, categoriesPromise, settings, fe
               <TemplatesTab
                 habitTemplates={habitTemplates}
                 goalTemplates={goalTemplates}
-                onCreateHabit={(data) => createHabit(data)}
-                onCreateGoal={(data) => createGoal(data)}
+                onCreateHabit={(data) => createHabit.mutate(data)}
+                onCreateGoal={(data) => createGoal.mutate(data)}
+                creatingHabitName={createHabit.isPending ? createHabit.variables?.name : undefined}
+                creatingGoalTitle={createGoal.isPending ? createGoal.variables?.title : undefined}
               />
             </TabsContent>
 
-            {/* People tab */}
-            <TabsContent value="people">
+            {/* Community tab */}
+            <TabsContent value="community">
               <CommunityTab settings={settings} />
             </TabsContent>
           </Tabs>
