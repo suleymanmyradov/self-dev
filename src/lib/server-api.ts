@@ -3,7 +3,7 @@ import 'server-only';
 import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
-import { backendUrl, config, isAiGatewayPath, isDev } from './config';
+import { config, isAiGatewayPath, isDev } from './config';
 import { ApiError } from '@/api/axios-client';
 
 const AUTH_COOKIE_NAME = 'auth-token';

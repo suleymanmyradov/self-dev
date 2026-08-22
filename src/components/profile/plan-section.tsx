@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useSearchParams, useRouter, usePathname } from "next/navigation";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
@@ -69,13 +69,25 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
   // after the Stripe webhook lands — the webhook that actually flips the
   // subscription to "active" can arrive a few seconds after the redirect, so
   // a single refetch may still read stale "free" state.
-  const [isPollingBilling, setIsPollingBilling] = useState(false);
+  //
+  // Polling timers are stored in a ref instead of a state flag so that
+  // router.replace (which clears the URL param and re-triggers this effect)
+  // does not cancel the timers via the effect cleanup. The ref is cleaned up
+  // on unmount only.
+  const pollingCleanupRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     const checkoutResult = searchParams.get("checkout");
     if (checkoutResult !== "success" && checkoutResult !== "canceled") return;
     if (checkoutResult === "success") {
       toast.success("Payment successful! Your Pro plan is now active.");
-      setIsPollingBilling(true);
+      const refetch = () => queryClient.invalidateQueries({ queryKey: ["billing"] });
+      refetch();
+      const timers = [2, 4, 7, 11].map((s) => setTimeout(refetch, s * 1000));
+      const stop = setTimeout(() => { pollingCleanupRef.current = null; }, 12_000);
+      pollingCleanupRef.current = () => {
+        timers.forEach(clearTimeout);
+        clearTimeout(stop);
+      };
     } else {
       toast.info("Checkout was canceled. You can try again anytime.");
     }
@@ -84,23 +96,12 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
     params.delete("checkout");
     const query = params.toString();
     router.replace(query ? `${pathname}?${query}` : pathname, { scroll: false });
-  }, [searchParams, router, pathname]);
+  }, [searchParams, router, pathname, queryClient]);
 
-  // Poll the billing overview for ~12s after a successful checkout to catch
-  // the webhook-driven subscription update. Decoupled from the URL-param
-  // effect above so the router.replace (which clears the param) doesn't
-  // cancel the timers.
+  // Clean up polling timers on unmount only.
   useEffect(() => {
-    if (!isPollingBilling) return;
-    const refetch = () => queryClient.invalidateQueries({ queryKey: ["billing"] });
-    refetch();
-    const timers = [2, 4, 7, 11].map((s) => setTimeout(refetch, s * 1000));
-    const stop = setTimeout(() => setIsPollingBilling(false), 12_000);
-    return () => {
-      timers.forEach(clearTimeout);
-      clearTimeout(stop);
-    };
-  }, [isPollingBilling, queryClient]);
+    return () => { pollingCleanupRef.current?.(); };
+  }, []);
 
   const handleUpgrade = () => {
     trackEvent.mutate({

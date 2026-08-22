@@ -20,11 +20,17 @@ export function DataSection() {
   });
 
   // On success the server action redirects to /login, so we only need to
-  // handle the error path here.
+  // handle the error path here. Close the dialog via render-time state
+  // adjustment (per React docs) to avoid setState-in-effect cascading
+  // renders; the toast is a side effect and stays in the effect.
+  const [lastError, setLastError] = useState<string | undefined>(undefined);
+  if (!state.success && state.error && state.error !== lastError) {
+    setLastError(state.error);
+    setConfirmOpen(false);
+  }
   useEffect(() => {
     if (!state.success && state.error) {
       toast.error(state.error);
-      setConfirmOpen(false);
     }
   }, [state]);
 
