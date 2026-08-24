@@ -4,7 +4,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Camera } from "lucide-react";
 import type { Profile, Settings } from "@/api";
 
@@ -19,6 +18,7 @@ export function ProfileSection({
   profilePending,
   profileError,
   settings,
+  onDeleteAccountClick,
 }: {
   profile: Profile;
   avatarUrl: string;
@@ -30,8 +30,8 @@ export function ProfileSection({
   profilePending: boolean;
   profileError?: string;
   settings: Settings | null;
+  onDeleteAccountClick: () => void;
 }) {
-  const timezones = Intl.supportedValuesOf("timeZone");
 
   return (
     <div className="space-y-6">
@@ -88,19 +88,13 @@ export function ProfileSection({
               />
             </div>
             <div className="space-y-1.5">
-              <label className="text-sm font-medium">Time zone</label>
-              <Select name="timezone" defaultValue={settings?.timezone || undefined}>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Select timezone" />
-                </SelectTrigger>
-                <SelectContent>
-                  {timezones.map((tz) => (
-                    <SelectItem key={tz} value={tz}>
-                      {tz}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <label className="text-sm font-medium" htmlFor="username">Username</label>
+              <Input
+                id="username"
+                value={profile.username ?? ""}
+                disabled
+                className="text-muted-foreground"
+              />
             </div>
           </div>
 
@@ -130,11 +124,22 @@ export function ProfileSection({
 
       {/* Footer links */}
       <div className="flex items-center gap-4 text-sm text-muted-foreground">
-        <button className="hover:text-foreground transition-colors" type="button">
+        <button
+          className="hover:text-foreground transition-colors"
+          type="button"
+          onClick={() => {
+            const event = new CustomEvent("profile:navigate", { detail: "data" });
+            window.dispatchEvent(event);
+          }}
+        >
           Export everything
         </button>
         <span>·</span>
-        <button className="hover:text-foreground transition-colors" type="button">
+        <button
+          className="hover:text-foreground transition-colors text-destructive"
+          type="button"
+          onClick={onDeleteAccountClick}
+        >
           Delete account
         </button>
       </div>

@@ -211,13 +211,19 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
             ))}
           </ul>
 
-          <Button
-            variant="outline"
-            className="w-full"
-            disabled={currentPlanCode === "free"}
-          >
-            {currentPlanCode === "free" ? "You&apos;re on this plan" : "Start Free"}
-          </Button>
+          {/* Hide the Free card button entirely when the user is on Pro.
+              Downgrades are handled in the Stripe customer portal, which is
+              already reachable via the "Manage billing" button on the Pro
+              card — showing a dead "Start Free" button here is misleading. */}
+          {!isPro && (
+            <Button
+              variant="outline"
+              className="w-full"
+              disabled={currentPlanCode === "free"}
+            >
+              {currentPlanCode === "free" ? "You&apos;re on this plan" : "Start Free"}
+            </Button>
+          )}
         </div>
 
         {/* Pro card */}

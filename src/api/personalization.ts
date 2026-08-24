@@ -13,6 +13,10 @@ import {
   PersonalizedCoachingResponseSchema,
   GenerateOnboardingHabitsRequestSchema,
   GenerateOnboardingHabitsResponseSchema,
+  ListMemoryFactsResponseSchema,
+  MemoryFactResponseSchema,
+  AddMemoryFactRequestSchema,
+  ForgetAllMemoryFactsResponseSchema,
 } from '@/lib/validation';
 import type {
   CoachingProfile,
@@ -27,6 +31,11 @@ import type {
   StreamAttachment,
   GenerateOnboardingHabitsRequest,
   OnboardingHabitSuggestion,
+  MemoryFact,
+  ListMemoryFactsParams,
+  ListMemoryFactsResponse,
+  AddMemoryFactRequest,
+  ForgetAllMemoryFactsResponse,
 } from './types';
 
 const ENDPOINTS = {
@@ -37,6 +46,8 @@ const ENDPOINTS = {
   PERSONALIZED_COACHING: '/personalization/coaching',
   COACHING_STREAM: '/personalization/coaching-stream',
   ONBOARDING_HABITS: '/personalization/onboarding-habits',
+  MEMORY_FACTS: '/memory/facts',
+  MEMORY_FACT: (id: string) => `/memory/facts/${encodeURIComponent(id)}`,
 };
 
 export interface UpsertCoachingProfileRequest {
@@ -196,6 +207,7 @@ export interface StreamCoachingRequest {
   goalId?: string;
   attachments?: StreamAttachment[];
   regenerate?: boolean;
+  clientMessageId?: string;
 }
 
 export function streamPersonalizedCoaching(
@@ -212,6 +224,7 @@ export function streamPersonalizedCoaching(
         goalId: data.goalId,
         attachments: data.attachments,
         regenerate: data.regenerate,
+        clientMessageId: data.clientMessageId,
       });
       const streamUrl = `${config.apiUrl}${ENDPOINTS.COACHING_STREAM}`;
       const response = await fetch(streamUrl, {
@@ -338,4 +351,48 @@ export async function generateOnboardingHabits(
   const response = await api.post<unknown>(ENDPOINTS.ONBOARDING_HABITS, validated);
   const parsed = GenerateOnboardingHabitsResponseSchema.parse(response);
   return parsed.data;
+}
+
+// ============================================
+// Memory Facts — curated long-term memory
+// ============================================
+
+/**
+ * List the coach's curated facts about the user. These are the durable
+ * commitments, preferences, constraints, and context that the coach injects
+ * into the system prompt by default.
+ */
+export async function listMemoryFacts(
+  params: ListMemoryFactsParams = { page: 1, limit: 50 },
+): Promise<ListMemoryFactsResponse> {
+  const response = await api.get<unknown>(ENDPOINTS.MEMORY_FACTS, params);
+  return ListMemoryFactsResponseSchema.parse(response);
+}
+
+/**
+ * Add a user-authored fact. User-authored facts outrank model-extracted ones.
+ * Set `supersedesId` to correct an existing fact — the old one is marked
+ * superseded and the new one becomes the current belief.
+ */
+export async function addMemoryFact(data: AddMemoryFactRequest): Promise<MemoryFact> {
+  const validated = AddMemoryFactRequestSchema.parse(data);
+  const response = await api.post<unknown>(ENDPOINTS.MEMORY_FACTS, validated);
+  const parsed = MemoryFactResponseSchema.parse(response);
+  return parsed.data;
+}
+
+/**
+ * Forget (delete) a single memory fact.
+ */
+export async function forgetMemoryFact(id: string): Promise<void> {
+  await api.delete(ENDPOINTS.MEMORY_FACT(id));
+}
+
+/**
+ * Forget all memory facts. Requires `confirm: true` to guard against an
+ * accidental wipe from a stray DELETE.
+ */
+export async function forgetAllMemoryFacts(): Promise<ForgetAllMemoryFactsResponse> {
+  const response = await api.delete<unknown>(ENDPOINTS.MEMORY_FACTS, { confirm: true });
+  return ForgetAllMemoryFactsResponseSchema.parse(response);
 }

@@ -36,6 +36,9 @@ export interface ChatThreadContextValue {
     currentConversationId: string | undefined;
     setCurrentConversationId: Dispatch<SetStateAction<string | undefined>>;
     retry: (messageId: string) => Promise<void>;
+    hasMoreMessages: boolean;
+    isLoadingOlder: boolean;
+    loadOlderMessages: () => Promise<void>;
 }
 
 export interface ChatComposerContextValue {
@@ -115,6 +118,9 @@ export function ChatProvider({
         setCurrentConversationId,
         onNew,
         onCancel,
+        hasMoreMessages,
+        isLoadingOlder,
+        loadOlderMessages,
     } = state;
     const [text, setText] = useState('');
     const [attachments, setAttachments] = useState<ChatAttachment[]>([]);
@@ -191,6 +197,9 @@ export function ChatProvider({
                 displayText: previousUserMessage.content,
                 attachments: previousUserMessage.attachments,
                 regenerateMessageId: messageId,
+                // Reuse the original clientMessageId so the backend deduplicates
+                // if the first attempt actually persisted the user turn.
+                clientMessageId: previousUserMessage.clientMessageId,
             });
         },
         [isRunning, messages, onNew],
@@ -224,6 +233,9 @@ export function ChatProvider({
             currentConversationId,
             setCurrentConversationId,
             retry,
+            hasMoreMessages,
+            isLoadingOlder,
+            loadOlderMessages,
             text,
             setText,
             attachments,
@@ -258,6 +270,9 @@ export function ChatProvider({
             text,
             thinkingMessage,
             updateEditing,
+            hasMoreMessages,
+            isLoadingOlder,
+            loadOlderMessages,
         ],
     );
 

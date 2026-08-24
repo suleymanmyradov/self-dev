@@ -416,6 +416,11 @@ export interface StartConversationRequest {
 
 export interface SendMessageRequest {
   content: string;
+  /**
+   * Idempotency key. Retrying a send with the same value returns the message
+   * already stored instead of creating a second copy of the turn.
+   */
+  clientMessageId?: string;
 }
 
 export interface ConversationsResponse extends ApiResponse<Conversation[]> {
@@ -434,7 +439,44 @@ export type MessageResponse = ApiResponse<Message>;
 
 export interface ListConversationsParams extends PageParams {
   type?: ConversationType;
+  /**
+   * false (the default) lists active conversations, true lists archived ones.
+   * Archived conversations previously appeared in the active list.
+   */
+  archived?: boolean;
 }
+
+// ============================================
+// Memory Fact Types (curated long-term memory)
+// ============================================
+
+export type MemoryFactCategory = 'commitment' | 'preference' | 'constraint' | 'context';
+
+export interface MemoryFact {
+  id: string;
+  fact: string;
+  category: MemoryFactCategory;
+  confidence: number;
+  userAuthored: boolean;
+  createdAt: string;
+}
+
+export interface ListMemoryFactsParams extends PageParams {}
+
+export interface ListMemoryFactsResponse extends ApiResponse<MemoryFact[]> {
+  page: PageResponse;
+}
+
+export type MemoryFactResponse = ApiResponse<MemoryFact>;
+
+export interface AddMemoryFactRequest {
+  fact: string;
+  category: MemoryFactCategory;
+  /** When set, the id of the fact this one corrects (supersession). */
+  supersedesId?: string;
+}
+
+export interface ForgetAllMemoryFactsResponse extends ApiResponse<{ forgotten: boolean }> {}
 
 // ============================================
 // Settings Types
@@ -822,6 +864,11 @@ export interface GeneratePersonalizedCoachingRequest {
   context?: string;
   goalId?: string;
   attachments?: StreamAttachment[];
+  /**
+   * Idempotency key for the user turn. Retrying a failed send with the same
+   * value returns the message already stored instead of creating a duplicate.
+   */
+  clientMessageId?: string;
 }
 
 export interface GeneratePersonalizedCoachingResponse {

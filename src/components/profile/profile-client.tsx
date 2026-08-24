@@ -1,6 +1,6 @@
 "use client";
 
-import { useActionState, useCallback, useEffect, useRef, useState } from "react";
+import { startTransition, useActionState, useCallback, useEffect, useRef, useState } from "react";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { toast } from "@/components/ui/sonner";
 import type {
@@ -20,6 +20,7 @@ import { cn } from "@/lib/utils";
 import { ProfileClientProps, SectionId, NAV_ITEMS } from "@/components/profile/types";
 import { ProfileSection } from "@/components/profile/profile-section";
 import { CoachingSection } from "@/components/profile/coaching-section";
+import { MemorySection } from "@/components/profile/memory-section";
 import { RemindersSection } from "@/components/profile/reminders-section";
 import { NotificationsSection } from "@/components/profile/notifications-section";
 import { AppearanceSection } from "@/components/profile/appearance-section";
@@ -44,7 +45,7 @@ export function ProfileClient({
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   // Settings state
-  const [settingsState] = useActionState(updateSettingsAction, {
+  const [settingsState, settingsAction, settingsPending] = useActionState(updateSettingsAction, {
     success: false,
   });
   const [notifState, notifAction, notifPending] = useActionState(updateNotificationPreferencesAction, {
@@ -110,7 +111,9 @@ export function ProfileClient({
       formData.set("goalRemindersEnabled", String(merged.goalRemindersEnabled));
       formData.set("streakWarningsEnabled", String(merged.streakWarningsEnabled));
       formData.set("sundayReviewEnabled", String(merged.sundayReviewEnabled));
-      notifAction(formData);
+      startTransition(() => {
+        notifAction(formData);
+      });
     },
     [notifAction, emailEnabled, pushEnabled, habitReminders, goalReminders, streakWarnings, sundayReview],
   );
@@ -127,6 +130,10 @@ export function ProfileClient({
     (value: boolean) => submitPrefs({ habitRemindersEnabled: value }),
     [submitPrefs],
   );
+  const handleGoalRemindersToggle = useCallback(
+    (value: boolean) => submitPrefs({ goalRemindersEnabled: value }),
+    [submitPrefs],
+  );
   const handleStreakWarningsToggle = useCallback(
     (value: boolean) => submitPrefs({ streakWarningsEnabled: value }),
     [submitPrefs],
@@ -136,21 +143,60 @@ export function ProfileClient({
     [submitPrefs],
   );
 
+  // Settings (timezone, checkInTime) — submitted via the settings action, not
+  // the profile action, because these fields belong to UpdateSettingsRequest.
+  const submitSettings = useCallback(
+    (overrides: { timezone?: string; checkInTime?: string }) => {
+      const formData = new FormData();
+      if (overrides.timezone !== undefined) {
+        formData.set("timezone", overrides.timezone);
+      }
+      if (overrides.checkInTime !== undefined) {
+        formData.set("checkInTime", overrides.checkInTime);
+      }
+      startTransition(() => {
+        settingsAction(formData);
+      });
+    },
+    [settingsAction],
+  );
+
   const handleCoachingChange = useCallback(
-    (style: AccountabilityStyle) => {
+    (overrides: {
+      accountabilityStyle?: AccountabilityStyle;
+      preferredTone?: PreferredTone;
+      difficultyPreference?: DifficultyPreference;
+    }) => {
       const current = coachingProfile ?? {
         accountabilityStyle: "balanced" as AccountabilityStyle,
         preferredTone: "supportive" as PreferredTone,
         difficultyPreference: "adaptive" as DifficultyPreference,
       };
       const formData = new FormData();
-      formData.set("accountabilityStyle", style);
-      formData.set("preferredTone", current.preferredTone);
-      formData.set("difficultyPreference", current.difficultyPreference);
-      coachingAction(formData);
+      formData.set("accountabilityStyle", overrides.accountabilityStyle ?? current.accountabilityStyle);
+      formData.set("preferredTone", overrides.preferredTone ?? current.preferredTone);
+      formData.set("difficultyPreference", overrides.difficultyPreference ?? current.difficultyPreference);
+      startTransition(() => {
+        coachingAction(formData);
+      });
     },
-    [coachingAction, coachingProfile]
+    [coachingAction, coachingProfile],
   );
+
+  const handleDeleteAccountClick = useCallback(() => {
+    setActiveSection("data");
+  }, []);
+
+  // Listen for navigation events from child sections (e.g. profile footer
+  // "Export everything" link → switch to the data section).
+  useEffect(() => {
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail as SectionId;
+      if (detail) setActiveSection(detail);
+    };
+    window.addEventListener("profile:navigate", handler);
+    return () => window.removeEventListener("profile:navigate", handler);
+  }, []);
 
   const initials = profile.fullName
     ? profile.fullName
@@ -240,6 +286,7 @@ export function ProfileClient({
               profilePending={profilePending}
               profileError={profileState.error}
               settings={settings}
+              onDeleteAccountClick={handleDeleteAccountClick}
             />
           )}
 
@@ -251,16 +298,22 @@ export function ProfileClient({
             />
           )}
 
+          {activeSection === "memory" && <MemorySection />}
+
           {activeSection === "reminders" && (
             <RemindersSection
               notificationPreferences={notificationPreferences}
               notifPending={notifPending}
               onHabitRemindersToggle={handleHabitRemindersToggle}
+              goalReminders={goalReminders}
+              onGoalRemindersToggle={handleGoalRemindersToggle}
               streakWarnings={streakWarnings}
               onStreakWarningsChange={handleStreakWarningsToggle}
               sundayReview={sundayReview}
               onSundayReviewChange={handleSundayReviewToggle}
               settings={settings}
+              settingsPending={settingsPending}
+              onSettingsSave={submitSettings}
             />
           )}
 

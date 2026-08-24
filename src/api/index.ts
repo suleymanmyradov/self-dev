@@ -91,6 +91,15 @@ export type {
   MessageResponse,
   ListConversationsParams,
 
+  // Memory Fact Types
+  MemoryFactCategory,
+  MemoryFact,
+  ListMemoryFactsParams,
+  ListMemoryFactsResponse,
+  MemoryFactResponse,
+  AddMemoryFactRequest,
+  ForgetAllMemoryFactsResponse,
+
   // Settings Types
   AccountabilityStyle,
   Settings,
@@ -241,6 +250,10 @@ export {
   generatePersonalizedCoaching,
   streamPersonalizedCoaching,
   generateOnboardingHabits,
+  listMemoryFacts,
+  addMemoryFact,
+  forgetMemoryFact,
+  forgetAllMemoryFacts,
 } from './personalization';
 
 // Report API

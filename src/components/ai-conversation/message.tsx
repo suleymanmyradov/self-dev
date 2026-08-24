@@ -24,7 +24,7 @@ interface AssistantMessageProps {
 }
 
 export const AssistantMessage: FC<AssistantMessageProps> = ({ message, isLast }) => {
-    const { thinkingMessage } = useChatThread();
+    const { thinkingMessage, retry } = useChatThread();
     const isThinking = message.status === 'running' && !message.content;
 
     return (
@@ -49,7 +49,7 @@ export const AssistantMessage: FC<AssistantMessageProps> = ({ message, isLast })
                         </div>
                     )
                 )}
-                {message.error && <MessageError message={message.error} />}
+                {message.error && <MessageError message={message.error} messageId={message.id} onRetry={retry} />}
             </div>
 
             {message.proposals && message.proposals.length > 0 && (
@@ -74,10 +74,18 @@ export const AssistantMessage: FC<AssistantMessageProps> = ({ message, isLast })
     );
 };
 
-const MessageError: FC<{ message: string }> = ({ message }) => {
+const MessageError: FC<{ message: string; messageId: string; onRetry: (id: string) => void }> = ({ message, messageId, onRetry }) => {
     return (
         <div className="aui-message-error-root mt-2 rounded-md border border-destructive bg-destructive/10 p-3 text-sm text-destructive dark:bg-destructive/5 dark:text-red-200">
             <p className="aui-message-error-message">{message}</p>
+            <button
+                type="button"
+                onClick={() => onRetry(messageId)}
+                className="aui-message-error-retry mt-2 inline-flex items-center gap-1.5 rounded-md border border-destructive/30 px-2.5 py-1 text-xs font-medium text-destructive transition-colors hover:bg-destructive/10"
+            >
+                <RefreshCwIcon className="size-3" />
+                Retry
+            </button>
         </div>
     );
 };

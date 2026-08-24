@@ -71,6 +71,7 @@ describe('useConversationMessages', () => {
         conversationId: 'conversation-1',
         attachments: undefined,
         goalId: '11111111-1111-4111-8111-111111111111',
+        clientMessageId: expect.any(String),
       },
       expect.anything(),
     );
@@ -187,7 +188,7 @@ describe('useConversationMessages', () => {
     });
     expect(mocks.startConversation).not.toHaveBeenCalled();
     expect(mocks.streamPersonalizedCoaching).toHaveBeenCalledWith(
-      { userMessage: 'Continue', conversationId: 'conversation-2', attachments: undefined },
+      { userMessage: 'Continue', conversationId: 'conversation-2', attachments: undefined, clientMessageId: expect.any(String) },
       expect.anything(),
     );
   });
@@ -237,6 +238,7 @@ describe('useConversationMessages', () => {
         conversationId: 'conversation-4',
         attachments: undefined,
         regenerate: true,
+        clientMessageId: expect.any(String),
       },
       expect.anything(),
     );

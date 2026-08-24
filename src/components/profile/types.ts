@@ -8,7 +8,7 @@ import type {
   BillingOverviewResponse,
 } from "@/api";
 
-export type SectionId = "profile" | "coaching" | "reminders" | "notifications" | "appearance" | "plan" | "data";
+export type SectionId = "profile" | "coaching" | "memory" | "reminders" | "notifications" | "appearance" | "plan" | "data";
 
 export interface ProfileClientProps {
   profile: Profile;
@@ -44,9 +44,32 @@ export const COACHING_STYLES: {
   },
 ];
 
+export const COACHING_TONES: {
+  id: PreferredTone;
+  label: string;
+  description: string;
+}[] = [
+  { id: "supportive", label: "Supportive", description: "Warm and encouraging" },
+  { id: "direct", label: "Direct", description: "Straight to the point" },
+  { id: "warm", label: "Warm", description: "Friendly and personal" },
+  { id: "practical", label: "Practical", description: "Action-oriented, no fluff" },
+  { id: "challenging", label: "Challenging", description: "Pushes you to do more" },
+];
+
+export const COACHING_DIFFICULTIES: {
+  id: DifficultyPreference;
+  label: string;
+  description: string;
+}[] = [
+  { id: "easy", label: "Easy", description: "Small, safe steps" },
+  { id: "adaptive", label: "Adaptive", description: "Adjusts to your pace" },
+  { id: "ambitious", label: "Ambitious", description: "Stretch goals" },
+];
+
 export const NAV_ITEMS: { id: SectionId; label: string }[] = [
   { id: "profile", label: "Profile" },
   { id: "coaching", label: "Coaching" },
+  { id: "memory", label: "Memory" },
   { id: "reminders", label: "Reminders" },
   { id: "notifications", label: "Notifications" },
   { id: "appearance", label: "Appearance" },

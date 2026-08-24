@@ -16,7 +16,8 @@ const notification = (overrides: Partial<Notification>): Notification => ({
 describe('notificationDestination', () => {
   it('maps allowlisted destinations', () => {
     expect(notificationDestination(notification({ destination: 'weekly-review' }))).toBe('/progress');
-    expect(notificationDestination(notification({ destination: 'habit-detail' }))).toBe('/habits');
+    expect(notificationDestination(notification({ destination: 'habit-detail' }))).toBe('/plan');
+    expect(notificationDestination(notification({ destination: 'goal-detail' }))).toBe('/plan');
   });
 
   it('requires resource ids for detail routes', () => {

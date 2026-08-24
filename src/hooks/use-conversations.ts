@@ -8,10 +8,10 @@ import type { StartConversationRequest, SendMessageRequest, ListConversationsPar
 const DEFAULT_CONVERSATIONS_PARAMS: ListConversationsParams = { page: 1, limit: 20 };
 
 export function useConversations(params: ListConversationsParams = DEFAULT_CONVERSATIONS_PARAMS) {
-  const { page, limit, type } = params;
+  const { page, limit, type, archived } = params;
   return useQuery({
-    queryKey: ['conversations', page ?? 1, limit ?? 20, type],
-    queryFn: () => listConversations({ page, limit, type }),
+    queryKey: ['conversations', page ?? 1, limit ?? 20, type, archived ?? false],
+    queryFn: () => listConversations({ page, limit, type, archived }),
     select: (data) => data.data,
   });
 }

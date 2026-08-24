@@ -443,6 +443,9 @@ export const StartConversationRequestSchema = z.object({
 
 export const SendMessageRequestSchema = z.object({
   content: z.string().min(1, 'Message cannot be empty').max(5000),
+  // Idempotency key: retrying a send with the same value returns the message
+  // already stored rather than duplicating the turn.
+  clientMessageId: z.string().optional(),
 });
 
 export const ConversationsResponseSchema = ApiResponseSchema(z.array(ConversationSchema)).extend({
@@ -457,6 +460,37 @@ export const MessagesResponseSchema = ApiResponseSchema(z.array(MessageSchema)).
 });
 
 export const MessageResponseSchema = ApiResponseSchema(MessageSchema);
+
+// ============================================
+// Memory Fact Schemas (curated long-term memory)
+// ============================================
+
+export const MemoryFactCategorySchema = z.enum(['commitment', 'preference', 'constraint', 'context']);
+
+export const MemoryFactSchema = z.object({
+  id: z.string(),
+  fact: z.string(),
+  category: MemoryFactCategorySchema,
+  confidence: z.number(),
+  userAuthored: z.boolean(),
+  createdAt: z.string(),
+});
+
+export const ListMemoryFactsResponseSchema = ApiResponseSchema(z.array(MemoryFactSchema)).extend({
+  page: PageResponseSchema,
+});
+
+export const MemoryFactResponseSchema = ApiResponseSchema(MemoryFactSchema);
+
+export const AddMemoryFactRequestSchema = z.object({
+  fact: z.string().min(1, 'Fact cannot be empty').max(500),
+  category: MemoryFactCategorySchema,
+  supersedesId: z.string().optional(),
+});
+
+export const ForgetAllMemoryFactsResponseSchema = ApiResponseSchema(
+  z.object({ forgotten: z.boolean() }),
+);
 
 // ============================================
 // Settings Schemas
@@ -726,6 +760,7 @@ export const GeneratePersonalizedCoachingRequestSchema = z.object({
   goalId: z.string().uuid().optional(),
   attachments: z.array(StreamAttachmentSchema).optional(),
   regenerate: z.boolean().optional(),
+  clientMessageId: z.string().optional(),
 });
 
 export const GeneratePersonalizedCoachingResponseSchema = z.object({

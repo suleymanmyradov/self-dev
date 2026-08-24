@@ -1,6 +1,7 @@
 'use client';
 
-import { useCallback, useEffect, useRef, useState, type CSSProperties } from 'react';
+import { useCallback, useEffect, useLayoutEffect, useRef, useState, type CSSProperties } from 'react';
+import { Loader2Icon } from 'lucide-react';
 import { LazyMotion, MotionConfig, domAnimation } from 'motion/react';
 
 import { useChatThread } from '@/components/ai-conversation/chat-context';
@@ -9,10 +10,14 @@ import { AssistantMessage, UserMessage } from '@/components/ai-conversation/mess
 import { ThreadWelcome } from '@/components/ai-conversation/thread-welcome';
 
 export function Thread() {
-    const { messages, isEmpty, thinkingMessage } = useChatThread();
+    const { messages, isEmpty, thinkingMessage, hasMoreMessages, isLoadingOlder, loadOlderMessages } = useChatThread();
     const viewportRef = useRef<HTMLDivElement>(null);
     const bottomRef = useRef<HTMLDivElement>(null);
     const [isAtBottom, setIsAtBottom] = useState(true);
+    // Scroll height before older messages were prepended, used to preserve the
+    // viewport position so the user doesn't get jumped to a different message.
+    const prevScrollHeightRef = useRef<number | null>(null);
+    const loadingOlderRef = useRef(false);
 
     const scrollToBottom = useCallback((behavior: ScrollBehavior = 'smooth') => {
         const viewport = viewportRef.current;
@@ -27,7 +32,34 @@ export function Thread() {
         const distanceFromBottom =
             viewport.scrollHeight - viewport.scrollTop - viewport.clientHeight;
         setIsAtBottom(distanceFromBottom < 80);
-    }, []);
+
+        // Upward pagination: when the user scrolls near the top, load older
+        // messages. The scroll position is preserved by the layout effect below.
+        if (
+            viewport.scrollTop < 100 &&
+            hasMoreMessages &&
+            !isLoadingOlder &&
+            !loadingOlderRef.current
+        ) {
+            loadingOlderRef.current = true;
+            prevScrollHeightRef.current = viewport.scrollHeight;
+            void loadOlderMessages().finally(() => {
+                loadingOlderRef.current = false;
+            });
+        }
+    }, [hasMoreMessages, isLoadingOlder, loadOlderMessages]);
+
+    // After older messages are prepended, adjust scrollTop by the increase in
+    // scrollHeight so the viewport stays on the same message.
+    useLayoutEffect(() => {
+        const viewport = viewportRef.current;
+        if (!viewport || prevScrollHeightRef.current === null) return;
+        const delta = viewport.scrollHeight - prevScrollHeightRef.current;
+        if (delta > 0) {
+            viewport.scrollTop += delta;
+        }
+        prevScrollHeightRef.current = null;
+    }, [messages]);
 
     useEffect(() => {
         if (!isAtBottom) return;
@@ -55,6 +87,12 @@ export function Thread() {
                             <ThreadWelcome />
                         ) : (
                             <>
+                                {isLoadingOlder && (
+                                    <div className="flex items-center justify-center gap-2 py-3 text-xs text-muted-foreground">
+                                        <Loader2Icon className="size-3.5 animate-spin" />
+                                        Loading older messages…
+                                    </div>
+                                )}
                                 {messages.map((message, index) =>
                                     message.role === 'assistant' ? (
                                         <AssistantMessage

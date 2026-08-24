@@ -39,6 +39,7 @@ const ENDPOINTS = {
   RESET_PASSWORD: '/auth/reset-password',
   PROFILE_ME: '/profile/me',
   PROFILE: '/profile',
+  PROFILE_EXPORT: '/profile/export',
 };
 
 /**
@@ -135,6 +136,15 @@ export async function updateProfile(data: UpdateProfileRequest): Promise<Profile
   const validated = UpdateProfileRequestSchema.parse(data);
   const response = await api.put<unknown>(ENDPOINTS.PROFILE, validated);
   return ProfileResponseSchema.parse(response);
+}
+
+/**
+ * Export all user data as a downloadable JSON file.
+ * Returns a presigned URL to the generated export.
+ */
+export async function exportData(): Promise<{ downloadUrl: string }> {
+  const response = await api.post<unknown>(ENDPOINTS.PROFILE_EXPORT);
+  return response as { downloadUrl: string };
 }
 
 /**

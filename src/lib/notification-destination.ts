@@ -6,9 +6,9 @@ export function notificationDestination(notification: Notification): string | nu
     case 'activity':
       return '/progress';
     case 'habit-detail':
-      return '/habits';
     case 'goal-detail':
-      return '/goals';
+      // Habits and goals are both rendered on the /plan page.
+      return '/plan';
     case 'article-detail':
       return notification.resourceId ? `/article/${encodeURIComponent(notification.resourceId)}` : null;
     case 'conversation':

@@ -44,10 +44,17 @@ export const Assistant = ({
     const { data: billing } = useBillingOverview();
     const isPro = billing?.subscription?.planCode === 'pro';
 
-    const { data: conversations, isLoading: conversationsLoading } = useConversations({
+    const { data: activeConversations, isLoading: conversationsLoading } = useConversations({
         page: 1,
         limit: 50,
         type: 'coach',
+        archived: false,
+    });
+    const { data: archivedConversations } = useConversations({
+        page: 1,
+        limit: 50,
+        type: 'coach',
+        archived: true,
     });
     const archiveMutation = useArchiveConversation();
     const unarchiveMutation = useUnarchiveConversation();
@@ -71,7 +78,7 @@ export const Assistant = ({
     }, [conversationId, initialGoalId, initialGoalTitle, onNew]);
 
     const filteredConversations = useMemo(() => {
-        const all = conversations ?? [];
+        const all = [...(activeConversations ?? []), ...(archivedConversations ?? [])];
         const query = searchQuery.trim().toLowerCase();
         if (!query) return all;
         return all.filter(
@@ -79,12 +86,13 @@ export const Assistant = ({
                 conversation.title?.toLowerCase().includes(query) ||
                 conversation.lastMessage?.toLowerCase().includes(query),
         );
-    }, [conversations, searchQuery]);
+    }, [activeConversations, archivedConversations, searchQuery]);
 
     const activeConversation = useMemo(() => {
         if (!currentConversationId) return undefined;
-        return conversations?.find(conversation => conversation.id === currentConversationId);
-    }, [conversations, currentConversationId]);
+        const all = [...(activeConversations ?? []), ...(archivedConversations ?? [])];
+        return all.find(conversation => conversation.id === currentConversationId);
+    }, [activeConversations, archivedConversations, currentConversationId]);
 
     const handleDelete = (id: string) => {
         setDeleteTargetId(id);

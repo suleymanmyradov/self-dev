@@ -18,6 +18,8 @@ export interface CoachingMessage {
     error?: string;
     attachments?: ChatAttachment[];
     proposals?: CoachingProposal[];
+    /** Idempotency key for the user turn. Reused on retry to deduplicate. */
+    clientMessageId?: string;
 }
 
 export interface SendMessageOptions {
@@ -26,6 +28,8 @@ export interface SendMessageOptions {
     goalId?: string;
     attachments?: ChatAttachment[];
     regenerateMessageId?: string;
+    /** Reuse an existing clientMessageId on retry instead of generating new. */
+    clientMessageId?: string;
 }
 
 let messageCounter = 0;
@@ -41,6 +45,9 @@ export function useConversationMessages(conversationId?: string) {
     const [currentConversationId, setCurrentConversationId] = useState<string | undefined>(
         conversationId,
     );
+    const [hasMoreMessages, setHasMoreMessages] = useState(false);
+    const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+    const currentPageRef = useRef(1);
     const abortRef = useRef<AbortController | null>(null);
     const stateVersionRef = useRef(0);
 
@@ -62,6 +69,8 @@ export function useConversationMessages(conversationId?: string) {
                 }));
                 setMessages(loaded);
                 setCurrentConversationId(conversationId);
+                currentPageRef.current = resp.page?.page ?? 1;
+                setHasMoreMessages((resp.page?.page ?? 1) < (resp.page?.totalPages ?? 1));
             } catch (err) {
                 console.error('Failed to load conversation:', err);
             }
@@ -72,16 +81,47 @@ export function useConversationMessages(conversationId?: string) {
         };
     }, [conversationId]);
 
+    const loadOlderMessages = useCallback(async () => {
+        const convId = currentConversationId ?? conversationId;
+        if (!convId || isLoadingOlder || !hasMoreMessages) return;
+
+        const requestVersion = ++stateVersionRef.current;
+        setIsLoadingOlder(true);
+        try {
+            const nextPage = currentPageRef.current + 1;
+            const resp = await getMessages(convId, { page: nextPage, limit: 50 });
+            if (requestVersion !== stateVersionRef.current) return;
+            const older: CoachingMessage[] = resp.data.map(m => ({
+                id: m.id,
+                role: m.role,
+                content: m.content,
+                status: 'complete',
+            }));
+            // Prepend older messages. The API returns newest-first pages
+            // re-sorted ascending, so page N+1's messages are chronologically
+            // before page N's messages.
+            setMessages(prev => [...older, ...prev]);
+            currentPageRef.current = nextPage;
+            setHasMoreMessages(nextPage < (resp.page?.totalPages ?? 1));
+        } catch (err) {
+            console.error('Failed to load older messages:', err);
+        } finally {
+            setIsLoadingOlder(false);
+        }
+    }, [currentConversationId, conversationId, isLoadingOlder, hasMoreMessages]);
+
     const onNew = useCallback(
         async (text: string, options?: SendMessageOptions) => {
             const requestVersion = ++stateVersionRef.current;
             const userText = options?.displayText ?? text;
+            const clientMessageId = options?.clientMessageId ?? crypto.randomUUID();
             const userMsg: CoachingMessage = {
                 id: generateId(),
                 role: 'user',
                 content: userText,
                 status: 'complete',
                 attachments: options?.attachments,
+                clientMessageId,
             };
             const assistantId = generateId();
             const assistantMsg: CoachingMessage = {
@@ -139,6 +179,7 @@ export function useConversationMessages(conversationId?: string) {
                     userMessage: text,
                     conversationId: convId,
                     attachments: apiAttachments,
+                    clientMessageId,
                     ...(options?.goalId ? { goalId: options.goalId } : {}),
                     ...(options?.regenerateMessageId ? { regenerate: true } : {}),
                 },
@@ -283,5 +324,8 @@ export function useConversationMessages(conversationId?: string) {
         onNew,
         onCancel,
         onReset,
+        hasMoreMessages,
+        isLoadingOlder,
+        loadOlderMessages,
     };
 }

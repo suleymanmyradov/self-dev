@@ -12,9 +12,11 @@ import {
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
 import { deleteAccountAction } from "@/lib/actions/auth";
+import { exportData } from "@/api/auth";
 
 export function DataSection() {
   const [confirmOpen, setConfirmOpen] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const [state, action, pending] = useActionState(deleteAccountAction, {
     success: false,
   });
@@ -33,6 +35,23 @@ export function DataSection() {
       toast.error(state.error);
     }
   }, [state]);
+
+  const handleExport = async () => {
+    setExporting(true);
+    try {
+      const { downloadUrl } = await exportData();
+      if (downloadUrl) {
+        window.open(downloadUrl, "_blank");
+        toast.success("Your data export is ready. Download started in a new tab.");
+      } else {
+        toast.error("Export returned an empty URL. Please try again.");
+      }
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Data export failed");
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -53,8 +72,13 @@ export function DataSection() {
             <p className="text-sm font-medium">Export everything</p>
             <p className="text-xs text-muted-foreground">Download all your data as JSON</p>
           </div>
-          <Button variant="outline" size="sm" disabled>
-            Export
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleExport}
+            disabled={exporting}
+          >
+            {exporting ? "Exporting..." : "Export"}
           </Button>
         </div>
 
