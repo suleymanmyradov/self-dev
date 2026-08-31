@@ -20,6 +20,7 @@ const items: Array<
   { type: "separator" },
   { type: "item", label: "Pricing", href: "/me" },
   { type: "separator" },
+  { type: "item", label: "Help", href: "/help" },
   { type: "item", label: "Report a problem", href: "/report" },
   { type: "separator" },
   { type: "item", label: "Log out", href: "/logout" },

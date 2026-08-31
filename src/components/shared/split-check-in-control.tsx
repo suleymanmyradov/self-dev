@@ -2,6 +2,7 @@
 
 import { cn } from '@/lib/utils';
 import { Check, Pencil } from 'lucide-react';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/ui/tooltip';
 
 interface SplitCheckInControlProps {
   /** Whether the habit is already checked in today. */
@@ -46,40 +47,55 @@ export function SplitCheckInControl({
       )}
     >
       {/* Fast check-in half */}
-      <button
-        type="button"
-        onClick={onCheckIn}
-        disabled={disabled}
-        aria-label={checked ? `Undo ${ariaLabel}` : ariaLabel}
-        aria-pressed={checked}
-        className={cn(
-          'flex items-center justify-center transition-[background-color,transform] duration-200 ease-out',
-          'hover:bg-success/5 active:scale-[0.96] disabled:cursor-not-allowed disabled:active:scale-100',
-          checked && 'bg-success text-success-foreground hover:bg-success',
-        )}
-        style={{ width: 28, height: 28 }}
-      >
-        {checked && <Check className="h-3.5 w-3.5" strokeWidth={2.5} />}
-      </button>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <button
+            type="button"
+            onClick={onCheckIn}
+            disabled={disabled}
+            aria-label={checked ? `Undo ${ariaLabel}` : ariaLabel}
+            aria-pressed={checked}
+            className={cn(
+              'flex items-center justify-center transition-[background-color,transform] duration-200 ease-out',
+              'hover:bg-success/5 active:scale-[0.96] disabled:cursor-not-allowed disabled:active:scale-100',
+              checked && 'bg-success text-success-foreground hover:bg-success',
+            )}
+            style={{ width: 28, height: 28 }}
+          >
+            <Check
+              className={cn('h-3.5 w-3.5', checked ? 'text-success-foreground' : 'text-muted-foreground/40')}
+              strokeWidth={2.5}
+            />
+          </button>
+        </TooltipTrigger>
+        <TooltipContent side="bottom">
+          {checked ? `Undo check-in` : `Quick check-in`}
+        </TooltipContent>
+      </Tooltip>
 
       {/* Detailed half — opens the check-in modal */}
       {!hideDetails && (
         <>
           <div className={cn('w-px self-stretch', checked ? 'bg-success/40' : 'bg-muted-foreground/20')} />
-          <button
-            type="button"
-            onClick={onLogDetails}
-            disabled={disabled}
-            aria-label={`Log details for ${ariaLabel}`}
-            className={cn(
-              'flex items-center justify-center transition-[background-color,transform] duration-200 ease-out',
-              'text-muted-foreground hover:text-foreground hover:bg-accent active:scale-[0.96] disabled:cursor-not-allowed disabled:active:scale-100',
-              checked && 'text-success-foreground/80 hover:text-success-foreground',
-            )}
-            style={{ width: 22, height: 28 }}
-          >
-            <Pencil className="h-3 w-3" strokeWidth={2.25} />
-          </button>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <button
+                type="button"
+                onClick={onLogDetails}
+                disabled={disabled}
+                aria-label={`Log details for ${ariaLabel}`}
+                className={cn(
+                  'flex items-center justify-center transition-[background-color,transform] duration-200 ease-out',
+                  'text-muted-foreground hover:text-foreground hover:bg-accent active:scale-[0.96] disabled:cursor-not-allowed disabled:active:scale-100',
+                  checked && 'text-success-foreground/80 hover:text-success-foreground',
+                )}
+                style={{ width: 22, height: 28 }}
+              >
+                <Pencil className="h-3 w-3" strokeWidth={2.25} />
+              </button>
+            </TooltipTrigger>
+            <TooltipContent side="bottom">Detailed check-in</TooltipContent>
+          </Tooltip>
         </>
       )}
     </div>

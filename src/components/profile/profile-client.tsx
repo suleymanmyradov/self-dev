@@ -285,6 +285,7 @@ export function ProfileClient({
               profileAction={profileAction}
               profilePending={profilePending}
               profileError={profileState.error}
+              profileSuccess={profileState.success}
               settings={settings}
               onDeleteAccountClick={handleDeleteAccountClick}
             />

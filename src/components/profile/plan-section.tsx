@@ -221,7 +221,7 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
               className="w-full"
               disabled={currentPlanCode === "free"}
             >
-              {currentPlanCode === "free" ? "You&apos;re on this plan" : "Start Free"}
+              {currentPlanCode === "free" ? "You're on this plan" : "Start Free"}
             </Button>
           )}
         </div>
@@ -260,7 +260,7 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
                 className="w-full"
                 disabled
               >
-                You&apos;re on this plan
+                You're on this plan
               </Button>
               <Button
                 variant="outline"

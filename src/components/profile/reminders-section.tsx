@@ -3,8 +3,8 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
+import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import type { NotificationPreferences, Settings } from "@/api";
 
 export function RemindersSection({
@@ -34,7 +34,6 @@ export function RemindersSection({
   settingsPending: boolean;
   onSettingsSave: (overrides: { timezone?: string; checkInTime?: string }) => void;
 }) {
-  const timezones = Intl.supportedValuesOf("timeZone");
   const [checkInTime, setCheckInTime] = useState(settings?.checkInTime ?? "21:00");
   const [timezone, setTimezone] = useState(settings?.timezone || undefined);
 
@@ -96,21 +95,11 @@ export function RemindersSection({
               {settingsPending ? "Saving..." : "Save"}
             </Button>
           </div>
-          <Select
-            value={timezone || undefined}
-            onValueChange={setTimezone}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Select timezone" />
-            </SelectTrigger>
-            <SelectContent className="max-h-[300px]">
-              {timezones.map((tz) => (
-                <SelectItem key={tz} value={tz}>
-                  {tz}
-                </SelectItem>
-              ))}
-            </SelectContent>
-          </Select>
+          <TimezoneCombobox
+            value={timezone}
+            onChange={setTimezone}
+            disabled={settingsPending}
+          />
         </div>
 
         <div className="h-px bg-border" />

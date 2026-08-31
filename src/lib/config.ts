@@ -102,6 +102,7 @@ const AI_GATEWAY_PATH_PREFIXES = [
   '/weekly-reviews/generate',
   '/weekly-reviews/generate-stream',
   '/conversations',
+  '/memory',
 ];
 
 /**
