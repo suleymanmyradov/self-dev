@@ -1,7 +1,7 @@
 import { cn } from '@/lib/utils';
 
 interface StreakBarProps {
-  /** Array of 14 booleans — oldest first, most recent last */
+  /** Array of booleans — oldest first, most recent last */
   days: boolean[];
   /** Current streak count */
   streak: number;
@@ -11,7 +11,8 @@ interface StreakBarProps {
 }
 
 export function StreakBar({ days, streak, label, className }: StreakBarProps) {
-  const display = days.slice(-14);
+  // Render most-recent-first so the streak fills from the left.
+  const display = days.slice(-14).reverse();
   const completed = display.filter(Boolean).length;
   const total = display.length;
 
@@ -35,7 +36,7 @@ export function StreakBar({ days, streak, label, className }: StreakBarProps) {
             className={cn(
               'h-5 flex-1 rounded-sm transition-colors duration-200',
               done ? 'bg-success' : 'bg-muted',
-              i === display.length - 1 && !done && 'border border-dashed border-muted-foreground/30',
+              i === 0 && !done && 'border border-dashed border-muted-foreground/30',
             )}
           />
         ))}
