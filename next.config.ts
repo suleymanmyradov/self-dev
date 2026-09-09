@@ -1,6 +1,8 @@
 import type { NextConfig } from 'next';
 
 const nextConfig: NextConfig = {
+    // Emits .next/standalone for the production Docker image (deploy/).
+    output: 'standalone',
     // Enables the "use cache" directive, cacheTag, and cacheLife functions.
     // Pages are dynamic by default; only explicitly cached scopes are prerendered.
     cacheComponents: true,
@@ -33,6 +35,12 @@ const nextConfig: NextConfig = {
                 protocol: 'http',
                 hostname: 'localhost',
                 port: '9000',
+            },
+            {
+                // Production: MinIO objects served through the API origin via Caddy.
+                protocol: 'https',
+                hostname: 'api.evolella.com',
+                pathname: '/files/**',
             },
         ],
         formats: ['image/avif', 'image/webp'],

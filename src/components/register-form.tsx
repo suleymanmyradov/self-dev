@@ -188,7 +188,15 @@ export function RegisterForm() {
 
         {/* Terms text */}
         <p className="text-xs text-muted-foreground text-center">
-          By creating an account, you agree to our Terms and Privacy Policy.
+          By creating an account, you agree to our{' '}
+          <a href="/terms" className="underline hover:text-foreground">
+            Terms
+          </a>{' '}
+          and{' '}
+          <a href="/privacy" className="underline hover:text-foreground">
+            Privacy Policy
+          </a>
+          .
         </p>
 
         {/* OR divider */}
