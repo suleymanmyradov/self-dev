@@ -90,10 +90,14 @@ jobs:
       - name: Make GHCR image public (free storage for public repo)
         if: success()
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: gh api -X PATCH "/user/packages/container/self-dev" -f visibility=public
       - name: Prune old image versions (keep 3)
         if: always()
         continue-on-error: true
+        env:
+          GH_TOKEN: ${{ github.token }}
         run: |
           gh api --paginate "/user/packages/container/self-dev/versions" --jq '.[].id' 2>/dev/null \
             | tail -n +4 \
