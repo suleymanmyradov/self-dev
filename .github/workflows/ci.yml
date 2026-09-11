@@ -1,0 +1,100 @@
+# CI/CD for the public Next.js frontend (deployed as the `frontend` service in
+# growth-server's deploy/docker-compose.prod.yml).
+#
+# PRs: docker build only. Push to main: build + push to GHCR, then SSH-deploy
+# to the production VM (pull + recreate + health check).
+
+name: CI/CD
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  IMAGE: ghcr.io/${{ github.repository }}
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      packages: write
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        if: github.event_name == 'push'
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - uses: docker/build-push-action@v6
+        with:
+          context: .
+          push: ${{ github.event_name == 'push' }}
+          provenance: false
+          build-args: |
+            NEXT_PUBLIC_APP_URL=https://app.evolella.com
+            NEXT_PUBLIC_GOOGLE_CLIENT_ID=874343812843-k9235ttvebor9mrlq8ie8vrnmreraq79.apps.googleusercontent.com
+            NEXT_PUBLIC_ENABLE_ANALYTICS=false
+            NEXT_PUBLIC_ENABLE_PWA=false
+          tags: |
+            ${{ env.IMAGE }}:latest
+            ${{ env.IMAGE }}:sha-${{ github.sha }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - name: Deploy to production VM
+        env:
+          SSH_KEY: ${{ secrets.DEPLOY_SSH_KEY }}
+          SSH_HOST: ${{ secrets.DEPLOY_HOST }}
+          SSH_USER: ${{ secrets.DEPLOY_USER }}
+          KNOWN_HOSTS: ${{ secrets.DEPLOY_KNOWN_HOSTS }}
+          GHCR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          mkdir -p ~/.ssh
+          printf '%s\n' "$SSH_KEY" > ~/.ssh/deploy_key
+          chmod 600 ~/.ssh/deploy_key
+          printf '%s\n' "$KNOWN_HOSTS" > ~/.ssh/known_hosts
+          printf '%s' "$GHCR_TOKEN" | ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" \
+            "docker login ghcr.io -u '${{ github.actor }}' --password-stdin" >/dev/null
+          ssh -i ~/.ssh/deploy_key "$SSH_USER@$SSH_HOST" 'bash -s' <<'REMOTE'
+          set -euo pipefail
+          cd /home/ubuntu/growth-server
+          docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod pull frontend
+          docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod up -d --no-deps frontend
+          for _ in $(seq 1 30); do
+            curl -fsS --max-time 5 -o /dev/null https://app.evolella.com && echo "==> frontend healthy" && exit 0
+            sleep 2
+          done
+          echo "!! frontend health check failed" >&2
+          docker compose -f deploy/docker-compose.prod.yml --env-file deploy/.env.prod logs --tail 30 frontend >&2
+          exit 1
+          REMOTE
+      - name: Make GHCR image public (free storage for public repo)
+        if: success()
+        continue-on-error: true
+        run: gh api -X PATCH "/user/packages/container/self-dev" -f visibility=public
+      - name: Prune old image versions (keep 3)
+        if: always()
+        continue-on-error: true
+        run: |
+          gh api --paginate "/user/packages/container/self-dev/versions" --jq '.[].id' 2>/dev/null \
+            | tail -n +4 \
+            | while read -r id; do gh api -X DELETE "/user/packages/container/self-dev/versions/$id" || true; done
