@@ -5,6 +5,7 @@ import { useActionState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { PasswordInput } from '@/components/ui/password-input';
 import { Label } from '@/components/ui/label';
 import { registerAction } from '@/lib/actions/auth';
 import { useAuthStore } from '@/store/auth';
@@ -148,10 +149,9 @@ export function RegisterForm() {
         {/* Password */}
         <div className="grid gap-1.5">
           <Label htmlFor="password" className="text-sm font-medium">Password</Label>
-          <Input
+          <PasswordInput
             id="password"
             name="password"
-            type="password"
             placeholder="Minimum 8 characters"
             value={password}
             onChange={(e) => setPassword(e.target.value)}
@@ -170,10 +170,9 @@ export function RegisterForm() {
         {/* Confirm Password */}
         <div className="grid gap-1.5">
           <Label htmlFor="confirmPassword" className="text-sm font-medium">Confirm password</Label>
-          <Input
+          <PasswordInput
             id="confirmPassword"
             name="confirmPassword"
-            type="password"
             placeholder="Repeat your password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}

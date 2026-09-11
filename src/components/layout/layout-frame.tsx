@@ -49,7 +49,7 @@ export function LayoutFrame({ children }: { children: React.ReactNode }) {
 
       {/* Main Content */}
       <main className={cn(
-        "min-w-0 h-screen overflow-hidden overflow-x-hidden pt-14 pb-16 md:pt-0 md:pb-0 transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width)] md:pr-0",
+        "min-w-0 h-screen overflow-y-auto overflow-x-hidden pt-14 pb-16 md:pt-0 md:pb-0 transition-[padding] duration-200 ease-out md:pl-[var(--sidebar-width)] md:pr-0",
       )}>
         {children}
       </main>
