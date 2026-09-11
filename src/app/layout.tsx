@@ -29,8 +29,9 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
-    title: 'Self Dev AI - Personal Development Assistant',
-    description: 'AI-powered personal development with coaching, therapy, and habit tracking',
+    title: 'Evolella — Build better habits with an AI coach that keeps you accountable',
+    description:
+        'Set a goal, get a simple plan, check in daily, and let Evolella adapt your habits when life gets messy.',
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
