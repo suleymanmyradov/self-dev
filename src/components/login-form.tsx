@@ -65,7 +65,7 @@ export function LoginForm() {
       <div className="space-y-1.5">
         <h1 className="font-display text-2xl">Welcome back.</h1>
         <p className="text-sm text-muted-foreground">
-          Six habits are waiting for you.
+          Pick up right where you left off.
         </p>
       </div>
 
