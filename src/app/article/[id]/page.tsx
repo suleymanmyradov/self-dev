@@ -5,6 +5,7 @@ import { cache } from "react";
 import { notFound } from "next/navigation";
 import { getArticleCached } from "@/api/server-cache";
 import { listArticles } from "@/api";
+import { config } from "@/lib/config";
 import { RelativeTime } from "@/components/shared/relative-time";
 import { ArticleMarkdown, ReadingProgress } from "@/components/article/article-markdown";
 import { Button } from "@/components/ui/button";
@@ -71,10 +72,26 @@ export async function generateMetadata({
   const { id } = await params;
   const response = await fetchArticle(id);
   const article = response?.data;
+  const baseUrl = config.appUrl.replace(/\/+$/, '');
+  const canonical = `${baseUrl}/article/${id}`;
 
   return {
-    title: article ? `${article.title} | Growth` : "Article | Growth",
-    description: article?.excerpt ?? "Read this article on Growth.",
+    title: article ? `${article.title} | Evolella` : "Article | Evolella",
+    description: article?.excerpt ?? "Read this article on Evolella.",
+    alternates: { canonical },
+    openGraph: {
+      type: "article",
+      url: canonical,
+      siteName: "Evolella",
+      title: article?.title,
+      description: article?.excerpt,
+      images: article?.imageUrl ? [article.imageUrl] : undefined,
+      publishedTime: article?.publishedAt,
+      modifiedTime: article?.updatedAt,
+      authors: article?.author ? [article.author] : undefined,
+      tags: article?.tags,
+    },
+    twitter: { card: "summary_large_image" },
   };
 }
 
@@ -117,9 +134,36 @@ export default async function ArticlePage({
   }
 
   const categoryName = article.category?.name;
+  const baseUrl = config.appUrl.replace(/\/+$/, '');
+
+  const jsonLd = {
+    '@context': 'https://schema.org',
+    '@type': 'Article',
+    headline: article.title,
+    description: article.excerpt,
+    image: article.imageUrl || undefined,
+    datePublished: article.publishedAt,
+    dateModified: article.updatedAt || article.publishedAt,
+    author: {
+      '@type': 'Person',
+      name: article.author || 'Evolella',
+    },
+    publisher: {
+      '@type': 'Organization',
+      name: 'Evolella',
+      url: baseUrl,
+      logo: `${baseUrl}/icon.png`,
+    },
+    mainEntityOfPage: `${baseUrl}/article/${id}`,
+    keywords: article.tags?.join(', '),
+  };
 
   return (
     <>
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       {/* Reading progress bar */}
       <ReadingProgress />
 
@@ -177,7 +221,7 @@ export default async function ArticlePage({
                 </div>
                 <div className="flex flex-col">
                   <span className="text-sm font-medium text-foreground">
-                    {article.author || 'Growth'}
+                    {article.author || 'Evolella'}
                   </span>
                   <span className="text-xs text-muted-foreground">
                     <RelativeTime date={article.publishedAt} /> · {article.readTime} min read

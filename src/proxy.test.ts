@@ -18,11 +18,9 @@ describe('PROTECTED_ROUTES', () => {
         '/plan',
         '/progress',
         '/coach',
-        '/library',
         '/me',
         '/report',
         '/onboarding',
-        '/article',
       ]),
     );
   });
@@ -97,8 +95,12 @@ describe('isProtectedRoute', () => {
       expect(isProtectedRoute('/coach/abc-123')).toBe(true);
     });
 
-    it('returns true for /article/<id>', () => {
-      expect(isProtectedRoute('/article/uuid-here')).toBe(true);
+    it('returns false for /article/<id> (public SEO content)', () => {
+      expect(isProtectedRoute('/article/uuid-here')).toBe(false);
+    });
+
+    it('returns false for /library (public SEO content)', () => {
+      expect(isProtectedRoute('/library')).toBe(false);
     });
 
     it('returns true for /onboarding/step-1', () => {

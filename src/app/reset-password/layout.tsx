@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Reset Password | Growth',
+  title: 'Reset Password | Evolella',
   description: 'Set a new password for your account.',
 };
 

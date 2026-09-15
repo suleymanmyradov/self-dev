@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Get Started | Growth',
+  title: 'Get Started | Evolella',
   description: 'Set up your AI accountability coach — define your goal, build your habit plan, and choose how you want to be held accountable.',
 };
 

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Check Your Email | Growth',
+  title: 'Check Your Email | Evolella',
   description: 'Verify your email to activate your account.',
 };
 

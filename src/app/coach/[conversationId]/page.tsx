@@ -3,7 +3,7 @@ import { Assistant } from '@/components/ai-coach/assistant';
 
 export async function generateMetadata(): Promise<Metadata> {
     return {
-        title: 'AI Coach | Growth',
+        title: 'AI Coach | Evolella',
         description: 'Your AI accountability coaching session.',
     };
 }

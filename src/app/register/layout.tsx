@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Register | Growth',
+  title: 'Register | Evolella',
   description: 'Create a Growth account to start tracking habits and achieving your goals.',
 };
 

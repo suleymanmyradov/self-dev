@@ -11,16 +11,16 @@ const JWT_ISSUER = process.env.JWT_ISSUER || 'growth-auth';
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'growth-api';
 
 // Routes that require authentication
+// Note: /article and /library are intentionally public — they serve
+// crawlable marketing/SEO content. Per-user state (isLiked/isSaved) is
+// handled client-side and degrades gracefully for anonymous visitors.
 export const PROTECTED_ROUTES = [
   '/plan',
   '/progress',
   '/coach',
-  '/library',
   '/me',
   '/report',
   '/onboarding',
-  // Article pages are user-specific (isLiked/isSaved come from authed fetches)
-  '/article',
 ];
 
 // Routes that should be accessible only when NOT authenticated

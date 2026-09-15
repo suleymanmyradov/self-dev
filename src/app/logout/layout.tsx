@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'Logout | Growth',
+  title: 'Logout | Evolella',
   description: 'Sign out of your Growth account.',
 };
 

@@ -4,6 +4,7 @@ import type { Metadata } from 'next';
 import { IBM_Plex_Mono, Instrument_Sans, Newsreader } from 'next/font/google';
 import './globals.css';
 
+import { config } from '@/lib/config';
 import { LayoutFrame } from '@/components/layout/layout-frame';
 import { ThemeProvider } from '@/components/theme-provider';
 import { QueryProvider } from '@/components/providers/query-provider';
@@ -29,6 +30,7 @@ const mono = IBM_Plex_Mono({
 });
 
 export const metadata: Metadata = {
+    metadataBase: new URL(config.appUrl),
     title: 'Evolella — Build better habits with an AI coach that keeps you accountable',
     description:
         'Set a goal, get a simple plan, check in daily, and let Evolella adapt your habits when life gets messy.',

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
-  title: 'My Habits | Growth',
+  title: 'My Habits | Evolella',
   description: 'Track your daily habits and build consistent routines.',
 };
 

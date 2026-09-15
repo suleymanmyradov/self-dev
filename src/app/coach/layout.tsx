@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 import type React from 'react';
 
 export const metadata: Metadata = {
-  title: 'AI Coach | Growth',
+  title: 'AI Coach | Evolella',
   description: 'Your AI accountability coach — set goals, build habits, and check in daily.',
 };
 
