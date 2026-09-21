@@ -10,9 +10,11 @@ import {
   DialogHeader,
   DialogTitle,
 } from "@/components/ui/dialog";
+import { Switch } from "@/components/ui/switch";
 import { toast } from "@/components/ui/sonner";
 import { deleteAccountAction } from "@/lib/actions/auth";
 import { exportData } from "@/api/auth";
+import { useConsent } from "@/hooks/use-consent";
 
 export function DataSection() {
   const [confirmOpen, setConfirmOpen] = useState(false);
@@ -20,6 +22,7 @@ export function DataSection() {
   const [state, action, pending] = useActionState(deleteAccountAction, {
     success: false,
   });
+  const { consent, setConsent } = useConsent();
 
   // On success the server action redirects to /login, so we only need to
   // handle the error path here. Close the dialog via render-time state
@@ -51,6 +54,13 @@ export function DataSection() {
     } finally {
       setExporting(false);
     }
+  };
+
+  // Consent withdrawal path per the analytics consent policy: flipping this
+  // off stops any future product-analytics collection on this device.
+  const handleAnalyticsToggle = (value: boolean) => {
+    setConsent({ analytics: value });
+    toast.success(value ? "Product analytics enabled" : "Product analytics disabled");
   };
 
   return (
@@ -97,6 +107,44 @@ export function DataSection() {
           >
             Delete
           </Button>
+        </div>
+      </div>
+
+      <div className="rounded-xl bg-card border border-border p-6 space-y-5">
+        <div>
+          <p className="text-sm font-medium mb-1">Cookie settings</p>
+          <p className="text-sm text-muted-foreground">
+            Choose which optional cookies and storage we can use on this device. You can change
+            this at any time — it also controls the consent banner.
+          </p>
+        </div>
+
+        <div className="h-px bg-border" />
+
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">Necessary</p>
+            <p className="text-xs text-muted-foreground">
+              Sign-in and preferences — always on
+            </p>
+          </div>
+          <Switch checked disabled aria-label="Necessary storage (always on)" />
+        </div>
+
+        <div className="h-px bg-border" />
+
+        <div className="flex items-center justify-between gap-4">
+          <div>
+            <p className="text-sm font-medium">Product analytics</p>
+            <p className="text-xs text-muted-foreground">
+              Anonymous usage data that helps improve Evolella — off until you opt in
+            </p>
+          </div>
+          <Switch
+            checked={consent?.analytics ?? false}
+            onCheckedChange={handleAnalyticsToggle}
+            aria-label="Product analytics"
+          />
         </div>
       </div>
 

@@ -34,5 +34,6 @@ export { useCheckInForm } from './use-check-in-form';
 export { useRegisterForm } from './use-register-form';
 export { useLoginForm } from './use-login-form';
 export { useDebounceValue } from './use-debounce';
+export { useConsent } from './use-consent';
 export { useExplore } from './use-explore';
 export { useMemoryFacts, useAddMemoryFact, useForgetMemoryFact, useForgetAllMemoryFacts } from './use-memory-facts';

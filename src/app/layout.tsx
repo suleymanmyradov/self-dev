@@ -13,6 +13,7 @@ import { ViewportWatcher } from '@/components/shared/viewport-watcher';
 import { MobileTopBar } from '@/components/shared/mobile-topbar';
 import { BottomTabBar } from '@/components/shared/bottom-tab-bar';
 import { Toaster } from '@/components/ui/sonner';
+import { CookieConsent } from '@/components/shared/cookie-consent';
 import { WebVitals } from '@/app/web-vitals';
 
 const sans = Instrument_Sans({
@@ -66,6 +67,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             </Suspense>
                         </div>
                         <WebVitals />
+                        <CookieConsent />
                         <Toaster />
                     </QueryProvider>
                 </ThemeProvider>

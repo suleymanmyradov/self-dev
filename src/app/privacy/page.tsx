@@ -1,5 +1,6 @@
 import type { Metadata } from 'next';
 import Link from 'next/link';
+import { CookieSettingsButton } from '@/components/shared/cookie-settings-button';
 
 export const metadata: Metadata = {
   title: 'Privacy Policy — Evolella',
@@ -119,6 +120,21 @@ export default function PrivacyPolicyPage() {
                 support@evolella.com
               </a>
               .
+            </p>
+          </div>
+        </section>
+
+        <section className="space-y-3">
+          <h2 className="font-display-face text-xl font-semibold">Cookies &amp; analytics</h2>
+          <div className="space-y-3 text-sm leading-relaxed text-muted-foreground">
+            <p>
+              We use strictly necessary storage to keep you signed in and remember your
+              preferences. Product analytics are off by default and only run if you opt in
+              from the consent banner or your settings — you can withdraw that consent at
+              any time, which stops future analytics collection on this device.
+            </p>
+            <p>
+              Change your choice here: <CookieSettingsButton />
             </p>
           </div>
         </section>

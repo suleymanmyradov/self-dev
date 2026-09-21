@@ -17,7 +17,9 @@ const handleWebVitals: ReportWebVitalsCallback = (metric) => {
     return;
   }
 
-  // TODO: send to analytics endpoint once configured.
+  // TODO: send to analytics endpoint once configured — and only when
+  // hasAnalyticsConsent() from '@/lib/consent' (plus
+  // config.features.enableAnalytics) is true.
   // Example:
   //   const body = JSON.stringify(metric);
   //   if (navigator.sendBeacon) {
