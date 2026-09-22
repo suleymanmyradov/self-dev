@@ -173,13 +173,15 @@ describe('isProtectedRoute', () => {
 
 describe('checkToken', () => {
   const originalJwtSecret = process.env.JWT_SECRET;
+  const originalJwtPublicKey = process.env.JWT_PUBLIC_KEY;
   const originalNodeEnv = process.env.NODE_ENV;
   // process.env.NODE_ENV is typed read-only in @types/node; cast for tests.
   const env = process.env as Record<string, string | undefined>;
 
   beforeEach(() => {
-    // Simulate local dev: no JWT_SECRET, non-production NODE_ENV.
+    // Simulate local dev: no JWT key material, non-production NODE_ENV.
     delete process.env.JWT_SECRET;
+    delete process.env.JWT_PUBLIC_KEY;
     env.NODE_ENV = 'development';
   });
 
@@ -189,10 +191,15 @@ describe('checkToken', () => {
     } else {
       delete process.env.JWT_SECRET;
     }
+    if (originalJwtPublicKey !== undefined) {
+      process.env.JWT_PUBLIC_KEY = originalJwtPublicKey;
+    } else {
+      delete process.env.JWT_PUBLIC_KEY;
+    }
     env.NODE_ENV = originalNodeEnv;
   });
 
-  describe('dev fallback (no JWT_SECRET, non-production)', () => {
+  describe('dev fallback (no JWT key material, non-production)', () => {
     it('returns "valid" for a token of length >= 10', async () => {
       const result = await checkToken('a'.repeat(10));
       expect(result).toBe('valid');
@@ -219,9 +226,10 @@ describe('checkToken', () => {
     });
   });
 
-  describe('production without JWT_SECRET', () => {
+  describe('production without JWT key material', () => {
     beforeEach(() => {
       delete process.env.JWT_SECRET;
+      delete process.env.JWT_PUBLIC_KEY;
       env.NODE_ENV = 'production';
       vi.spyOn(console, 'warn').mockImplementation(() => {});
     });
@@ -230,12 +238,80 @@ describe('checkToken', () => {
       vi.restoreAllMocks();
     });
 
-    it('returns "invalid" and warns when JWT_SECRET is missing in production', async () => {
+    it('returns "invalid" and warns when no key is configured in production', async () => {
       const result = await checkToken('a'.repeat(50));
       expect(result).toBe('invalid');
       expect(console.warn).toHaveBeenCalledWith(
-        expect.stringContaining('JWT_SECRET is not set'),
+        expect.stringContaining('JWT_PUBLIC_KEY'),
       );
+    });
+  });
+
+  // The proxy reads JWT_* env vars at module load, so these tests re-import
+  // the module with stubbed env to exercise the real ES256 verify path.
+  describe('ES256 verification', () => {
+    async function importProxyWithKey(publicKeyPem: string, secret?: string) {
+      vi.resetModules();
+      vi.stubEnv('JWT_PUBLIC_KEY', publicKeyPem);
+      if (secret) vi.stubEnv('JWT_SECRET', secret);
+      return import('@/proxy');
+    }
+
+    async function makeEs256Token(
+      signKey: Parameters<typeof import('jose').SignJWT.prototype.sign>[0],
+      alg: 'ES256' | 'HS256',
+    ) {
+      const { SignJWT } = await import('jose');
+      return new SignJWT({ sub: 'user-1', sid: 'sess-1', typ: 'access' })
+        .setProtectedHeader({ alg })
+        .setIssuer('growth-auth')
+        .setAudience('growth-api')
+        .setIssuedAt()
+        .setExpirationTime('15m')
+        .setNotBefore(Math.floor(Date.now() / 1000))
+        .sign(signKey);
+    }
+
+    it('returns "valid" for an ES256 token signed by the matching private key', async () => {
+      const { generateKeyPair, exportSPKI } = await import('jose');
+      const { publicKey, privateKey } = await generateKeyPair('ES256');
+      const pem = (await exportSPKI(publicKey)).replace(/\n/g, '\\n');
+      const mod = await importProxyWithKey(pem);
+      const token = await makeEs256Token(privateKey, 'ES256');
+      expect(await mod.checkToken(token)).toBe('valid');
+    });
+
+    it('returns "invalid" for an ES256 token signed by a different key', async () => {
+      const { generateKeyPair, exportSPKI } = await import('jose');
+      const { publicKey } = await generateKeyPair('ES256');
+      const { privateKey: otherKey } = await generateKeyPair('ES256');
+      const mod = await importProxyWithKey(await exportSPKI(publicKey));
+      const token = await makeEs256Token(otherKey, 'ES256');
+      expect(await mod.checkToken(token)).toBe('invalid');
+    });
+
+    it('rejects HS256 tokens signed with the public key PEM (alg confusion)', async () => {
+      const { generateKeyPair, exportSPKI } = await import('jose');
+      const { publicKey } = await generateKeyPair('ES256');
+      const pem = await exportSPKI(publicKey);
+      const mod = await importProxyWithKey(pem);
+      const confused = await makeEs256Token(
+        new TextEncoder().encode(pem),
+        'HS256',
+      );
+      expect(await mod.checkToken(confused)).toBe('invalid');
+    });
+
+    it('accepts legacy HS256 tokens while JWT_SECRET is still set', async () => {
+      const { generateKeyPair, exportSPKI } = await import('jose');
+      const { publicKey } = await generateKeyPair('ES256');
+      const secret = 'legacy-secret-must-be-at-least-32-bytes';
+      const mod = await importProxyWithKey(await exportSPKI(publicKey), secret);
+      const token = await makeEs256Token(
+        new TextEncoder().encode(secret),
+        'HS256',
+      );
+      expect(await mod.checkToken(token)).toBe('valid');
     });
   });
 });

@@ -1,11 +1,12 @@
-import { SignJWT } from 'jose';
+import { SignJWT, importPKCS8 } from 'jose';
 import { randomUUID } from 'crypto';
 
 /**
  * Generate a valid JWT token pair for E2E tests.
  *
- * Uses the same JWT_SECRET as the frontend proxy (from .env.local) so the
- * proxy's checkToken() will validate the token as 'valid'.
+ * Signs with the ES256 private key from JWT_PRIVATE_KEY (matching the public
+ * key the proxy/backend verify with). Falls back to the legacy HS256
+ * JWT_SECRET for environments that haven't migrated yet.
  *
  * Returns { accessToken, refreshToken } that can be set as cookies.
  */
@@ -14,14 +15,33 @@ export interface TestAuthOptions {
   username?: string;
 }
 
-export async function generateTestTokens(options: TestAuthOptions = {}): Promise<{
-  accessToken: string;
-  refreshToken: string;
-}> {
+interface SigningKey {
+  key: Parameters<SignJWT['sign']>[0];
+  alg: 'ES256' | 'HS256';
+}
+
+// Env vars carry PEMs on one line with literal \n escapes.
+function normalizePem(pem: string): string {
+  return pem.replace(/\\n/g, '\n');
+}
+
+async function getSigningKey(): Promise<SigningKey> {
+  const privateKey = process.env.JWT_PRIVATE_KEY;
+  if (privateKey) {
+    return { key: await importPKCS8(normalizePem(privateKey), 'ES256'), alg: 'ES256' };
+  }
   const secret = new TextEncoder().encode(
     process.env.JWT_SECRET ||
       '36be8f513d378b3e8560303d509a7a540385bc50b717c3d487c788210703390b',
   );
+  return { key: secret, alg: 'HS256' };
+}
+
+export async function generateTestTokens(options: TestAuthOptions = {}): Promise<{
+  accessToken: string;
+  refreshToken: string;
+}> {
+  const { key, alg } = await getSigningKey();
   const issuer = process.env.JWT_ISSUER || 'growth-auth';
   const audience = process.env.JWT_AUDIENCE || 'growth-api';
 
@@ -38,13 +58,13 @@ export async function generateTestTokens(options: TestAuthOptions = {}): Promise
     rls: ['user'],
     typ: 'access',
   })
-    .setProtectedHeader({ alg: 'HS256' })
+    .setProtectedHeader({ alg })
     .setIssuedAt(now)
     .setIssuer(issuer)
     .setAudience([audience])
     .setExpirationTime('1h')
     .setNotBefore(now)
-    .sign(secret);
+    .sign(key);
 
   const refreshToken = await new SignJWT({
     jti: randomUUID(),
@@ -54,13 +74,13 @@ export async function generateTestTokens(options: TestAuthOptions = {}): Promise
     rls: ['user'],
     typ: 'refresh',
   })
-    .setProtectedHeader({ alg: 'HS256' })
+    .setProtectedHeader({ alg })
     .setIssuedAt(now)
     .setIssuer(issuer)
     .setAudience([audience])
     .setExpirationTime('24h')
     .setNotBefore(now)
-    .sign(secret);
+    .sign(key);
 
   return { accessToken, refreshToken };
 }

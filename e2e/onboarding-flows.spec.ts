@@ -26,7 +26,7 @@ import { setAuthCookies } from './helpers';
  *
  * Prerequisites:
  *   - Frontend running (bun run dev or next start)
- *   - The proxy validates the JWT from .env.local (JWT_SECRET)
+ *   - The proxy validates the JWT from .env.local (JWT_PUBLIC_KEY / JWT_SECRET)
  */
 
 // ============================================

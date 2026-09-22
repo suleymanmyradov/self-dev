@@ -1,14 +1,31 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
-import { jwtVerify } from 'jose';
+import { decodeProtectedHeader, importSPKI, jwtVerify } from 'jose';
 
 const AUTH_COOKIE_NAME = 'auth-token';
 const REFRESH_COOKIE_NAME = 'refresh-token';
 
-// JWT config (server-side env vars — never exposed to the browser)
+// JWT config (server-side env vars — never exposed to the browser).
+// JWT_PUBLIC_KEY is the ES256 public key (PEM) matching the auth service's
+// private signing key — a leaked public key cannot mint tokens. JWT_SECRET is
+// the legacy HS256 shared secret kept only for the migration window.
+const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY;
 const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_ISSUER = process.env.JWT_ISSUER || 'growth-auth';
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'growth-api';
+
+// Env vars carry PEMs on one line with literal \n escapes.
+function normalizePem(pem: string): string {
+  return pem.replace(/\\n/g, '\n');
+}
+
+// importSPKI is async — parse once and reuse the promise across requests.
+let es256KeyPromise: ReturnType<typeof importSPKI> | null = null;
+function getES256Key() {
+  if (!JWT_PUBLIC_KEY) return null;
+  es256KeyPromise ??= importSPKI(normalizePem(JWT_PUBLIC_KEY), 'ES256');
+  return es256KeyPromise;
+}
 
 // Routes that require authentication
 // Note: /article and /library are intentionally public — they serve
@@ -51,28 +68,52 @@ export type TokenStatus = 'valid' | 'expired' | 'invalid';
  * attempt a silent refresh.
  */
 export async function checkToken(token: string): Promise<TokenStatus> {
-  if (!JWT_SECRET) {
+  if (!JWT_PUBLIC_KEY && !JWT_SECRET) {
     if (process.env.NODE_ENV === 'production') {
-      console.warn('[proxy] JWT_SECRET is not set; treating tokens as invalid.');
+      console.warn(
+        '[proxy] neither JWT_PUBLIC_KEY nor JWT_SECRET is set; treating tokens as invalid.',
+      );
       return 'invalid';
     }
     // Development fallback — require a non-trivial token string
     return token.length >= 10 ? 'valid' : 'invalid';
   }
 
+  // Dispatch on the token's alg so an ES256 token is never checked against the
+  // legacy secret and vice versa (prevents algorithm-confusion).
+  let alg: string | undefined;
   try {
-    const secret = new TextEncoder().encode(JWT_SECRET);
+    alg = decodeProtectedHeader(token).alg;
+  } catch {
+    return 'invalid';
+  }
+
+  try {
     // clockTolerance must be ≤ the backend's DefaultLeeway (30s). With a
     // larger value, the proxy considers a token "valid" after the backend
     // has already expired it, causing 401s in server components. Using 0
     // ensures the proxy refreshes as soon as the token expires, well before
     // the backend would reject it (the backend's 30s leeway covers clock skew).
-    const { payload } = await jwtVerify(token, secret, {
-      issuer: JWT_ISSUER,
-      audience: JWT_AUDIENCE,
-      clockTolerance: 0,
-    });
-    return payload.typ === 'access' ? 'valid' : 'invalid';
+    if (alg === 'ES256') {
+      const key = await getES256Key();
+      if (!key) return 'invalid';
+      const { payload } = await jwtVerify(token, key, {
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+        clockTolerance: 0,
+      });
+      return payload.typ === 'access' ? 'valid' : 'invalid';
+    }
+    if (alg === 'HS256' && JWT_SECRET) {
+      const secret = new TextEncoder().encode(JWT_SECRET);
+      const { payload } = await jwtVerify(token, secret, {
+        issuer: JWT_ISSUER,
+        audience: JWT_AUDIENCE,
+        clockTolerance: 0,
+      });
+      return payload.typ === 'access' ? 'valid' : 'invalid';
+    }
+    return 'invalid';
   } catch (err: unknown) {
     if ((err as { code?: string })?.code === 'ERR_JWT_EXPIRED') return 'expired';
     return 'invalid';
