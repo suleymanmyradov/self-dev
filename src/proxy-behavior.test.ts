@@ -60,23 +60,23 @@ function makeMockRequest(
 // --- Tests ---
 
 describe('proxy() behavior', () => {
-  const originalJwtSecret = process.env.JWT_SECRET;
+  const originalJwtPublicKey = process.env.JWT_PUBLIC_KEY;
   const originalNodeEnv = process.env.NODE_ENV;
   const env = process.env as Record<string, string | undefined>;
 
   beforeEach(() => {
-    // Dev fallback: no JWT_SECRET, so checkToken returns 'valid' for tokens
-    // >= 10 chars and 'invalid' for shorter tokens.
-    delete process.env.JWT_SECRET;
+    // Dev fallback: no JWT_PUBLIC_KEY, so checkToken returns 'valid' for
+    // tokens >= 10 chars and 'invalid' for shorter tokens.
+    delete process.env.JWT_PUBLIC_KEY;
     env.NODE_ENV = 'development';
     vi.stubGlobal('fetch', vi.fn());
   });
 
   afterEach(() => {
-    if (originalJwtSecret !== undefined) {
-      process.env.JWT_SECRET = originalJwtSecret;
+    if (originalJwtPublicKey !== undefined) {
+      process.env.JWT_PUBLIC_KEY = originalJwtPublicKey;
     } else {
-      delete process.env.JWT_SECRET;
+      delete process.env.JWT_PUBLIC_KEY;
     }
     env.NODE_ENV = originalNodeEnv;
     vi.unstubAllGlobals();
@@ -214,7 +214,7 @@ describe('proxy() behavior', () => {
   // #15: Silent token refresh (tested via checkToken + tryRefresh integration)
   //
   // The proxy's refresh path is triggered when checkToken returns 'expired'.
-  // In dev mode (no JWT_SECRET), checkToken can't return 'expired' — it only
+  // In dev mode (no JWT_PUBLIC_KEY), checkToken can't return 'expired' — it only
   // returns 'valid' or 'invalid'. The 'expired' path requires a real JWT.
   // The checkToken unit tests (proxy.test.ts) cover the 'expired' detection.
   // Here we test the proxy behavior with valid/invalid tokens, which covers

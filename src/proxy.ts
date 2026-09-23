@@ -7,10 +7,8 @@ const REFRESH_COOKIE_NAME = 'refresh-token';
 
 // JWT config (server-side env vars — never exposed to the browser).
 // JWT_PUBLIC_KEY is the ES256 public key (PEM) matching the auth service's
-// private signing key — a leaked public key cannot mint tokens. JWT_SECRET is
-// the legacy HS256 shared secret kept only for the migration window.
+// private signing key — a leaked public key cannot mint tokens.
 const JWT_PUBLIC_KEY = process.env.JWT_PUBLIC_KEY;
-const JWT_SECRET = process.env.JWT_SECRET;
 const JWT_ISSUER = process.env.JWT_ISSUER || 'growth-auth';
 const JWT_AUDIENCE = process.env.JWT_AUDIENCE || 'growth-api';
 
@@ -68,10 +66,10 @@ export type TokenStatus = 'valid' | 'expired' | 'invalid';
  * attempt a silent refresh.
  */
 export async function checkToken(token: string): Promise<TokenStatus> {
-  if (!JWT_PUBLIC_KEY && !JWT_SECRET) {
+  if (!JWT_PUBLIC_KEY) {
     if (process.env.NODE_ENV === 'production') {
       console.warn(
-        '[proxy] neither JWT_PUBLIC_KEY nor JWT_SECRET is set; treating tokens as invalid.',
+        '[proxy] JWT_PUBLIC_KEY is not set; treating tokens as invalid.',
       );
       return 'invalid';
     }
@@ -79,8 +77,9 @@ export async function checkToken(token: string): Promise<TokenStatus> {
     return token.length >= 10 ? 'valid' : 'invalid';
   }
 
-  // Dispatch on the token's alg so an ES256 token is never checked against the
-  // legacy secret and vice versa (prevents algorithm-confusion).
+  // Dispatch on the token's alg — only ES256 is accepted. Anything else
+  // (including HS256 signed with the public key PEM) is invalid, which
+  // prevents algorithm-confusion attacks.
   let alg: string | undefined;
   try {
     alg = decodeProtectedHeader(token).alg;
@@ -94,26 +93,15 @@ export async function checkToken(token: string): Promise<TokenStatus> {
     // has already expired it, causing 401s in server components. Using 0
     // ensures the proxy refreshes as soon as the token expires, well before
     // the backend would reject it (the backend's 30s leeway covers clock skew).
-    if (alg === 'ES256') {
-      const key = await getES256Key();
-      if (!key) return 'invalid';
-      const { payload } = await jwtVerify(token, key, {
-        issuer: JWT_ISSUER,
-        audience: JWT_AUDIENCE,
-        clockTolerance: 0,
-      });
-      return payload.typ === 'access' ? 'valid' : 'invalid';
-    }
-    if (alg === 'HS256' && JWT_SECRET) {
-      const secret = new TextEncoder().encode(JWT_SECRET);
-      const { payload } = await jwtVerify(token, secret, {
-        issuer: JWT_ISSUER,
-        audience: JWT_AUDIENCE,
-        clockTolerance: 0,
-      });
-      return payload.typ === 'access' ? 'valid' : 'invalid';
-    }
-    return 'invalid';
+    if (alg !== 'ES256') return 'invalid';
+    const key = await getES256Key();
+    if (!key) return 'invalid';
+    const { payload } = await jwtVerify(token, key, {
+      issuer: JWT_ISSUER,
+      audience: JWT_AUDIENCE,
+      clockTolerance: 0,
+    });
+    return payload.typ === 'access' ? 'valid' : 'invalid';
   } catch (err: unknown) {
     if ((err as { code?: string })?.code === 'ERR_JWT_EXPIRED') return 'expired';
     return 'invalid';
