@@ -5,8 +5,7 @@ import { randomUUID } from 'crypto';
  * Generate a valid JWT token pair for E2E tests.
  *
  * Signs with the ES256 private key from JWT_PRIVATE_KEY (matching the public
- * key the proxy/backend verify with). Falls back to the legacy HS256
- * JWT_SECRET for environments that haven't migrated yet.
+ * key the proxy/backend verify with). ES256 is the only accepted algorithm.
  *
  * Returns { accessToken, refreshToken } that can be set as cookies.
  */
@@ -15,33 +14,27 @@ export interface TestAuthOptions {
   username?: string;
 }
 
-interface SigningKey {
-  key: Parameters<SignJWT['sign']>[0];
-  alg: 'ES256' | 'HS256';
-}
-
 // Env vars carry PEMs on one line with literal \n escapes.
 function normalizePem(pem: string): string {
   return pem.replace(/\\n/g, '\n');
 }
 
-async function getSigningKey(): Promise<SigningKey> {
+async function getSigningKey(): Promise<Parameters<SignJWT['sign']>[0]> {
   const privateKey = process.env.JWT_PRIVATE_KEY;
-  if (privateKey) {
-    return { key: await importPKCS8(normalizePem(privateKey), 'ES256'), alg: 'ES256' };
+  if (!privateKey) {
+    throw new Error(
+      'JWT_PRIVATE_KEY is required for E2E auth tokens (ES256-only; generate a pair with `make jwt-keygen` in backend/)',
+    );
   }
-  const secret = new TextEncoder().encode(
-    process.env.JWT_SECRET ||
-      '36be8f513d378b3e8560303d509a7a540385bc50b717c3d487c788210703390b',
-  );
-  return { key: secret, alg: 'HS256' };
+  return importPKCS8(normalizePem(privateKey), 'ES256');
 }
 
 export async function generateTestTokens(options: TestAuthOptions = {}): Promise<{
   accessToken: string;
   refreshToken: string;
 }> {
-  const { key, alg } = await getSigningKey();
+  const key = await getSigningKey();
+  const alg = 'ES256';
   const issuer = process.env.JWT_ISSUER || 'growth-auth';
   const audience = process.env.JWT_AUDIENCE || 'growth-api';
 
