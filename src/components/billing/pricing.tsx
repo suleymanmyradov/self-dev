@@ -130,7 +130,12 @@ export function Pricing({ country }: Props) {
             <div className="grid gap-6 md:grid-cols-2">
                 {PricingTiers.map(tier => {
                     const priceId = tier.priceId?.[frequency];
-                    const formatted = priceId ? prices[priceId] : '$0';
+                    // Show the static USD price immediately — the localized
+                    // Paddle preview swaps in when it resolves (or never,
+                    // if the preview call fails).
+                    const formatted = priceId
+                        ? (prices[priceId] ?? tier.displayPrice?.[frequency] ?? '…')
+                        : '$0';
                     const cta = tierCta(tier);
                     return (
                         <div

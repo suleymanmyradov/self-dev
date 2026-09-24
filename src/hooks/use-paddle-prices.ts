@@ -45,11 +45,16 @@ export function usePaddlePrices(
         };
 
         let cancelled = false;
-        paddle.PricePreview(params).then(response => {
-            if (!cancelled) {
-                setPrices(prev => ({ ...prev, ...getPriceAmounts(response) }));
-            }
-        });
+        paddle.PricePreview(params)
+            .then(response => {
+                if (!cancelled) {
+                    setPrices(prev => ({ ...prev, ...getPriceAmounts(response) }));
+                }
+            })
+            .catch(err => {
+                // Static display prices stay on screen; log for diagnosis.
+                console.warn('[paddle] PricePreview failed', err);
+            });
         return () => {
             cancelled = true;
         };

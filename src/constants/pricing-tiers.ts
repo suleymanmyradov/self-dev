@@ -6,6 +6,10 @@ export interface Tier {
     // Paddle catalog price IDs, resolved per environment (see below). Absent
     // for the free tier — it never checks out.
     priceId?: { month: string; year: string };
+    // Static USD display fallback — shown only when the Paddle localized
+    // price preview can't load (e.g. domain pending approval). Checkout
+    // always bills the catalog price; this is display-only.
+    displayPrice?: { month: string; year: string };
 }
 
 // Sandbox and production catalogs have different pri_ IDs. They come from
@@ -51,5 +55,6 @@ export const PricingTiers: Tier[] = [
         get priceId() {
             return proPriceId();
         },
+        displayPrice: { month: '$9.99', year: '$99.90' },
     },
 ];
