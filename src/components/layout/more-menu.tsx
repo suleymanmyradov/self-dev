@@ -25,6 +25,7 @@ const items: Array<
   { type: "separator" },
   { type: "item", label: "Terms", href: "/terms" },
   { type: "item", label: "Privacy", href: "/privacy" },
+  { type: "item", label: "Refunds", href: "/refunds" },
   { type: "item", label: "Contact support", href: "mailto:support@evolella.com" },
   { type: "separator" },
   { type: "item", label: "Log out", href: "/logout" },

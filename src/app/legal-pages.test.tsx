@@ -2,6 +2,7 @@ import { createElement } from 'react';
 import { renderToStaticMarkup } from 'react-dom/server';
 import { describe, expect, it } from 'vitest';
 import PrivacyPolicyPage from '@/app/privacy/page';
+import RefundsPage from '@/app/refunds/page';
 import TermsPage from '@/app/terms/page';
 
 const renderPage = (page: typeof PrivacyPolicyPage) => renderToStaticMarkup(createElement(page));
@@ -63,14 +64,14 @@ describe('Concise legal disclosures', () => {
         expect(html).toContain('href="/terms"');
     });
     it('omits infrastructure internals and obsolete provider claims', () => {
-        for (const page of [PrivacyPolicyPage, TermsPage]) {
+        for (const page of [PrivacyPolicyPage, TermsPage, RefundsPage]) {
             expect(text(renderPage(page))).not.toMatch(
                 /05:45|PostgreSQL|MinIO|Caddy|Kafka|bcrypt|OpenAI-compatible|localStorage|evolella\.consent|evolella_consent|1,000|capped at 50|SDK|Amazon Web Services|Stripe|Cloudflare R2|OWNER ACTION REQUIRED/,
             );
         }
     });
     it('identifies the confirmed individual operator and shared contact', () => {
-        for (const page of [PrivacyPolicyPage, TermsPage]) {
+        for (const page of [PrivacyPolicyPage, TermsPage, RefundsPage]) {
             const html = renderPage(page);
             const copy = text(html);
             expect(copy).toContain('Evolella is operated by Suleyman Myradow');
@@ -80,13 +81,16 @@ describe('Concise legal disclosures', () => {
         }
     });
     it('publishes filled legal details without draft placeholders', () => {
-        for (const page of [PrivacyPolicyPage, TermsPage]) {
+        for (const page of [PrivacyPolicyPage, TermsPage, RefundsPage]) {
             const copy = text(renderPage(page));
-            expect(copy).toContain('September 23, 2026');
             expect(copy).not.toContain('Draft.');
             expect(copy).not.toContain('CONFIRM');
             expect(copy).not.toContain('[');
         }
+        for (const page of [PrivacyPolicyPage, TermsPage]) {
+            expect(text(renderPage(page))).toContain('September 23, 2026');
+        }
+        expect(text(renderPage(RefundsPage))).toContain('September 24, 2026');
         const privacy = text(renderPage(PrivacyPolicyPage));
         expect(privacy).toContain('a postal address is available on request');
         expect(privacy).toContain('processed mainly in the United States');
@@ -134,5 +138,25 @@ describe('Concise legal disclosures', () => {
         expect(html).toContain('href="https://www.paddle.com/legal/refund-policy"');
         expect(copy).not.toContain('CONFIRM REFUND POLICY');
         expect(html).toContain('href="/privacy"');
+    });
+    it('publishes a dedicated refund and cancellation policy', () => {
+        const html = renderPage(RefundsPage);
+        const copy = text(html);
+        for (const value of [
+            'cancel your Evolella Pro subscription at any time',
+            'hosted customer portal',
+            'Manage billing',
+            'end of the current paid period',
+            'Deleting your account does not cancel a subscription',
+            'merchant of record',
+            '14 days',
+            'Apple App Store or Google Play',
+            'statutory consumer rights are unaffected',
+        ])
+            expect(copy).toContain(value);
+        expect(html).toContain('Refund &amp; Cancellation Policy');
+        expect(html).toContain('href="https://www.paddle.com/legal/refund-policy"');
+        expect(html).toContain('href="/terms"');
+        expect(html).toContain('href="mailto:support@evolella.com"');
     });
 });

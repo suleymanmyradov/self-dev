@@ -85,8 +85,12 @@ export default function TermsPage() {
                         <a className="underline" href="https://www.paddle.com/legal/refund-policy">
                             refund policy
                         </a>{' '}
-                        and applicable consumer law. Mobile purchases follow the relevant app
-                        store&apos;s refund process. Contact{' '}
+                        and applicable consumer law — see our{' '}
+                        <Link className="underline" href="/refunds">
+                            Refund &amp; Cancellation Policy
+                        </Link>
+                        . Mobile purchases follow the relevant app store&apos;s refund process.
+                        Contact{' '}
                         <a className="underline" href="mailto:support@evolella.com">
                             support@evolella.com
                         </a>{' '}
