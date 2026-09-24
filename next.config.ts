@@ -9,12 +9,7 @@ const nextConfig: NextConfig = {
     // Allow the dev server (HMR WebSocket, dev-only assets) to be reached from
     // LAN IPs so testing from other devices / VMs on the local network works.
     // Production is unaffected.
-    allowedDevOrigins: [
-        '127.0.0.1',
-        '192.168.77.40',
-        '192.168.77.*',
-        '*.trycloudflare.com',
-    ],
+    allowedDevOrigins: ['127.0.0.1', '192.168.77.40', '192.168.77.*', '*.trycloudflare.com'],
     images: {
         remotePatterns: [
             {
@@ -74,7 +69,6 @@ const nextConfig: NextConfig = {
             { source: '/search', destination: '/library', permanent: false },
             { source: '/profile', destination: '/me', permanent: false },
             { source: '/settings', destination: '/me', permanent: false },
-            { source: '/pricing', destination: '/me', permanent: false },
             { source: '/ai-coach/:path*', destination: '/coach/:path*', permanent: false },
         ];
     },
@@ -101,9 +95,10 @@ const nextConfig: NextConfig = {
                     },
                     {
                         key: 'Content-Security-Policy',
-                        value: process.env.NODE_ENV === 'development'
-                            ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline'; img-src 'self' https: http://127.0.0.1:9000 http://localhost:9000 data: blob:; connect-src 'self' https://api.openai.com http://127.0.0.1:9000 http://localhost:9000; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
-                            : "default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https://api.openai.com; font-src 'self'; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
+                        value:
+                            process.env.NODE_ENV === 'development'
+                                ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: http://127.0.0.1:9000 http://localhost:9000 data: blob:; connect-src 'self' https://api.openai.com https://*.paddle.com http://127.0.0.1:9000 http://localhost:9000; font-src 'self'; frame-src https://*.paddle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
+                                : "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.paddle.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https://api.openai.com https://*.paddle.com; font-src 'self'; frame-src https://*.paddle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
                     },
                 ],
             },

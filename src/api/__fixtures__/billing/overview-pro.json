@@ -40,9 +40,7 @@
     "currentPeriodStart": "2025-07-22T00:00:00Z",
     "currentPeriodEnd": "2025-08-22T00:00:00Z",
     "trialEnd": "",
-    "cancelAtPeriodEnd": false,
-    "stripeCustomerId": "cus_fixture",
-    "stripeSubscriptionId": "sub_fixture"
+    "cancelAtPeriodEnd": false
   },
   "entitlements": {
     "planCode": "pro",
@@ -61,5 +59,5 @@
     "currentActiveHabits": 2,
     "currentPendingAdjustments": 1
   },
-  "billingMode": "stripe_test"
+  "billingMode": "paddle"
 }

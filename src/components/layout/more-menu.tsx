@@ -23,6 +23,10 @@ const items: Array<
   { type: "item", label: "Help", href: "/help" },
   { type: "item", label: "Report a problem", href: "/report" },
   { type: "separator" },
+  { type: "item", label: "Terms", href: "/terms" },
+  { type: "item", label: "Privacy", href: "/privacy" },
+  { type: "item", label: "Contact support", href: "mailto:support@evolella.com" },
+  { type: "separator" },
   { type: "item", label: "Log out", href: "/logout" },
 ];
 

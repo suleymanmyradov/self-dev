@@ -1,8 +1,7 @@
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
 import {
   getBillingOverview,
   trackUpgradeEvent,
-  createCheckoutSession,
   createCustomerPortalSession,
 } from '@/api/billing';
 import type { UpgradeEventRequest, BillingOverviewResponse } from '@/api';
@@ -36,16 +35,6 @@ export function useEntitlements() {
 export function useTrackUpgradeEvent() {
   return useMutation({
     mutationFn: (data: UpgradeEventRequest) => trackUpgradeEvent(data),
-  });
-}
-
-export function useCreateCheckoutSession() {
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: createCheckoutSession,
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['billing'] });
-    },
   });
 }
 

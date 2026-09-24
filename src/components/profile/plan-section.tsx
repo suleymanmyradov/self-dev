@@ -7,7 +7,7 @@ import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/sonner";
 import { Check } from "lucide-react";
 import type { BillingOverviewResponse } from "@/api";
-import { useBillingOverview, useCreateCustomerPortalSession, useTrackUpgradeEvent, useCreateCheckoutSession } from "@/hooks";
+import { useBillingOverview, useCreateCustomerPortalSession, useTrackUpgradeEvent } from "@/hooks";
 import { useBillingUIStore } from "@/store/billing-ui";
 import { FakeDoorFeedbackDialog } from "@/components/billing/fake-door-feedback-dialog";
 import { cn } from "@/lib/utils";
@@ -34,7 +34,6 @@ const PRO_FEATURES = [
 export function PlanSection({ billingInitialData }: { billingInitialData?: BillingOverviewResponse }) {
   const { data: billing } = useBillingOverview(billingInitialData);
   const trackEvent = useTrackUpgradeEvent();
-  const checkout = useCreateCheckoutSession();
   const portalMutation = useCreateCustomerPortalSession();
   const searchParams = useSearchParams();
   const router = useRouter();
@@ -55,7 +54,7 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
   const currentPlanCode = billing?.subscription?.planCode ?? "free";
   const isPro = currentPlanCode === "pro";
   const billingMode = billing?.billingMode ?? "fake_door";
-  const isStripeMode = billingMode === "stripe_test" || billingMode === "stripe_live";
+  const isPaddleMode = billingMode === "paddle";
 
   const proPlan = billing ? billing.plans.find((p) => p.code === "pro") : null;
   const annualPriceCents = proPlan?.priceAnnualCents ?? 9990;
@@ -64,16 +63,9 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
   const monthlyDollars = monthlyPriceCents / 100;
   const displayPrice = interval === "annual" ? annualMonthlyDollars : monthlyDollars;
 
-  // Show a toast when returning from Stripe checkout via SuccessURL/CancelURL.
-  // On success, kick off a brief polling loop so the billing query refetches
-  // after the Stripe webhook lands — the webhook that actually flips the
-  // subscription to "active" can arrive a few seconds after the redirect, so
-  // a single refetch may still read stale "free" state.
-  //
-  // Polling timers are stored in a ref instead of a state flag so that
-  // router.replace (which clears the URL param and re-triggers this effect)
-  // does not cancel the timers via the effect cleanup. The ref is cleaned up
-  // on unmount only.
+  // Refresh billing state when landing back here after checkout — the Paddle
+  // webhook flips the subscription asynchronously, so a single refetch may
+  // read stale "free" state. Poll briefly to converge.
   const pollingCleanupRef = useRef<(() => void) | null>(null);
   useEffect(() => {
     const checkoutResult = searchParams.get("checkout");
@@ -112,41 +104,12 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
       billingInterval: interval,
     });
 
-    if (isStripeMode) {
-      handleCheckout();
+    if (isPaddleMode) {
+      // Paddle checkout lives on /pricing (Paddle.js overlay).
+      router.push("/pricing");
     } else {
       openFakeDoor(interval);
     }
-  };
-
-  const handleCheckout = () => {
-    checkout.mutate(
-      { planCode: "pro", billingInterval: interval },
-      {
-        onSuccess: (data) => {
-          const url = data.checkoutUrl;
-          if (url) {
-            try {
-              const parsed = new URL(url);
-              const allowedHosts = ["checkout.stripe.com", "pay.stripe.com", "checkout.link.co"];
-              if (allowedHosts.includes(parsed.hostname)) {
-                toast.success("Redirecting to secure Stripe checkout...");
-                window.location.href = parsed.toString();
-              } else {
-                toast.error("Unexpected checkout URL. Please contact support.");
-              }
-            } catch {
-              toast.error("Received an invalid checkout URL. Please try again.");
-            }
-          } else {
-            toast.error("Checkout session could not be created. Please try again.");
-          }
-        },
-        onError: () => {
-          toast.error("Could not start checkout. Please try again in a moment.");
-        },
-      }
-    );
   };
 
   const handleManageBilling = () => {
@@ -212,7 +175,7 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
           </ul>
 
           {/* Hide the Free card button entirely when the user is on Pro.
-              Downgrades are handled in the Stripe customer portal, which is
+              Downgrades are handled in the Paddle customer portal, which is
               already reachable via the "Manage billing" button on the Pro
               card — showing a dead "Start Free" button here is misleading. */}
           {!isPro && (
@@ -260,7 +223,7 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
                 className="w-full"
                 disabled
               >
-                You're on this plan
+                You&apos;re on this plan
               </Button>
               <Button
                 variant="outline"
@@ -274,10 +237,9 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
           ) : (
             <Button
               className="w-full bg-background text-foreground hover:bg-background/90"
-              disabled={checkout.isPending}
               onClick={handleUpgrade}
             >
-              {checkout.isPending ? "Opening checkout..." : "Upgrade to Pro"}
+              Upgrade to Pro
             </Button>
           )}
 
@@ -293,7 +255,7 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
           open={fakeDoorOpen}
           onOpenChange={closeFakeDoor}
           billingInterval={fakeDoorBillingInterval}
-          onCheckout={handleCheckout}
+          onCheckout={() => router.push("/pricing")}
           billingMode={billingMode}
         />
       )}

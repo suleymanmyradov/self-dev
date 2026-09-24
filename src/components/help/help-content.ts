@@ -915,7 +915,7 @@ export const helpSections: HelpSection[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'On the web, upgrading goes through Stripe checkout. Choose monthly or annual billing, complete checkout, and your entitlements update automatically.',
+            text: 'On the web, upgrading goes through Paddle checkout on the pricing page. Choose monthly or annual billing, complete checkout, and your entitlements update automatically.',
           },
         ],
       },
@@ -925,7 +925,7 @@ export const helpSections: HelpSection[] = [
         blocks: [
           {
             kind: 'paragraph',
-            text: 'Use the Stripe customer portal link in Settings to change plans, update payment methods, or cancel. Changes sync back to your account.',
+            text: 'Use the Manage billing button in Settings to open the Paddle customer portal — change plans, update payment methods, or cancel. Changes sync back to your account.',
           },
         ],
       },

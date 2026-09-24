@@ -7,7 +7,7 @@ import { setAuthCookies } from './helpers';
  *
  * Verifies the Free card button behavior:
  *   - Free user: button visible, disabled, labeled "You're on this plan".
- *   - Pro user: button hidden entirely (downgrades go through the Stripe
+ *   - Pro user: button hidden entirely (downgrades go through the Paddle
  *     customer portal via the Pro card's "Manage billing" button).
  *
  * Prerequisites:

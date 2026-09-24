@@ -279,7 +279,6 @@ export type {
 export {
   getBillingOverview,
   trackUpgradeEvent,
-  createCheckoutSession,
   createCustomerPortalSession,
 } from './billing';
 
@@ -295,7 +294,6 @@ export type {
   UpgradeEventRequest,
   BillingOverviewResponse,
   UpgradeEventResponse,
-  CheckoutSessionResponse,
   PortalSessionResponse,
   PlanLimitError,
 } from './types';

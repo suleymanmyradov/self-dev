@@ -898,8 +898,10 @@ export const UserSubscriptionSchema = z.object({
   currentPeriodEnd: z.string().optional(),
   trialEnd: z.string().optional(),
   cancelAtPeriodEnd: z.boolean(),
-  stripeCustomerId: z.string().optional(),
-  stripeSubscriptionId: z.string().optional(),
+  paddleCustomerId: z
+    .string()
+    .optional()
+    .transform(v => (v === '' ? undefined : v)),
 });
 
 export const EntitlementsSchema = z.object({
@@ -924,7 +926,7 @@ export const BillingOverviewSchema = z.object({
   plans: z.array(PlanSchema),
   subscription: UserSubscriptionSchema,
   entitlements: EntitlementsSchema,
-  billingMode: z.enum(['disabled', 'fake_door', 'stripe_test', 'stripe_live']),
+  billingMode: z.enum(['disabled', 'fake_door', 'paddle']),
 });
 
 export const UpgradeEventTypeSchema = z.enum([
@@ -970,10 +972,6 @@ export const UpgradeEventRequestSchema = z.object({
 // matching the gateway contract in services/gateway/contract/types.api.
 export const BillingOverviewResponseSchema = BillingOverviewSchema;
 export const UpgradeEventResponseSchema = z.object({ eventId: z.string() });
-export const CheckoutSessionResponseSchema = z.object({
-  checkoutUrl: z.string().optional(),
-  sessionId: z.string().optional(),
-});
 export const PortalSessionResponseSchema = z.object({ portalUrl: z.string().optional() });
 
 export const PlanLimitErrorSchema = z.object({
