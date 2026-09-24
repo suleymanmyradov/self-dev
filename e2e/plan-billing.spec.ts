@@ -5,10 +5,12 @@ import { setAuthCookies } from './helpers';
 /**
  * E2E test for the Plan & billing subpage on /me.
  *
- * Verifies the Free card button behavior:
- *   - Free user: button visible, disabled, labeled "You're on this plan".
- *   - Pro user: button hidden entirely (downgrades go through the Paddle
- *     customer portal via the Pro card's "Manage billing" button).
+ * The /me page shows the current subscription status card only — the plan
+ * picker lives on /pricing. Verifies:
+ *   - Free user: sees "Free" status + "Upgrade to Pro" / "Compare plans"
+ *     buttons that lead to /pricing.
+ *   - Pro user: sees "Pro" status, billing interval, renewal date, and the
+ *     "Manage billing" button (customer portal) — no upgrade CTA.
  *
  * Prerequisites:
  *   - Frontend running (bun run dev) on :3000
@@ -36,19 +38,12 @@ function setProPlan() {
   );
 }
 
-/** The Free card is the pricing card whose <h3> says "Free".
- *  The h3 sits inside a flex row inside the card div, so the card is
- *  the h3's grandparent. */
-function freeCard(page: import('@playwright/test').Page) {
-  return page.getByRole('heading', { name: 'Free', level: 3 }).locator('xpath=../..');
-}
-
 test.afterEach(() => {
   // Restore the seeded user to free so we don't leave test state behind.
   setFreePlan();
 });
 
-test('Plan & billing: Free user sees disabled "You\'re on this plan" on the Free card', async ({ page }) => {
+test('Plan & billing: Free user sees status card with upgrade CTA', async ({ page }) => {
   setFreePlan();
   await setAuthCookies(page, { userId: USER_ID, username: 'semiaactive_test' });
   await page.goto('/me');
@@ -56,19 +51,16 @@ test('Plan & billing: Free user sees disabled "You\'re on this plan" on the Free
   await page.getByRole('button', { name: 'Plan & billing' }).click();
   await expect(page.getByRole('heading', { name: 'Plan & billing' })).toBeVisible();
 
-  // Free card button is visible and disabled.
-  const btn = freeCard(page).getByRole('button');
-  await expect(btn).toBeVisible();
-  await expect(btn).toBeDisabled();
-  // Note: the source uses &apos; in a JS string literal, which JSX does not
-  // decode — the button text literally contains "You&apos;re on this plan".
-  await expect(btn).toContainText("on this plan");
+  // Status card shows the Free plan.
+  await expect(page.getByRole('heading', { name: 'Free', level: 3 })).toBeVisible();
 
-  // Pro card shows "Upgrade to Pro" (not "You're on this plan").
+  // Upgrade + compare CTAs are present; no per-card buttons remain.
   await expect(page.getByRole('button', { name: 'Upgrade to Pro' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Compare plans' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Manage billing' })).toHaveCount(0);
 });
 
-test('Plan & billing: Pro user does NOT see a Free card button', async ({ page }) => {
+test('Plan & billing: Pro user sees subscription details and Manage billing', async ({ page }) => {
   setProPlan();
   await setAuthCookies(page, { userId: USER_ID, username: 'semiaactive_test' });
   await page.goto('/me');
@@ -76,11 +68,12 @@ test('Plan & billing: Pro user does NOT see a Free card button', async ({ page }
   await page.getByRole('button', { name: 'Plan & billing' }).click();
   await expect(page.getByRole('heading', { name: 'Plan & billing' })).toBeVisible();
 
-  // The Free card must not have any button.
-  await expect(freeCard(page).getByRole('button')).toHaveCount(0);
+  // Status card shows Pro + interval + renewal date.
+  await expect(page.getByRole('heading', { name: 'Pro', level: 3 })).toBeVisible();
+  await expect(page.getByText('Annual')).toBeVisible();
+  await expect(page.getByText('Renews')).toBeVisible();
 
-  // Pro card shows "You're on this plan" + "Manage billing".
-  const proCard = page.getByRole('heading', { name: 'Pro', level: 3 }).locator('xpath=../..');
-  await expect(proCard.getByRole('button', { name: /on this plan/i })).toBeVisible();
-  await expect(proCard.getByRole('button', { name: 'Manage billing' })).toBeVisible();
+  // Pro users manage via the portal — no upgrade CTA.
+  await expect(page.getByRole('button', { name: 'Manage billing' })).toBeVisible();
+  await expect(page.getByRole('button', { name: 'Upgrade to Pro' })).toHaveCount(0);
 });

@@ -77,7 +77,7 @@ export const UpgradePrompt = memo(function UpgradePrompt({
       trigger,
       planCode: "pro",
     });
-    window.location.href = "/me";
+    window.location.href = "/pricing";
   }, [trackEvent, surface, trigger]);
 
   const handleDismiss = useCallback(() => {

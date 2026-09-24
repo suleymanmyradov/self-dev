@@ -18,7 +18,7 @@ const items: Array<
   { type: "item", label: "Settings", href: "/me" },
   { type: "item", label: "Saved", href: "/library" },
   { type: "separator" },
-  { type: "item", label: "Pricing", href: "/me" },
+  { type: "item", label: "Pricing", href: "/pricing" },
   { type: "separator" },
   { type: "item", label: "Help", href: "/help" },
   { type: "item", label: "Report a problem", href: "/report" },
