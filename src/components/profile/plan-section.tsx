@@ -130,15 +130,13 @@ export function PlanSection({ billingInitialData }: { billingInitialData?: Billi
       </div>
 
       {/* Fake door dialog (only when billing is in fake_door mode) */}
-      {billing?.plans && (
-        <FakeDoorFeedbackDialog
-          open={fakeDoorOpen}
-          onOpenChange={closeFakeDoor}
-          billingInterval={fakeDoorBillingInterval}
-          onCheckout={() => router.push("/pricing")}
-          billingMode={billingMode}
-        />
-      )}
+      <FakeDoorFeedbackDialog
+        open={fakeDoorOpen}
+        onOpenChange={closeFakeDoor}
+        billingInterval={fakeDoorBillingInterval}
+        onCheckout={() => router.push("/pricing")}
+        billingMode={billingMode}
+      />
     </div>
   );
 }
