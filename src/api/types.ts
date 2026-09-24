@@ -939,8 +939,7 @@ export interface UserSubscription {
   currentPeriodEnd?: string;
   trialEnd?: string;
   cancelAtPeriodEnd: boolean;
-  stripeCustomerId?: string;
-  stripeSubscriptionId?: string;
+  paddleCustomerId?: string;
 }
 
 export interface Entitlements {
@@ -965,7 +964,7 @@ export interface BillingOverview {
   plans: Plan[];
   subscription: UserSubscription;
   entitlements: Entitlements;
-  billingMode: 'disabled' | 'fake_door' | 'stripe_test' | 'stripe_live';
+  billingMode: 'disabled' | 'fake_door' | 'paddle';
 }
 
 export type UpgradeEventType =
@@ -1003,7 +1002,6 @@ export interface UpgradeEventRequest {
 // Billing endpoints return flat response bodies (no `data` envelope).
 export type BillingOverviewResponse = BillingOverview;
 export type UpgradeEventResponse = { eventId: string };
-export type CheckoutSessionResponse = { checkoutUrl?: string; sessionId?: string };
 export type PortalSessionResponse = { portalUrl?: string };
 
 export interface PlanLimitError {

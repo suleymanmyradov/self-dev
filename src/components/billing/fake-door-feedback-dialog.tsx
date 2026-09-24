@@ -27,7 +27,7 @@ interface FakeDoorFeedbackDialogProps {
   onOpenChange: (open: boolean) => void;
   billingInterval: "monthly" | "annual";
   onCheckout?: () => void;
-  billingMode?: 'disabled' | 'fake_door' | 'stripe_test' | 'stripe_live';
+  billingMode?: 'disabled' | 'fake_door' | 'paddle';
 }
 
 export function FakeDoorFeedbackDialog({
@@ -44,7 +44,7 @@ export function FakeDoorFeedbackDialog({
   const [submitted, setSubmitted] = useState(false);
   const trackEvent = useTrackUpgradeEvent();
 
-  const isStripeMode = billingMode === 'stripe_test' || billingMode === 'stripe_live';
+  const isPaddleMode = billingMode === 'paddle';
 
   const handleClose = () => {
     onOpenChange(false);
@@ -58,7 +58,7 @@ export function FakeDoorFeedbackDialog({
   };
 
   const handleEarlyAccess = () => {
-    if (isStripeMode && onCheckout) {
+    if (isPaddleMode && onCheckout) {
       trackEvent.mutate({
         eventType: "checkout_started",
         surface: "pricing_page",
@@ -133,7 +133,7 @@ export function FakeDoorFeedbackDialog({
             </div>
             <div className="flex flex-col gap-2">
               <Button onClick={handleEarlyAccess}>
-                {isStripeMode ? "Upgrade to Pro" : "Join early access waitlist"}
+                {isPaddleMode ? "Upgrade to Pro" : "Join early access waitlist"}
               </Button>
               <Button
                 variant="ghost"
