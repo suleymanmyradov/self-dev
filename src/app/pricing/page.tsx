@@ -1,4 +1,5 @@
 import { headers } from 'next/headers';
+import Link from 'next/link';
 import { Pricing } from '@/components/billing/pricing';
 
 // Geo headers set by common edge/CDN layers, in priority order. Cloudflare
@@ -26,5 +27,31 @@ export default async function PricingPage() {
     }
     // When no geo header is present we pass nothing — Paddle auto-detects the
     // buyer's country from their IP at PricePreview/checkout time.
-    return <Pricing country={country} />;
+    return (
+        <>
+            <Pricing country={country} />
+            {/* Legal links on the checkout page itself — required by Paddle's
+                website approval ("must link through to terms, privacy notice
+                and refund policy"). */}
+            <footer className="mx-auto w-full max-w-3xl px-4 pb-10">
+                <div className="flex flex-wrap justify-center gap-x-6 gap-y-2 border-t border-border pt-6 text-xs text-muted-foreground">
+                    <Link className="underline-offset-2 hover:underline" href="/terms">
+                        Terms of Service
+                    </Link>
+                    <Link className="underline-offset-2 hover:underline" href="/privacy">
+                        Privacy Policy
+                    </Link>
+                    <Link className="underline-offset-2 hover:underline" href="/refunds">
+                        Refund &amp; Cancellation Policy
+                    </Link>
+                    <a
+                        className="underline-offset-2 hover:underline"
+                        href="mailto:support@evolella.com"
+                    >
+                        support@evolella.com
+                    </a>
+                </div>
+            </footer>
+        </>
+    );
 }
