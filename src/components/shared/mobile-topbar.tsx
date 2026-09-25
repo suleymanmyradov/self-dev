@@ -12,10 +12,16 @@ import {
 } from '@/components/ui/sheet';
 import { Bell, Leaf } from 'lucide-react';
 import { useUnreadCount } from '@/hooks';
+import { useAuthStore } from '@/store/auth';
+import { useShallow } from 'zustand/react/shallow';
 import { NotificationsList } from '@/components/layout/left-nested-panel';
 
 export const MobileTopBar = memo(function MobileTopBar() {
   const unreadCount = useUnreadCount();
+  const { user, hasHydrated } = useAuthStore(
+    useShallow((s) => ({ user: s.user, hasHydrated: s.hasHydrated }))
+  );
+  const isLoggedIn = hasHydrated && !!user;
   const [notificationsOpen, setNotificationsOpen] = useState(false);
 
   return (
@@ -31,23 +37,25 @@ export const MobileTopBar = memo(function MobileTopBar() {
           <span className="text-base font-semibold tracking-tight">Growth</span>
         </Link>
 
-        <div className="ml-auto">
-          <Button
-            variant="ghost"
-            size="icon"
-            className="relative border border-border/60 bg-background/80 shadow-sm hover:bg-muted/50"
-            aria-label="Notifications"
-            onClick={() => setNotificationsOpen(true)}
-          >
-            <Bell className="h-5 w-5" />
-            {unreadCount > 0 && (
-              <span
-                aria-hidden
-                className="absolute -right-0.5 -top-0.5 inline-flex h-2.5 w-2.5 items-center justify-center rounded-full bg-primary"
-              />
-            )}
-          </Button>
-        </div>
+        {isLoggedIn && (
+          <div className="ml-auto">
+            <Button
+              variant="ghost"
+              size="icon"
+              className="relative border border-border/60 bg-background/80 shadow-sm hover:bg-muted/50"
+              aria-label="Notifications"
+              onClick={() => setNotificationsOpen(true)}
+            >
+              <Bell className="h-5 w-5" />
+              {unreadCount > 0 && (
+                <span
+                  aria-hidden
+                  className="absolute -right-0.5 -top-0.5 inline-flex h-2.5 w-2.5 items-center justify-center rounded-full bg-primary"
+                />
+              )}
+            </Button>
+          </div>
+        )}
       </div>
 
       {/* Notifications sheet — slides in from the right */}

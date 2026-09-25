@@ -4,7 +4,9 @@ import { memo } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { cn } from '@/lib/utils';
-import { Sun, Target, BarChart3, HandFist, Compass } from 'lucide-react';
+import { Sun, Target, BarChart3, HandFist, Compass, Tag, LogIn } from 'lucide-react';
+import { useAuthStore } from '@/store/auth';
+import { useShallow } from 'zustand/react/shallow';
 
 const tabs = [
   { href: "/", label: "Today", icon: Sun },
@@ -14,13 +16,24 @@ const tabs = [
   { href: "/library", label: "Library", icon: Compass },
 ];
 
+// Logged-out visitors get public routes only.
+const publicTabs = [
+  { href: "/pricing", label: "Pricing", icon: Tag },
+  { href: "/library", label: "Library", icon: Compass },
+  { href: "/login", label: "Log in", icon: LogIn },
+];
+
 export const BottomTabBar = memo(function BottomTabBar() {
   const pathname = usePathname();
+  const { user, hasHydrated } = useAuthStore(
+    useShallow((s) => ({ user: s.user, hasHydrated: s.hasHydrated }))
+  );
+  const items = hasHydrated && user ? tabs : publicTabs;
 
   return (
     <div className="fixed bottom-0 left-0 right-0 z-50 border-t border-border/70 bg-background/90 backdrop-blur md:hidden pb-[env(safe-area-inset-bottom)]">
       <nav className="flex h-16 items-center justify-around px-3">
-        {tabs.map((tab) => {
+        {items.map((tab) => {
           const isActive =
             tab.href === '/'
               ? pathname === '/'

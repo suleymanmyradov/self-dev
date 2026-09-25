@@ -8,6 +8,7 @@ import { usePathname } from 'next/navigation';
 import type { LucideIcon } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useUIStore } from '@/store/uiStore';
+import { useAuthStore } from '@/store/auth';
 import { useShallow } from 'zustand/react/shallow';
 import { useUnreadCount } from '@/hooks';
 import {
@@ -19,6 +20,8 @@ import {
   User,
   Bell,
   Sun,
+  Tag,
+  LogIn,
 } from 'lucide-react';
 
 const navItems: { href: string; label: string; icon: LucideIcon }[] = [
@@ -28,6 +31,14 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/coach', label: 'Coach', icon: HandFist },
   { href: '/library', label: 'Library', icon: Compass },
   { href: '/me', label: 'Me', icon: User },
+];
+
+// Public items for logged-out visitors — only routes that don't require
+// auth, so clicking around never lands on a login wall.
+const publicNavItems: { href: string; label: string; icon: LucideIcon }[] = [
+  { href: '/pricing', label: 'Pricing', icon: Tag },
+  { href: '/library', label: 'Library', icon: Compass },
+  { href: '/login', label: 'Log in', icon: LogIn },
 ];
 
 export const SidebarNav = memo(function SidebarNav() {
@@ -40,6 +51,14 @@ export const SidebarNav = memo(function SidebarNav() {
   );
   const openLeftPanel = useUIStore(s => s.openLeftPanel);
   const closeLeftPanel = useUIStore(s => s.closeLeftPanel);
+  const { user, hasHydrated } = useAuthStore(
+    useShallow(s => ({ user: s.user, hasHydrated: s.hasHydrated }))
+  );
+  // Before hydration the store is empty — render the public nav so SSR and
+  // crawlers see only routes that work without auth. Signed-in users swap to
+  // the full nav once hydration lands.
+  const isLoggedIn = hasHydrated && !!user;
+  const items = isLoggedIn ? navItems : publicNavItems;
   const unreadCount = useUnreadCount();
   // Guard the badge so it never renders during SSR or the first hydration
   // render — the unread count is client-only data and would otherwise cause a
@@ -71,7 +90,7 @@ export const SidebarNav = memo(function SidebarNav() {
 
       {/* Main navigation */}
       <nav className="flex flex-1 flex-col items-center gap-2" aria-label="Primary">
-        {navItems.map((item) => (
+        {items.map((item) => (
           <NavButton
             key={item.href}
             href={item.href}
@@ -86,22 +105,26 @@ export const SidebarNav = memo(function SidebarNav() {
           />
         ))}
 
-        <div className="my-2 h-px w-8 bg-border/60" />
+        {isLoggedIn && (
+          <>
+            <div className="my-2 h-px w-8 bg-border/60" />
 
-        {/* Notifications panel toggle */}
-        <div className="relative">
-          <NavButton
-            label="Alerts"
-            icon={Bell}
-            isActive={isLeftPanelOpen && leftPanelType === 'notifications'}
-            onClick={() => handlePanelClick('notifications')}
-          />
-          {mounted && unreadCount > 0 && (
-            <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
-              {unreadCount > 9 ? '9+' : unreadCount}
-            </span>
-          )}
-        </div>
+            {/* Notifications panel toggle */}
+            <div className="relative">
+              <NavButton
+                label="Alerts"
+                icon={Bell}
+                isActive={isLeftPanelOpen && leftPanelType === 'notifications'}
+                onClick={() => handlePanelClick('notifications')}
+              />
+              {mounted && unreadCount > 0 && (
+                <span className="absolute -right-0.5 -top-0.5 flex h-4 min-w-4 items-center justify-center rounded-full bg-destructive px-1 text-[10px] font-bold text-destructive-foreground">
+                  {unreadCount > 9 ? '9+' : unreadCount}
+                </span>
+              )}
+            </div>
+          </>
+        )}
 
         <div className="mt-auto flex flex-col items-center gap-2 pt-4">
           <MoreMenu />
