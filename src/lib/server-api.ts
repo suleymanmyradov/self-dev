@@ -4,6 +4,7 @@ import { cookies } from 'next/headers';
 import { redirect } from 'next/navigation';
 import axios, { AxiosError, AxiosRequestConfig } from 'axios';
 import { config, isAiGatewayPath, isDev } from './config';
+import { peekRefreshToken } from './refresh-coordinator';
 import { ApiError } from '@/api/axios-client';
 
 const AUTH_COOKIE_NAME = 'auth-token';
@@ -27,36 +28,20 @@ export async function getServerAccessToken(): Promise<string | null> {
 }
 
 /**
- * Exchange a refresh token for a fresh token pair via the backend gateway.
- * Used as a fallback when the proxy middleware's refresh didn't cover a
- * request (e.g. clock-skew window between proxy and backend token validation).
- *
- * Note: the new cookies cannot be persisted from a Server Component (Next.js
- * only allows cookie writes in Server Actions / Route Handlers). The proxy
- * middleware remains the primary refresh mechanism; this is a last-resort
- * retry to avoid crashing the server render with a 401.
+ * Reuse a token pair produced by a concurrent cookie-writing refresh, if one
+ * is in flight. Server components CANNOT persist cookies (Next.js only allows
+ * cookie writes in Server Actions / Route Handlers), so initiating a rotation
+ * here would burn the single-use refresh token: the new pair never reaches
+ * the browser and the session dies. We only ever piggy-back on an exchange
+ * already started by the proxy or the BFF route — both of which persist the
+ * rotated cookies.
  */
-async function tryServerRefresh(
+async function trySharedRefresh(
   refreshToken: string,
-): Promise<{ accessToken: string; refreshToken: string } | null> {
-  const apiUrl = (process.env.NEXT_PUBLIC_API_PROXY_URL || 'http://localhost:8080')
-    .replace(/\/+$/, '')
-    .replace(/\/api\/v1$/, '');
-  try {
-    const res = await fetch(`${apiUrl}/api/v1/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json().catch(() => null)) as
-      | { accessToken?: string; refreshToken?: string }
-      | null;
-    if (!data?.accessToken || !data?.refreshToken) return null;
-    return { accessToken: data.accessToken, refreshToken: data.refreshToken };
-  } catch {
-    return null;
-  }
+): Promise<{ accessToken: string } | null> {
+  const outcome = await peekRefreshToken(refreshToken);
+  if (!outcome || outcome.kind !== 'ok') return null;
+  return { accessToken: outcome.accessToken };
 }
 
 export async function serverRequest<T>(cfg: AxiosRequestConfig): Promise<T> {
@@ -83,13 +68,14 @@ export async function serverRequest<T>(cfg: AxiosRequestConfig): Promise<T> {
     return await doRequest(accessToken);
   } catch (error) {
     // 401: the proxy middleware should have refreshed already, but a clock-skew
-    // window or a token revoked server-side can still cause this. Try one
-    // silent refresh; if that also fails, redirect to login instead of
+    // window or a token revoked server-side can still cause this. Reuse a
+    // concurrent rotation's result if one exists (we may never initiate one —
+    // we can't persist the cookies); otherwise redirect to login instead of
     // throwing (which would crash the streaming render).
     if (error instanceof AxiosError && error.response?.status === 401) {
       const refreshToken = cookieStore.get('refresh-token')?.value;
       if (refreshToken) {
-        const refreshed = await tryServerRefresh(refreshToken);
+        const refreshed = await trySharedRefresh(refreshToken);
         if (refreshed) {
           accessToken = refreshed.accessToken;
           try {

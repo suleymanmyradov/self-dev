@@ -12,7 +12,7 @@ export default function RefundsPage() {
             <h1 className="font-display-face text-3xl font-semibold">
                 Refund &amp; Cancellation Policy
             </h1>
-            <p className="mt-2 text-sm text-muted-foreground">Last updated: September 24, 2026</p>
+            <p className="mt-2 text-sm text-muted-foreground">Last updated: September 28, 2026</p>
 
             <div className="mt-8 space-y-8 text-sm leading-relaxed text-muted-foreground">
                 <p>
@@ -38,7 +38,9 @@ export default function RefundsPage() {
                     <p>
                         Cancellation takes effect at the end of the current paid period — you keep
                         Pro access until then, and no further renewals are charged. Deleting your
-                        account does not cancel a subscription; cancel it separately first.
+                        account cancels a Paddle web subscription immediately; app-store
+                        subscriptions must be cancelled in the store — deleting your account does
+                        not stop those renewals.
                     </p>
                 </section>
 

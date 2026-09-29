@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { decodeProtectedHeader, importSPKI, jwtVerify } from 'jose';
+import { exchangeRefreshToken } from '@/lib/refresh-coordinator';
 
 const AUTH_COOKIE_NAME = 'auth-token';
 const REFRESH_COOKIE_NAME = 'refresh-token';
@@ -117,29 +118,17 @@ const COOKIE_OPTS = {
 };
 
 /**
- * Exchange a refresh token for a fresh token pair via the backend gateway.
+ * Persist a rotated token pair onto a response — both onto the request (so
+ * downstream server code sees them) is not possible for redirects, so for
+ * redirects only the browser cookie store gets the pair.
  */
-async function tryRefresh(
-  refreshToken: string,
-): Promise<{ accessToken: string; refreshToken: string } | null> {
-  // Normalize to a bare origin so a value with a trailing /api/v1 can't double the prefix.
-  const apiUrl = (process.env.NEXT_PUBLIC_API_PROXY_URL || 'http://localhost:8080')
-    .replace(/\/+$/, '')
-    .replace(/\/api\/v1$/, '');
-  try {
-    const res = await fetch(`${apiUrl}/api/v1/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const { accessToken, refreshToken: newRefreshToken } = data;
-    if (!accessToken || !newRefreshToken) return null;
-    return { accessToken, refreshToken: newRefreshToken };
-  } catch {
-    return null;
-  }
+function setRotatedCookies(
+  response: NextResponse,
+  tokens: { accessToken: string; refreshToken: string },
+) {
+  response.cookies.set(AUTH_COOKIE_NAME, tokens.accessToken, COOKIE_OPTS);
+  response.cookies.set(REFRESH_COOKIE_NAME, tokens.refreshToken, COOKIE_OPTS);
+  return response;
 }
 
 export async function proxy(request: NextRequest) {
@@ -162,13 +151,22 @@ export async function proxy(request: NextRequest) {
       // Silently rotate the token so the user isn't interrupted every 15 min.
       const refreshToken = request.cookies.get(REFRESH_COOKIE_NAME)?.value;
       if (refreshToken) {
-        const refreshed = await tryRefresh(refreshToken);
-        if (refreshed) {
+        const outcome = await exchangeRefreshToken(refreshToken);
+        if (outcome.kind === 'ok') {
+          const refreshed = {
+            accessToken: outcome.accessToken,
+            refreshToken: outcome.refreshToken,
+          };
           authenticated = true;
 
-          // Redirect authenticated users away from auth pages
+          // Redirect authenticated users away from auth pages — the rotated
+          // pair must be written onto the redirect response, otherwise the
+          // single-use token we just consumed is lost and the session dies.
           if (isAuthRoute(pathname)) {
-            return NextResponse.redirect(new URL('/plan', request.url));
+            return setRotatedCookies(
+              NextResponse.redirect(new URL('/plan', request.url)),
+              refreshed,
+            );
           }
 
           // Mutate the request so server components receive the fresh token,
@@ -176,8 +174,7 @@ export async function proxy(request: NextRequest) {
           request.cookies.set(AUTH_COOKIE_NAME, refreshed.accessToken);
           request.cookies.set(REFRESH_COOKIE_NAME, refreshed.refreshToken);
           const response = NextResponse.next({ request });
-          response.cookies.set(AUTH_COOKIE_NAME, refreshed.accessToken, COOKIE_OPTS);
-          response.cookies.set(REFRESH_COOKIE_NAME, refreshed.refreshToken, COOKIE_OPTS);
+          setRotatedCookies(response, refreshed);
           return response;
         }
       }

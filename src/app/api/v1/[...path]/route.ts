@@ -1,6 +1,7 @@
 import { cookies } from 'next/headers';
 import { NextRequest, NextResponse } from 'next/server';
-import { backendUrl, config } from '@/lib/config';
+import { backendUrl } from '@/lib/config';
+import { exchangeRefreshToken } from '@/lib/refresh-coordinator';
 
 /**
  * Backend-for-frontend (BFF) proxy for all gateway routes.
@@ -46,34 +47,57 @@ const STRIP_RESPONSE_HEADERS = new Set([
   'set-cookie',
 ]);
 
+/**
+ * Decode a path segment repeatedly (bounded) so nested encodings collapse:
+ * Next.js decodes params once (%2e%2e → ".."), but a double-encoded segment
+ * (%252e%252e → "%2e%2e") survives into the upstream URL and decodes to ".."
+ * at the gateway — letting a caller reach paths outside /api/v1 with the
+ * user's Bearer token attached.
+ */
+function decodeFully(seg: string): string {
+  let out = seg;
+  for (let i = 0; i < 3; i++) {
+    try {
+      const decoded = decodeURIComponent(out);
+      if (decoded === out) break;
+      out = decoded;
+    } catch {
+      return out; // malformed escape — keep as-is
+    }
+  }
+  return out;
+}
+
+/**
+ * Reject path segments that could traverse out of /api/v1 or smuggle path
+ * separators into the upstream URL: dot-segments, decoded slashes/
+ * backslashes, residual '%' (double-encoding residue), and empty segments
+ * (// collapses on some upstreams). Legitimate gateway paths never contain
+ * these.
+ */
+function isUnsafePath(pathParts: string[]): boolean {
+  return pathParts.some((seg) => {
+    if (seg === '') return true;
+    const d = decodeFully(seg);
+    return d === '.' || d === '..' || d.includes('/') || d.includes('\\') || d.includes('%');
+  });
+}
+
 function buildUpstreamUrl(req: NextRequest, pathParts: string[]): string {
   const path = pathParts.join('/');
   // Route to the ai-gateway or main gateway based on the path prefix.
   return backendUrl(`/${path}`, req.nextUrl.search);
 }
 
-async function exchangeRefreshToken(
-  refreshToken: string,
-): Promise<{ accessToken: string; refreshToken: string } | null> {
-  try {
-    const res = await fetch(`${config.apiProxyUrl}${config.apiPrefix}/auth/refresh`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refreshToken }),
-    });
-    if (!res.ok) return null;
-    const data = (await res.json().catch(() => null)) as
-      | { accessToken?: string; refreshToken?: string }
-      | null;
-    if (!data?.accessToken || !data?.refreshToken) return null;
-    return { accessToken: data.accessToken, refreshToken: data.refreshToken };
-  } catch {
-    return null;
-  }
-}
-
 async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] }> }) {
   const { path } = await ctx.params;
+
+  // Path-traversal guard — anything trying to escape /api/v1 (encoded or
+  // not) gets a 404 without ever touching the gateway.
+  if (isUnsafePath(path)) {
+    return new NextResponse('Not Found', { status: 404 });
+  }
+
   const cookieStore = await cookies();
 
   let accessToken = cookieStore.get(AUTH_COOKIE_NAME)?.value ?? null;
@@ -98,15 +122,26 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
 
   let upstream = await callGateway(accessToken);
   let rotated: { accessToken: string; refreshToken: string } | null = null;
+  // True when the backend positively rejected the refresh token (401/403) or
+  // a rotated token still 401'd — only then may we delete cookies. A
+  // transient refresh failure (network/5xx) must keep them: the token is
+  // likely still valid and wiping the session logs the user out for nothing.
+  let sessionDead = false;
 
   // Transparent single-retry refresh on an expired access token.
   if (upstream.status === 401) {
     const refreshToken = cookieStore.get(REFRESH_COOKIE_NAME)?.value;
     if (refreshToken) {
-      rotated = await exchangeRefreshToken(refreshToken);
-      if (rotated) {
+      const outcome = await exchangeRefreshToken(refreshToken);
+      if (outcome.kind === 'ok') {
+        rotated = { accessToken: outcome.accessToken, refreshToken: outcome.refreshToken };
         accessToken = rotated.accessToken;
         upstream = await callGateway(accessToken);
+        // A rotated pair that still 401s means the session was revoked
+        // server-side — treat it as dead, not transient.
+        if (upstream.status === 401) sessionDead = true;
+      } else if (outcome.kind === 'rejected') {
+        sessionDead = true;
       }
     }
   }
@@ -132,11 +167,11 @@ async function handle(req: NextRequest, ctx: { params: Promise<{ path: string[] 
   if (rotated) {
     res.cookies.set(AUTH_COOKIE_NAME, rotated.accessToken, COOKIE_OPTS);
     res.cookies.set(REFRESH_COOKIE_NAME, rotated.refreshToken, COOKIE_OPTS);
-  } else if (upstream.status === 401 && wasAuthenticated) {
-    // Session was authenticated but is now dead (expired/revoked tokens) — drop
-    // the stale cookies. Only do this when there WAS a token; an unauthenticated
-    // 401 (no cookies) must not touch cookies, or it can race with a concurrent
-    // login (e.g. Google OAuth callback) that just set them.
+  } else if (upstream.status === 401 && wasAuthenticated && sessionDead) {
+    // The refresh token was positively rejected — the session is dead, drop
+    // the stale cookies. Only do this when there WAS a token; an
+    // unauthenticated 401 (no cookies) must not touch cookies, or it can race
+    // with a concurrent login (e.g. Google OAuth callback) that just set them.
     res.cookies.delete(AUTH_COOKIE_NAME);
     res.cookies.delete(REFRESH_COOKIE_NAME);
   }

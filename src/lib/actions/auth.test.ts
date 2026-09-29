@@ -157,8 +157,9 @@ describe('auth server actions', () => {
 
       expect(result.success).toBe(true);
       expect(result.user?.email).toBe('jane@example.com');
-      expect(result.accessToken).toBe('access-token-abc');
-      expect(result.refreshToken).toBe('refresh-token-xyz');
+      // Tokens must never reach browser JS — they live in httpOnly cookies.
+      expect(result).not.toHaveProperty('accessToken');
+      expect(result).not.toHaveProperty('refreshToken');
     });
 
     it('sets auth cookies on success', async () => {
@@ -353,14 +354,15 @@ describe('auth server actions', () => {
   // verifyEmailAction
   // -------------------------------------------
   describe('verifyEmailAction', () => {
-    it('returns success with user and tokens on valid token', async () => {
+    it('returns success with user on valid token — tokens stay in cookies only', async () => {
       mockFetchSuccess(validAuthResponse());
 
       const result = await verifyEmailAction('valid-token-abc');
 
       expect(result.success).toBe(true);
       expect(result.user?.email).toBe('jane@example.com');
-      expect(result.accessToken).toBe('access-token-abc');
+      expect(result).not.toHaveProperty('accessToken');
+      expect(result).not.toHaveProperty('refreshToken');
     });
 
     it('sets auth cookies on success (user is logged in immediately)', async () => {
@@ -457,14 +459,15 @@ describe('auth server actions', () => {
   // googleLoginAction
   // -------------------------------------------
   describe('googleLoginAction', () => {
-    it('returns success with user and tokens on valid authorization code', async () => {
+    it('returns success with user on valid code — tokens stay in cookies only', async () => {
       mockFetchSuccess(validAuthResponse());
 
       const result = await googleLoginAction('valid-auth-code');
 
       expect(result.success).toBe(true);
       expect(result.user?.email).toBe('jane@example.com');
-      expect(result.accessToken).toBe('access-token-abc');
+      expect(result).not.toHaveProperty('accessToken');
+      expect(result).not.toHaveProperty('refreshToken');
     });
 
     it('sets auth cookies on success', async () => {

@@ -33,7 +33,8 @@ describe('Concise legal disclosures', () => {
             'some history or unavailable sections may be missing',
             'Completion across services can take time',
             'not yet covered by automated deletion',
-            'Deleting an account does not cancel external subscriptions',
+            'cancels a Paddle web subscription automatically',
+            'must be cancelled in the store',
         ])
             expect(copy).toContain(value);
     });
@@ -87,22 +88,21 @@ describe('Concise legal disclosures', () => {
             expect(copy).not.toContain('CONFIRM');
             expect(copy).not.toContain('[');
         }
-        for (const page of [PrivacyPolicyPage, TermsPage]) {
-            expect(text(renderPage(page))).toContain('September 23, 2026');
+        for (const page of [PrivacyPolicyPage, TermsPage, RefundsPage]) {
+            expect(text(renderPage(page))).toContain('September 28, 2026');
         }
-        expect(text(renderPage(RefundsPage))).toContain('September 24, 2026');
         const privacy = text(renderPage(PrivacyPolicyPage));
         expect(privacy).toContain('a postal address is available on request');
         expect(privacy).toContain('processed mainly in the United States');
         expect(text(renderPage(TermsPage))).toContain('State of Delaware');
     });
-    it('distinguishes planned paid Gemini usage from current configuration', () => {
+    it('discloses AI provider data handling without unverified claims', () => {
         const privacy = text(renderPage(PrivacyPolicyPage));
-        expect(privacy).toContain('For launch, we plan to use Gemini with billing enabled');
-        expect(privacy).toContain('paid API terms');
+        expect(privacy).toContain('API terms');
+        expect(privacy).toContain('paid Gemini API');
         expect(privacy).toContain('retention for safety and legal purposes may still apply');
         expect(privacy).not.toMatch(
-            /billing is enabled|currently use paid Gemini|zero retention|never retain/i,
+            /billing is enabled|currently use paid Gemini|zero retention|never retain|plan to use/i,
         );
     });
     it('states adult eligibility and in-app notices without claiming automatic verification', () => {
@@ -122,11 +122,10 @@ describe('Concise legal disclosures', () => {
         const html = renderPage(TermsPage);
         const copy = text(html);
         for (const value of [
-            'When available',
             'Paddle',
             'RevenueCat',
             'renew automatically until cancelled',
-            'Deleting your account does not cancel a subscription',
+            'cancels a Paddle web subscription immediately',
             'hosted customer portal',
             'Manage subscription link in your purchase email',
             'Refund requests for web purchases are handled through Paddle',
@@ -147,7 +146,8 @@ describe('Concise legal disclosures', () => {
             'hosted customer portal',
             'Manage billing',
             'end of the current paid period',
-            'Deleting your account does not cancel a subscription',
+            'cancels a Paddle web subscription immediately',
+            'must be cancelled in the store',
             'merchant of record',
             '14 days',
             'Apple App Store or Google Play',

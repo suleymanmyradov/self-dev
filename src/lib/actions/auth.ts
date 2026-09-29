@@ -81,8 +81,9 @@ export interface AuthActionState {
   error?: string;
   fieldErrors?: Record<string, string[]>;
   user?: Profile;
-  accessToken?: string;
-  refreshToken?: string;
+  // Tokens are NEVER returned to client code — they only ever live in
+  // httpOnly cookies via setAuthCookies. Returning them here would hand the
+  // session to browser JS (XSS-exfiltratable) and undo the cookie design.
   // Registration flow: no tokens are issued until the email is verified.
   requiresVerification?: boolean;
   message?: string;
@@ -121,8 +122,6 @@ export async function loginAction(
     return {
       success: true,
       user: parsed.user,
-      accessToken: parsed.accessToken,
-      refreshToken: parsed.refreshToken,
     };
   } catch (error) {
     const message =
@@ -198,8 +197,6 @@ export async function verifyEmailAction(token: string): Promise<AuthActionState>
     return {
       success: true,
       user: parsed.user,
-      accessToken: parsed.accessToken,
-      refreshToken: parsed.refreshToken,
     };
   } catch (error) {
     const message =
@@ -256,8 +253,6 @@ export async function googleLoginAction(authorizationCode: string): Promise<Auth
     return {
       success: true,
       user: parsed.user,
-      accessToken: parsed.accessToken,
-      refreshToken: parsed.refreshToken,
     };
   } catch (error) {
     const message =

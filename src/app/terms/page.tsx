@@ -10,7 +10,7 @@ export default function TermsPage() {
     return (
         <section className="mx-auto w-full max-w-2xl px-4 py-12">
             <h1 className="font-display-face text-3xl font-semibold">Terms of Service</h1>
-            <p className="mt-2 text-sm text-muted-foreground">Last updated: September 23, 2026</p>
+            <p className="mt-2 text-sm text-muted-foreground">Last updated: September 28, 2026</p>
 
             <div className="mt-8 space-y-8 text-sm leading-relaxed text-muted-foreground">
                 <p>
@@ -68,7 +68,7 @@ export default function TermsPage() {
                         4. Subscriptions
                     </h2>
                     <p>
-                        When available, web payments use Paddle and mobile purchases use the
+                        Web payments use Paddle and mobile purchases use the
                         relevant app store, with RevenueCat managing subscription access. Prices,
                         billing periods and any trial are shown at checkout.
                     </p>
@@ -77,8 +77,9 @@ export default function TermsPage() {
                         through Paddle&apos;s hosted customer portal, available from the Manage
                         subscription link in your purchase email. For mobile purchases, use the app
                         store where you subscribed. Cancellation scheduled for the end of a paid
-                        period normally preserves access until then. Deleting your account does not
-                        cancel a subscription; cancel it separately first.
+                        period normally preserves access until then. Deleting your account cancels a
+                        Paddle web subscription immediately; app-store subscriptions must be
+                        cancelled in the store — deleting your account does not stop those renewals.
                     </p>
                     <p>
                         Refund requests for web purchases are handled through Paddle under its{' '}

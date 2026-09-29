@@ -8,7 +8,7 @@ export const metadata: Metadata = {
         'How Evolella collects, uses, stores, and protects your personal data, and the rights you have over it.',
 };
 
-const UPDATED = 'September 23, 2026';
+const UPDATED = 'September 28, 2026';
 
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
     return (
@@ -75,16 +75,17 @@ export default function PrivacyPolicyPage() {
                         want these services to process.
                     </p>
                     <p>
-                        For launch, we plan to use Gemini with billing enabled. Under Google&apos;s
-                        paid API terms, prompts and responses are not used to improve its products;
-                        retention for safety and legal purposes may still apply.
+                        AI prompts and responses are processed under each provider&apos;s API terms.
+                        Where a provider offers a paid API tier that excludes training use (such as
+                        Google&apos;s paid Gemini API), prompts and responses are not used to improve
+                        its products; retention for safety and legal purposes may still apply.
                     </p>
                     <p>
                         We use UpCloud for primary hosting in the United States, Google for sign-in,
-                        Resend for email, and Sentry for error and performance diagnostics. When
-                        enabled, Paddle handles web payments, RevenueCat and app stores handle
-                        mobile subscriptions, and Expo delivers mobile push notifications. Payment
-                        details are collected through the payment provider or app store.
+                        Resend for email, and Sentry for error and performance diagnostics. Paddle
+                        handles web payments, RevenueCat and the app stores handle mobile
+                        subscriptions, and Expo delivers mobile push notifications. Payment details
+                        are collected through the payment provider or app store.
                     </p>
                     <p>
                         Your data is processed mainly in the United States. Our providers may
@@ -152,7 +153,9 @@ export default function PrivacyPolicyPage() {
                         notifications, conversations, saved AI memories and reports. Completion
                         across services can take time. Uploaded files and generated export files are
                         not yet covered by automated deletion and may remain until removed manually.
-                        Deleting an account does not cancel external subscriptions.
+                        Deleting your account cancels a Paddle web subscription automatically.
+                        App-store subscriptions managed through Apple or Google must be cancelled in
+                        the store — deleting your account does not stop those renewals.
                     </p>
                     <p>
                         Depending on applicable law — including the privacy laws of your state — you
