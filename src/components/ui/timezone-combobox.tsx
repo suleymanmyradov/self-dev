@@ -110,7 +110,7 @@ export function TimezoneCombobox({
 }: TimezoneComboboxProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
-  const options = useMemo(getOptions, []);
+  const options = useMemo(() => getOptions(), []);
 
   const selected = useMemo(
     () => options.find((o) => o.id === value) ?? null,

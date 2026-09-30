@@ -1,8 +1,9 @@
 # CI/CD for the public Next.js frontend (deployed as the `frontend` service in
 # growth-server's deploy/docker-compose.prod.yml).
 #
-# PRs: docker build only. Push to main: build + push to GHCR, then SSH-deploy
-# to the production VM (pull + recreate + health check).
+# PRs: typecheck + eslint + vitest + docker build. Push to main: the same gate
+# runs before the image build + GHCR push and the SSH deploy to the production
+# VM (pull + recreate + health check).
 
 name: CI/CD
 
@@ -20,7 +21,21 @@ env:
   IMAGE: ghcr.io/${{ github.repository }}
 
 jobs:
+  test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: "1.3.1"
+      - run: bun install --frozen-lockfile
+      - run: bun run typecheck
+      - run: bun run lint
+      - run: bun run test
+
   build:
+    needs: test
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:

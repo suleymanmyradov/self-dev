@@ -3,7 +3,6 @@
 import { useState } from "react";
 import { BrainIcon, TrashIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import {
@@ -22,7 +21,6 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "@/components/ui/sonner";
-import { cn } from "@/lib/utils";
 import {
   useMemoryFacts,
   useAddMemoryFact,

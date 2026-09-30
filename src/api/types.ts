@@ -461,7 +461,7 @@ export interface MemoryFact {
   createdAt: string;
 }
 
-export interface ListMemoryFactsParams extends PageParams {}
+export type ListMemoryFactsParams = PageParams;
 
 export interface ListMemoryFactsResponse extends ApiResponse<MemoryFact[]> {
   page: PageResponse;
@@ -476,7 +476,7 @@ export interface AddMemoryFactRequest {
   supersedesId?: string;
 }
 
-export interface ForgetAllMemoryFactsResponse extends ApiResponse<{ forgotten: boolean }> {}
+export type ForgetAllMemoryFactsResponse = ApiResponse<{ forgotten: boolean }>;
 
 // ============================================
 // Settings Types
