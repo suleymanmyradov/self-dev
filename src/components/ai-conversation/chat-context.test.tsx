@@ -22,6 +22,7 @@ function createState(overrides: Record<string, unknown> = {}): TestState {
     hasMoreMessages: false,
     isLoadingOlder: false,
     loadOlderMessages: vi.fn().mockResolvedValue(undefined),
+    loadError: null,
     ...overrides,
   };
 }

@@ -147,7 +147,31 @@ export const Assistant = ({
                         onUnarchive={id => unarchiveMutation.mutate(id)}
                         onDelete={handleDelete}
                     />
-                    <Thread />
+                    {conversationState.loadError ? (
+                        <div className="flex flex-1 flex-col items-center justify-center gap-3 px-6 text-center">
+                            <p className="text-lg font-medium">
+                                {conversationState.loadError === 'not-found'
+                                    ? 'Conversation not found'
+                                    : 'Couldn’t load this conversation'}
+                            </p>
+                            <p className="text-sm text-muted-foreground">
+                                {conversationState.loadError === 'not-found'
+                                    ? 'It may have been deleted.'
+                                    : 'Something went wrong while loading the messages.'}
+                            </p>
+                            <Button
+                                size="sm"
+                                onClick={() => {
+                                    onReset();
+                                    router.push('/coach');
+                                }}
+                            >
+                                Start a new chat
+                            </Button>
+                        </div>
+                    ) : (
+                        <Thread />
+                    )}
                 </main>
             </div>
 

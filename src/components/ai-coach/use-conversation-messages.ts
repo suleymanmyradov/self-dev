@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { streamPersonalizedCoaching, type CoachingProposal } from '@/api/personalization';
 import { startConversation, getMessages } from '@/api/conversations';
+import { ApiError } from '@/api/axios-client';
 import type { StreamAttachment } from '@/api/types';
 import {
     prepareAttachmentForApi,
@@ -47,9 +48,18 @@ export function useConversationMessages(conversationId?: string) {
     );
     const [hasMoreMessages, setHasMoreMessages] = useState(false);
     const [isLoadingOlder, setIsLoadingOlder] = useState(false);
+    const [loadError, setLoadError] = useState<'not-found' | 'error' | null>(null);
     const currentPageRef = useRef(1);
     const abortRef = useRef<AbortController | null>(null);
     const stateVersionRef = useRef(0);
+
+    // Clear a stale loadError when navigating to a different conversation
+    // (or to the new-chat page, where conversationId becomes undefined).
+    const [prevConversationId, setPrevConversationId] = useState(conversationId);
+    if (prevConversationId !== conversationId) {
+        setPrevConversationId(conversationId);
+        setLoadError(null);
+    }
 
     // Load conversation history when a conversationId is provided
     useEffect(() => {
@@ -72,7 +82,9 @@ export function useConversationMessages(conversationId?: string) {
                 currentPageRef.current = resp.page?.page ?? 1;
                 setHasMoreMessages((resp.page?.page ?? 1) < (resp.page?.totalPages ?? 1));
             } catch (err) {
+                if (cancelled || loadVersion !== stateVersionRef.current) return;
                 console.error('Failed to load conversation:', err);
+                setLoadError(err instanceof ApiError && err.status === 404 ? 'not-found' : 'error');
             }
         })();
 
@@ -299,6 +311,7 @@ export function useConversationMessages(conversationId?: string) {
         setIsRunning(false);
         setThinkingMessage(null);
         setCurrentConversationId(undefined);
+        setLoadError(null);
     }, []);
 
     // Abort any in-flight stream when the component unmounts (e.g. navigating
@@ -327,5 +340,6 @@ export function useConversationMessages(conversationId?: string) {
         hasMoreMessages,
         isLoadingOlder,
         loadOlderMessages,
+        loadError,
     };
 }
