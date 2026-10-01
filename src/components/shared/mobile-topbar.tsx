@@ -34,7 +34,7 @@ export const MobileTopBar = memo(function MobileTopBar() {
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted text-foreground shadow-sm">
             <Leaf className="h-4 w-4" />
           </div>
-          <span className="text-base font-semibold tracking-tight">Growth</span>
+          <span className="text-base font-semibold tracking-tight">Evolella</span>
         </Link>
 
         {isLoggedIn && (

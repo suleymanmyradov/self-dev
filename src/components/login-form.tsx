@@ -1,11 +1,12 @@
 'use client';
 
 import { useActionState, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { loginAction } from '@/lib/actions/auth';
+import { sanitizeRedirect } from '@/lib/post-auth-redirect';
 import { useAuthStore } from '@/store/auth';
 import { useLoginForm } from '@/hooks';
 import { GoogleButton } from '@/components/google-button';
@@ -15,6 +16,10 @@ import { capitalizeFirst } from '@/lib/utils';
 
 export function LoginForm() {
   const router = useRouter();
+  // ?redirect=<path> carries the intent that bounced the user here (e.g.
+  // /pricing checkout). Same-origin only — sanitizeRedirect rejects
+  // protocol-relative and backslash URLs.
+  const redirectTo = sanitizeRedirect(useSearchParams().get('redirect'));
   const setAuth = useAuthStore((s) => s.login);
   const {
     email, setEmail,
@@ -36,13 +41,13 @@ export function LoginForm() {
       setAuth(state.user);
       toast.success('Logged in successfully');
       reset();
-      router.push('/plan');
+      router.push(redirectTo ?? '/plan');
     } else if (state.error) {
       setError(state.error);
     } else if (state.fieldErrors) {
       setFieldErrors(state.fieldErrors);
     }
-  }, [state, setAuth, reset, setError, setFieldErrors, router]);
+  }, [state, setAuth, reset, setError, setFieldErrors, router, redirectTo]);
 
   const handleSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     setError(null);
@@ -141,7 +146,7 @@ export function LoginForm() {
           </div>
         </div>
 
-        <GoogleButton />
+        <GoogleButton redirectTo={redirectTo} />
       </div>
 
       <div className="text-center text-sm text-muted-foreground">

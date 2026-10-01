@@ -20,6 +20,8 @@ import {
   useGenerateWeeklyReviewStream,
   useBillingOverview,
   useActivities,
+  useCheckInHistory,
+  dailyCheckInCounts,
 } from "@/hooks";
 import { UpgradePrompt } from "@/components/billing/upgrade-prompt";
 import type { WeeklyReview, ApiResponse, ActivityResponse } from "@/api";
@@ -35,23 +37,13 @@ interface WeeklyReviewClientProps {
 }
 
 /**
- * Derive per-day check-in counts from the habit breakdown data.
- * Each habit has `completedCount` and `totalCheckIns`; we approximate the
- * per-day distribution by distributing completed check-ins across the week
- * proportionally. When the backend exposes per-day data, this can be replaced.
+ * Parses a YYYY-MM-DD API date as a LOCAL day. `new Date("2026-09-07")`
+ * parses as UTC midnight, which shifts back a calendar day in every
+ * UTC-negative timezone — the source of the off-by-one day labels.
  */
-export function getDailyCheckInCounts(review: WeeklyReview | null | undefined): number[] {
-  if (!review) return [0, 0, 0, 0, 0, 0, 0];
-  // Approximate: distribute completed check-ins evenly across 7 days,
-  // capped at totalHabits per day. This gives a reasonable visual.
-  const totalCompleted = Math.max(0, Math.floor(review.completedCheckIns));
-  const perDay = review.totalHabits > 0 ? review.totalHabits : totalCompleted;
-  const base = Math.floor(totalCompleted / 7);
-  const remainder = totalCompleted % 7;
-  // Create a slightly varied distribution for visual interest
-  const counts = Array.from({ length: 7 }, (_, index) => base + (index < remainder ? 1 : 0));
-  // Adjust so the sum matches completedCheckIns
-  return counts.map((count) => Math.min(count, perDay));
+export function parseWeekDate(iso: string): Date {
+  const [y, m, d] = iso.split("-").map(Number);
+  return new Date(y, (m ?? 1) - 1, d ?? 1);
 }
 
 export function WeeklyReviewClient({
@@ -97,7 +89,13 @@ export function WeeklyReviewClient({
     generateStream.mutate({ weekStart: activeReview?.weekStart, forceRegenerate: true });
   };
 
-  const dailyCounts = useMemo(() => getDailyCheckInCounts(activeReview), [activeReview]);
+  // Real per-day counts from check-in history — previously this fabricated
+  // an even spread of the weekly total across all seven days.
+  const { data: weekCheckIns } = useCheckInHistory(activeReview?.weekStart);
+  const dailyCounts = useMemo(
+    () => dailyCheckInCounts(weekCheckIns, activeReview?.weekStart ?? ""),
+    [weekCheckIns, activeReview?.weekStart],
+  );
   const maxDaily = Math.max(...dailyCounts, 1);
   const todayIndex = isCurrentReview ? (new Date().getDay() === 0 ? 6 : new Date().getDay() - 1) : -1;
 
@@ -143,9 +141,10 @@ export function WeeklyReviewClient({
     );
   }
 
-  // Week label, e.g. "WEEK 30 · 21–27 JULY"
-  const weekStart = new Date(activeReview.weekStart);
-  const weekEnd = new Date(activeReview.weekEnd);
+  // Week label, e.g. "WEEK 30 · 21–27 JULY". Parse as local dates — UTC
+  // parsing renders the previous day for users behind UTC.
+  const weekStart = parseWeekDate(activeReview.weekStart);
+  const weekEnd = parseWeekDate(activeReview.weekEnd);
   const weekNumber = Math.ceil(((weekStart.getTime() - new Date(weekStart.getFullYear(), 0, 1).getTime()) / 86400000 + 1) / 7);
   const weekLabel = `WEEK ${weekNumber} · ${weekStart.getDate()}–${weekEnd.getDate()} ${weekEnd.toLocaleDateString('en-US', { month: 'short' }).toUpperCase()}`;
 

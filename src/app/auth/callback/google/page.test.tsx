@@ -12,10 +12,11 @@ import type { AuthActionState } from '@/lib/actions/auth';
 const mockRouterPush = vi.fn();
 const mockGoogleLoginAction = vi.fn();
 const mockSetAuth = vi.fn();
+const mockStateParam = { value: 'xyz' };
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: vi.fn(), refresh: vi.fn() }),
-  useSearchParams: () => new URLSearchParams('code=test-auth-code&state=xyz'),
+  useSearchParams: () => new URLSearchParams(`code=test-auth-code&state=${mockStateParam.value}`),
 }));
 
 vi.mock('@/lib/actions/auth', () => ({
@@ -63,6 +64,10 @@ describe('GoogleCallbackPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     mockGoogleLoginAction.mockResolvedValue(successState());
+    mockStateParam.value = 'xyz';
+    // The callback only proceeds when the echoed state matches the value
+    // stored before redirecting to Google.
+    document.cookie = 'google_oauth_state=xyz';
   });
 
   afterEach(() => {
@@ -93,6 +98,19 @@ describe('GoogleCallbackPage', () => {
     await waitFor(() => {
       expect(mockRouterPush).toHaveBeenCalledWith('/onboarding');
     });
+  });
+
+  it('rejects the callback when the state does not match the stored value', async () => {
+    mockStateParam.value = 'attacker-forged-state';
+
+    render(<GoogleCallbackPage />);
+
+    await waitFor(() => {
+      expect(screen.getByText(/sign-in could not be verified/i)).toBeInTheDocument();
+    });
+    expect(mockGoogleLoginAction).not.toHaveBeenCalled();
+    expect(mockSetAuth).not.toHaveBeenCalled();
+    expect(mockRouterPush).not.toHaveBeenCalled();
   });
 
   it('shows an error and does not navigate when the action fails', async () => {

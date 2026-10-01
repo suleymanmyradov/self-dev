@@ -6,12 +6,13 @@ import { toast } from 'sonner';
 /**
  * Hook to fetch user settings
  */
-export function useSettings(initialData?: SettingsResponse) {
+export function useSettings(initialData?: SettingsResponse, enabled = true) {
   return useQuery({
     queryKey: ['settings'],
     queryFn: () => getSettings(),
     select: (data) => data.data,
     initialData,
+    enabled,
     staleTime: 10 * 60 * 1000, // 10 minutes — settings rarely change
   });
 }

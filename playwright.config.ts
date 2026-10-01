@@ -1,7 +1,7 @@
 import { defineConfig, devices } from '@playwright/test';
 
 /**
- * Playwright E2E config for the Growth frontend.
+ * Playwright E2E config for the Evolella frontend.
  *
  * These tests require the full stack to be running:
  *   - Frontend: bun run dev (or next start)

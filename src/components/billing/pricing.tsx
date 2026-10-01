@@ -4,10 +4,12 @@ import { type Environments, initializePaddle, type Paddle } from '@paddle/paddle
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { Check } from 'lucide-react';
+import { toast } from 'sonner';
 import { usePaddlePrices } from '@/hooks/use-paddle-prices';
 import { PricingTiers, type Tier } from '@/constants/pricing-tiers';
 import { useAuthStore } from '@/store/auth';
 import { useBillingOverview } from '@/hooks/use-billing';
+import { createPaddleCheckout } from '@/api/billing';
 import { Button } from '@/components/ui/button';
 import { cn } from '@/lib/utils';
 
@@ -41,6 +43,7 @@ export function Pricing({ country }: Props) {
     const router = useRouter();
     const [frequency, setFrequency] = useState<Frequency>('month');
     const [paddle, setPaddle] = useState<Paddle | undefined>();
+    const [checkoutPending, setCheckoutPending] = useState(false);
     const user = useAuthStore(s => s.user);
     const hasHydrated = useAuthStore(s => s.hasHydrated);
     const { data: billing, isPending: billingPending } = useBillingOverview();
@@ -61,7 +64,7 @@ export function Pricing({ country }: Props) {
         }).then(p => p && setPaddle(p));
     }, [paddle?.Initialized, hasHydrated, user, billingPending, paddleCustomerId]);
 
-    function handleSubscribe(tier: Tier) {
+    async function handleSubscribe(tier: Tier) {
         if (!tier.priceId) return;
         // Paid checkout requires an account — an anonymous payment can't be
         // mapped to a user by the webhook, so gate it behind login. Checked
@@ -70,18 +73,32 @@ export function Pricing({ country }: Props) {
             router.push('/login?redirect=/pricing');
             return;
         }
-        if (!paddle) return;
-        paddle.Checkout.open({
-            items: [{ priceId: tier.priceId[frequency], quantity: 1 }],
-            ...(user.email && { customer: { email: user.email } }),
-            // custom_data.user_id lets the Go webhook map the payment to the account.
-            customData: { user_id: user.id },
-            settings: {
-                displayMode: 'overlay',
-                variant: 'one-page',
+        if (!paddle || checkoutPending) return;
+
+        setCheckoutPending(true);
+        try {
+            // The backend creates the Paddle transaction bound to the
+            // authenticated user (paddle_checkouts) and stamps
+            // custom_data.user_id server-side — checkout then opens by
+            // transactionId so client-side customData can't spoof identity.
+            const { transactionId } = await createPaddleCheckout({
+                priceId: tier.priceId[frequency],
                 successUrl: `${window.location.origin}/welcome`,
-            },
-        });
+            });
+            paddle.Checkout.open({
+                transactionId,
+                settings: {
+                    displayMode: 'overlay',
+                    variant: 'one-page',
+                    successUrl: `${window.location.origin}/welcome`,
+                },
+            });
+        } catch (err) {
+            console.error('[paddle] checkout creation failed', err);
+            toast.error('Could not start checkout. Please try again.');
+        } finally {
+            setCheckoutPending(false);
+        }
     }
 
     function tierCta(tier: Tier): { label: string; disabled: boolean } {
@@ -93,9 +110,13 @@ export function Pricing({ country }: Props) {
             // Free tier never checks out — anonymous users register instead.
             return { label: user ? 'Included' : 'Create free account', disabled: !!user };
         }
-        // Signed-in clicks open Paddle checkout (needs paddle ready);
-        // anonymous clicks just redirect to login — no Paddle needed.
-        return { label: 'Subscribe', disabled: !!user && !paddle };
+        // Signed-in clicks create the checkout transaction server-side and
+        // open Paddle (needs paddle ready); anonymous clicks just redirect to
+        // login — no Paddle needed.
+        return {
+            label: checkoutPending ? 'Starting…' : 'Subscribe',
+            disabled: !!user && (!paddle || checkoutPending),
+        };
     }
 
     return (

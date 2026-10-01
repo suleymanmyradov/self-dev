@@ -101,11 +101,11 @@ export function FakeDoorFeedbackDialog({
       <DialogContent className="sm:max-w-md">
         <DialogHeader>
           <DialogTitle className="font-display text-xl">
-            {step === "interest" ? "Growth Pro Early Access" : "Help us improve"}
+            {step === "interest" ? "Evolella Pro Early Access" : "Help us improve"}
           </DialogTitle>
           <DialogDescription>
             {step === "interest"
-              ? "We are testing Growth Pro access. Want early access?"
+              ? "We are testing Evolella Pro access. Want early access?"
               : "Tell us what would make Pro more valuable for you."}
           </DialogDescription>
         </DialogHeader>
@@ -114,7 +114,7 @@ export function FakeDoorFeedbackDialog({
           <div className="space-y-4">
             <div className="rounded-lg bg-secondary/50 border border-border p-4">
               <p className="text-sm">
-                Growth Pro is currently in early access. Join the waitlist and
+                Evolella Pro is currently in early access. Join the waitlist and
                 we will reach out when it is ready for you.
               </p>
             </div>
@@ -154,7 +154,7 @@ export function FakeDoorFeedbackDialog({
             </div>
             <p className="text-sm font-medium">You are on the list!</p>
             <p className="text-sm text-muted-foreground">
-              We will reach out when Growth Pro is ready for you.
+              We will reach out when Evolella Pro is ready for you.
             </p>
             <Button variant="outline" onClick={handleClose}>
               Done

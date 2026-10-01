@@ -46,7 +46,7 @@ export function NotificationsSection({
         <div className="flex items-center justify-between gap-4">
           <div className="min-w-0">
             <p className="text-sm font-medium">Mobile push</p>
-            <p className="text-xs text-muted-foreground">Allow Growth to send enabled reminders to registered mobile devices</p>
+            <p className="text-xs text-muted-foreground">Allow Evolella to send enabled reminders to registered mobile devices</p>
           </div>
           <Switch
             checked={notificationPreferences?.pushEnabled ?? false}

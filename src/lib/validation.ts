@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { isValidTimezone } from '@/lib/timezone';
+
 // ============================================
 // Common Schemas
 // ============================================
@@ -513,7 +515,8 @@ export const SettingsSchema = z.object({
 export const UpdateSettingsRequestSchema = z.object({
   theme: z.enum(['light', 'dark', 'system']).optional(),
   language: z.string().optional(),
-  timezone: z.string().optional(),
+  // IANA names only — invalid values are rejected server-side too.
+  timezone: z.string().refine(v => isValidTimezone(v), 'Invalid IANA timezone').optional(),
   accountabilityStyle: z.enum(['gentle', 'balanced', 'strict']).optional(),
   checkInTime: z.string().optional(),
   onboardingCompleted: z.boolean().optional(),
@@ -887,7 +890,7 @@ export const UserSubscriptionSchema = z.object({
   planId: z.string(),
   planCode: z.enum(['free', 'pro']),
   planName: z.string(),
-  status: z.enum(['free', 'trialing', 'active', 'past_due', 'canceled', 'expired']),
+  status: z.enum(['free', 'trialing', 'active', 'past_due', 'paused', 'canceled', 'expired']),
   // Backend sends "" for unset optional fields (go-zero JSON marshaling);
   // accept empty string and treat it as absent via .transform.
   billingInterval: z
@@ -968,11 +971,25 @@ export const UpgradeEventRequestSchema = z.object({
   metadataJson: z.string().optional(),
 });
 
+export const CreatePaddleCheckoutRequestSchema = z.object({
+  priceId: z.string().startsWith('pri_'),
+  checkoutUrl: z.string().optional(),
+  successUrl: z.string().optional(),
+  cancelUrl: z.string().optional(),
+});
+
 // The billing endpoints return flat response bodies (no `data` envelope),
 // matching the gateway contract in services/gateway/contract/types.api.
 export const BillingOverviewResponseSchema = BillingOverviewSchema;
 export const UpgradeEventResponseSchema = z.object({ eventId: z.string() });
 export const PortalSessionResponseSchema = z.object({ portalUrl: z.string().optional() });
+export const PaddleCheckoutResponseSchema = z.object({
+  checkoutUrl: z
+    .string()
+    .optional()
+    .transform(v => (v === '' ? undefined : v)),
+  transactionId: z.string(),
+});
 
 export const PlanLimitErrorSchema = z.object({
   code: z.literal('plan_limit_reached'),

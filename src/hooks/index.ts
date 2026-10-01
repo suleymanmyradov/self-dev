@@ -19,6 +19,7 @@ export { useSearch } from './use-search';
 export { useNotifications, useUnreadCount, useMarkNotificationRead, useMarkAllNotificationsRead } from './use-notifications';
 export { useSettings, useUpdateSettings } from './use-settings';
 export { useTodayCheckIns, useCreateCheckIn, useDeleteCheckIn, useCheckInAll } from './use-check-ins';
+export { useCheckInHistory, dailyCheckInCounts } from './use-check-in-history';
 export {
   useCurrentWeeklyReview,
   useWeeklyReview,

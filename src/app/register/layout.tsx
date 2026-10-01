@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Register | Evolella',
-  description: 'Create a Growth account to start tracking habits and achieving your goals.',
+  description: 'Create an Evolella account to start tracking habits and achieving your goals.',
 };
 
 export default function RegisterLayout({

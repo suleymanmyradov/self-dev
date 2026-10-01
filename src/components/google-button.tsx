@@ -2,6 +2,8 @@
 
 import { Button } from '@/components/ui/button';
 import { config } from '@/lib/config';
+import { storeOAuthState } from '@/lib/oauth-state';
+import { storePostAuthRedirect } from '@/lib/post-auth-redirect';
 
 /**
  * Generate a random opaque string suitable for the OAuth `state` parameter.
@@ -31,20 +33,34 @@ function generateState(): string {
  * Renders nothing when no Google client ID is configured (e.g. local dev
  * without OAuth set up), so the auth pages degrade gracefully.
  */
-export function GoogleButton({ label = 'Continue with Google' }: { label?: string }) {
+export function GoogleButton({
+  label = 'Continue with Google',
+  redirectTo,
+}: {
+  label?: string;
+  // Same-origin path to land on after the OAuth round trip (e.g. the page
+  // that bounced the user to login). Stored in a cookie — the query string
+  // doesn't survive the redirect to Google and back.
+  redirectTo?: string | null;
+}) {
   if (!config.googleClientId) {
     return null;
   }
 
   function handleClick() {
+    // state is an opaque value Google echoes back; we verify it matches the
+    // stored value on the callback to prevent login CSRF.
+    const state = generateState();
+    storeOAuthState(state);
+    if (redirectTo) {
+      storePostAuthRedirect(redirectTo);
+    }
     const params = new URLSearchParams({
       client_id: config.googleClientId,
       redirect_uri: config.googleRedirectUri,
       response_type: 'code',
       scope: 'openid email profile',
-      // state is an opaque value Google echoes back; we validate presence on
-      // the callback. A random value mitigates CSRF / replay.
-      state: generateState(),
+      state,
       prompt: 'select_account',
     });
     window.location.assign(`https://accounts.google.com/o/oauth2/v2/auth?${params.toString()}`);

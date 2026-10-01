@@ -280,6 +280,7 @@ export {
   getBillingOverview,
   trackUpgradeEvent,
   createCustomerPortalSession,
+  createPaddleCheckout,
 } from './billing';
 
 // Billing Types
@@ -295,5 +296,7 @@ export type {
   BillingOverviewResponse,
   UpgradeEventResponse,
   PortalSessionResponse,
+  CreatePaddleCheckoutRequest,
+  CreatePaddleCheckoutResponse,
   PlanLimitError,
 } from './types';

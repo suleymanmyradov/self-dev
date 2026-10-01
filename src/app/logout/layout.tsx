@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Logout | Evolella',
-  description: 'Sign out of your Growth account.',
+  description: 'Sign out of your Evolella account.',
 };
 
 export default function LogoutLayout({ children }: { children: React.ReactNode }) {

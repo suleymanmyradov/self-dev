@@ -95,11 +95,28 @@ const nextConfig: NextConfig = {
                     },
                     {
                         key: 'Content-Security-Policy',
+                        // script-src keeps 'unsafe-inline': Next.js emits inline
+                        // bootstrap scripts (self.__next_f) that can't carry a
+                        // per-request nonce in statically-prerendered shells
+                        // (cacheComponents). Nonce CSP + PPR is incompatible per
+                        // the Next.js CSP guide. The real XSS vectors are closed
+                        // elsewhere: React escaping, escaped JSON-LD, no remote
+                        // images in AI markdown, object-src 'none'.
                         value:
                             process.env.NODE_ENV === 'development'
-                                ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: http://127.0.0.1:9000 http://localhost:9000 data: blob:; connect-src 'self' https://api.openai.com https://*.paddle.com http://127.0.0.1:9000 http://localhost:9000; font-src 'self'; frame-src https://*.paddle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';"
-                                : "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.paddle.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https://api.openai.com https://*.paddle.com; font-src 'self'; frame-src https://*.paddle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self';",
+                                ? "default-src 'self'; script-src 'self' 'unsafe-inline' 'unsafe-eval' https://cdn.paddle.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: http://127.0.0.1:9000 http://localhost:9000 data: blob:; connect-src 'self' https://api.openai.com https://*.paddle.com http://127.0.0.1:9000 http://localhost:9000; font-src 'self'; frame-src https://*.paddle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none';"
+                                : "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.paddle.com; style-src 'self' 'unsafe-inline'; img-src 'self' https: data: blob:; connect-src 'self' https://api.openai.com https://*.paddle.com; font-src 'self'; frame-src https://*.paddle.com; frame-ancestors 'none'; base-uri 'self'; form-action 'self'; object-src 'none'; upgrade-insecure-requests;",
                     },
+                    // HSTS only in production: it would pin http://localhost
+                    // to HTTPS in dev and break local testing.
+                    ...(process.env.NODE_ENV === 'production'
+                        ? [
+                              {
+                                  key: 'Strict-Transport-Security',
+                                  value: 'max-age=63072000; includeSubDomains; preload',
+                              },
+                          ]
+                        : []),
                 ],
             },
         ];

@@ -11,9 +11,12 @@ import type { AuthActionState } from '@/lib/actions/auth';
 
 const mockRouterPush = vi.fn();
 const mockLoginAction = vi.fn();
+// Tests can set this to simulate /login?redirect=<path>.
+let mockSearchParams = new URLSearchParams();
 
 vi.mock('next/navigation', () => ({
   useRouter: () => ({ push: mockRouterPush, replace: vi.fn(), refresh: vi.fn() }),
+  useSearchParams: () => mockSearchParams,
 }));
 
 vi.mock('@/lib/actions/auth', () => ({
@@ -100,6 +103,7 @@ function fieldErrorState(field: string, message: string): AuthActionState {
 describe('LoginForm', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockSearchParams = new URLSearchParams();
     // Default: loginAction resolves to a generic error so the form doesn't
     // navigate; individual tests override this.
     mockLoginAction.mockResolvedValue(errorState('invalid credentials'));
@@ -191,6 +195,36 @@ describe('LoginForm', () => {
       await waitFor(() => {
         expect(toast.success).toHaveBeenCalledWith('Logged in successfully');
       });
+      await waitFor(() => {
+        expect(mockRouterPush).toHaveBeenCalledWith('/plan');
+      });
+    });
+
+    it('navigates to the sanitized ?redirect target after login', async () => {
+      mockLoginAction.mockResolvedValue(successState());
+      mockSearchParams = new URLSearchParams('redirect=/pricing');
+      const user = userEvent.setup();
+      render(<LoginForm />);
+
+      await user.type(screen.getByLabelText(/email/i), 'user@example.com');
+      await user.type(screen.getByLabelText(/password/i), 'password123');
+      await user.click(screen.getByRole('button', { name: /sign in/i }));
+
+      await waitFor(() => {
+        expect(mockRouterPush).toHaveBeenCalledWith('/pricing');
+      });
+    });
+
+    it('ignores a protocol-relative ?redirect (open-redirect guard)', async () => {
+      mockLoginAction.mockResolvedValue(successState());
+      mockSearchParams = new URLSearchParams('redirect=//evil.example.com');
+      const user = userEvent.setup();
+      render(<LoginForm />);
+
+      await user.type(screen.getByLabelText(/email/i), 'user@example.com');
+      await user.type(screen.getByLabelText(/password/i), 'password123');
+      await user.click(screen.getByRole('button', { name: /sign in/i }));
+
       await waitFor(() => {
         expect(mockRouterPush).toHaveBeenCalledWith('/plan');
       });

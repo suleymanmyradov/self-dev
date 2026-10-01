@@ -5,6 +5,8 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { GalleryVerticalEnd, Loader2, XCircle } from 'lucide-react';
 import { googleLoginAction } from '@/lib/actions/auth';
+import { consumeOAuthState } from '@/lib/oauth-state';
+import { consumePostAuthRedirect } from '@/lib/post-auth-redirect';
 import { useAuthStore } from '@/store/auth';
 import { toast } from 'sonner';
 import { capitalizeFirst } from '@/lib/utils';
@@ -33,19 +35,26 @@ function GoogleCallbackContent() {
     if (!code || exchangedRef.current) return;
     exchangedRef.current = true;
 
-    // Optional state validation: if we stored a state value before redirecting,
-    // verify it matches to prevent CSRF. For now we accept any non-empty state.
-    void state;
-
     (async () => {
+      // CSRF check: the state Google echoed back must match the value we
+      // stored before redirecting to Google. Consume-on-read makes replayed
+      // callbacks fail too.
+      const expectedState = consumeOAuthState();
+      if (!state || !expectedState || state !== expectedState) {
+        setError('Sign-in could not be verified. Please try again.');
+        return;
+      }
+
       const result = await googleLoginAction(code);
       if (result.success && result.user) {
         setAuth(result.user);
         toast.success('Signed in with Google');
-        // Route through /onboarding: it redirects to /habits when onboarding is
-        // already complete, so returning users skip it while new users are guided
-        // through the setup flow.
-        router.push('/onboarding');
+        // A stored post-auth redirect (e.g. /pricing after a gated Subscribe
+        // click) beats the default: it carries the intent that sent the user
+        // to login. Otherwise route through /onboarding, which redirects to
+        // /habits when onboarding is already complete so returning users skip
+        // it while new users are guided through the setup flow.
+        router.push(consumePostAuthRedirect() ?? '/onboarding');
       } else {
         setError(result.error ?? 'Google sign-in failed.');
       }

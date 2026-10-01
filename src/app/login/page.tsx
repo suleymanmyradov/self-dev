@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import { LoginForm } from '@/components/login-form';
 
 export default function LoginPage() {
@@ -16,7 +17,11 @@ export default function LoginPage() {
             </div>
           </div>
 
-          <LoginForm />
+          {/* LoginForm reads ?redirect= via useSearchParams, which requires
+              a Suspense boundary to avoid a CSR bailout deopt. */}
+          <Suspense>
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
 

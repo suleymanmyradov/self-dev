@@ -55,7 +55,7 @@ export const UpgradePrompt = memo(function UpgradePrompt({
   const hasTrackedView = useRef(false);
 
   const title = titleProp || TRIGGER_MESSAGES[trigger]?.title || "Upgrade to Pro";
-  const description = descProp || TRIGGER_MESSAGES[trigger]?.description || "Unlock more features with Growth Pro.";
+  const description = descProp || TRIGGER_MESSAGES[trigger]?.description || "Unlock more features with Evolella Pro.";
 
   // Track prompt_viewed once per mount
   useEffect(() => {

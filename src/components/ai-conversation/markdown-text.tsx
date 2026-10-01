@@ -148,6 +148,28 @@ const defaultComponents: Components = {
             />
         );
     },
+    // AI output must never trigger remote fetches: a markdown image URL can
+    // embed exfiltrated context in its query string or act as a tracking
+    // pixel. Render a non-loading link to the resource instead of <img>.
+    img: ({ src, alt }) => {
+        const href = typeof src === 'string' &&
+            (src.startsWith('https://') || src.startsWith('http://'))
+            ? src
+            : undefined;
+        const label = alt || 'image';
+        return href ? (
+            <a
+                href={href}
+                rel="noopener noreferrer nofollow"
+                target="_blank"
+                className="aui-md-a font-medium text-primary underline underline-offset-4"
+            >
+                {label}
+            </a>
+        ) : (
+            <span className="text-muted-foreground">[{label}]</span>
+        );
+    },
     blockquote: ({ className, ...props }) => (
         <blockquote className={cn('aui-md-blockquote border-l-2 pl-6 italic', className)} {...props} />
     ),

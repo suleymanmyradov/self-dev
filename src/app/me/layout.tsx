@@ -2,7 +2,7 @@ import type { Metadata } from 'next';
 
 export const metadata: Metadata = {
   title: 'Profile | Evolella',
-  description: 'Manage your Growth profile and personal information.',
+  description: 'Manage your Evolella profile and personal information.',
 };
 
 export default function ProfileLayout({

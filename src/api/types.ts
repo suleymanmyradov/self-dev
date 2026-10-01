@@ -933,7 +933,7 @@ export interface UserSubscription {
   planId: string;
   planCode: 'free' | 'pro';
   planName: string;
-  status: 'free' | 'trialing' | 'active' | 'past_due' | 'canceled' | 'expired';
+  status: 'free' | 'trialing' | 'active' | 'past_due' | 'paused' | 'canceled' | 'expired';
   billingInterval?: 'monthly' | 'annual';
   currentPeriodStart?: string;
   currentPeriodEnd?: string;
@@ -999,10 +999,18 @@ export interface UpgradeEventRequest {
   metadataJson?: string;
 }
 
+export interface CreatePaddleCheckoutRequest {
+  priceId: string;
+  checkoutUrl?: string;
+  successUrl?: string;
+  cancelUrl?: string;
+}
+
 // Billing endpoints return flat response bodies (no `data` envelope).
 export type BillingOverviewResponse = BillingOverview;
 export type UpgradeEventResponse = { eventId: string };
 export type PortalSessionResponse = { portalUrl?: string };
+export type CreatePaddleCheckoutResponse = { checkoutUrl?: string; transactionId: string };
 
 export interface PlanLimitError {
   code: 'plan_limit_reached';

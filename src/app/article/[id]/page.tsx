@@ -158,11 +158,16 @@ export default async function ArticlePage({
     keywords: article.tags?.join(', '),
   };
 
+  // Escape `<` so article fields (title, excerpt) containing `</script>`
+  // can't break out of the JSON-LD block and inject markup — the unicode
+  // escape keeps the JSON valid while making the HTML safe.
+  const jsonLdHtml = JSON.stringify(jsonLd).replace(/</g, '\\u003c');
+
   return (
     <>
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: jsonLdHtml }}
       />
       {/* Reading progress bar */}
       <ReadingProgress />
