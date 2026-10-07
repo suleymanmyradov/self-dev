@@ -211,6 +211,52 @@ describe('proxy() behavior', () => {
   });
 
   // ============================================
+  // #19: Authenticated users follow ?redirect= from auth pages
+  //
+  // Email CTAs link to /login?redirect=<path> because email readers are
+  // usually not logged in on the device they tap. A logged-in user tapping
+  // the same link must land on the target, not the /plan default.
+  // ============================================
+
+  describe('#19 authenticated redirect param', () => {
+    it('follows redirect=/ instead of /plan', async () => {
+      const req = makeMockRequest('/login?redirect=/', { 'auth-token': 'valid-token-12345' });
+      const res = await proxy(req);
+      expect(res.status).toBe(307);
+      expect(res.headers.get('location')).toBe('http://localhost:3000/');
+    });
+
+    it('follows redirect=/progress', async () => {
+      const req = makeMockRequest('/login?redirect=%2Fprogress', {
+        'auth-token': 'valid-token-12345',
+      });
+      const res = await proxy(req);
+      expect(res.headers.get('location')).toBe('http://localhost:3000/progress');
+    });
+
+    it('defaults to /plan without a redirect param', async () => {
+      const req = makeMockRequest('/login', { 'auth-token': 'valid-token-12345' });
+      const res = await proxy(req);
+      expect(res.headers.get('location')).toBe('http://localhost:3000/plan');
+    });
+
+    it.each([
+      ['//evil.com', 'protocol-relative'],
+      ['https://evil.com', 'absolute url'],
+      ['/\\evil.com', 'backslash trick'],
+      ['javascript:alert(1)', 'non-path scheme'],
+    ])('rejects %s (%s) and falls back to /plan', async (raw) => {
+      const req = makeMockRequest(
+        `/login?redirect=${encodeURIComponent(raw)}`,
+        { 'auth-token': 'valid-token-12345' },
+      );
+      const res = await proxy(req);
+      expect(res.status).toBe(307);
+      expect(res.headers.get('location')).toBe('http://localhost:3000/plan');
+    });
+  });
+
+  // ============================================
   // #15: Silent token refresh (tested via checkToken + tryRefresh integration)
   //
   // The proxy's refresh path is triggered when checkToken returns 'expired'.

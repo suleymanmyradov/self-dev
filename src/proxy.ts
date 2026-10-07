@@ -131,6 +131,17 @@ function setRotatedCookies(
   return response;
 }
 
+// Authenticated users arriving at an auth page with ?redirect=<path> (e.g.
+// from an email CTA) follow that target instead of the /plan default. Only
+// same-origin absolute paths are honored — protocol-relative (`//evil.com`)
+// and backslash forms would be open-redirect phishing vectors.
+function safeRedirectTarget(raw: string | null | undefined): string {
+  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) {
+    return '/plan';
+  }
+  return raw;
+}
+
 export async function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;
 
@@ -164,7 +175,12 @@ export async function proxy(request: NextRequest) {
           // single-use token we just consumed is lost and the session dies.
           if (isAuthRoute(pathname)) {
             return setRotatedCookies(
-              NextResponse.redirect(new URL('/plan', request.url)),
+              NextResponse.redirect(
+                new URL(
+                  safeRedirectTarget(request.nextUrl.searchParams.get('redirect')),
+                  request.url,
+                ),
+              ),
               refreshed,
             );
           }
@@ -185,7 +201,9 @@ export async function proxy(request: NextRequest) {
 
   // Redirect authenticated users away from auth pages
   if (authenticated && isAuthRoute(pathname)) {
-    return NextResponse.redirect(new URL('/plan', request.url));
+    return NextResponse.redirect(
+      new URL(safeRedirectTarget(request.nextUrl.searchParams.get('redirect')), request.url),
+    );
   }
 
   // Redirect unauthenticated users away from protected pages
