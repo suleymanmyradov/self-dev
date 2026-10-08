@@ -7,21 +7,17 @@
  * Google OAuth round trip, which drops the query string.
  */
 
+import { safeRedirectPath } from '@/lib/safe-redirect';
+
 const REDIRECT_COOKIE = 'post_auth_redirect';
 const MAX_AGE_SECONDS = 600; // 10 minutes — same bound as the OAuth state cookie.
 
 /**
- * Accepts only same-origin absolute paths. Rejects protocol-relative URLs
- * (`//evil.com`), backslash tricks (`/\evil.com` parses as a host in some
- * browsers), and anything that isn't a path — the redirect must never send
- * the user off-site (open-redirect phishing vector).
+ * Accepts only same-origin absolute paths — the redirect must never send the
+ * user off-site (open-redirect phishing vector). See safeRedirectPath.
  */
 export function sanitizeRedirect(raw: string | null | undefined): string | null {
-    if (!raw) return null;
-    if (!raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) {
-        return null;
-    }
-    return raw;
+    return safeRedirectPath(raw);
 }
 
 export function storePostAuthRedirect(path: string): void {

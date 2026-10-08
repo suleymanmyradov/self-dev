@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 import { decodeProtectedHeader, importSPKI, jwtVerify } from 'jose';
 import { exchangeRefreshToken } from '@/lib/refresh-coordinator';
+import { safeRedirectPath } from '@/lib/safe-redirect';
 
 const AUTH_COOKIE_NAME = 'auth-token';
 const REFRESH_COOKIE_NAME = 'refresh-token';
@@ -133,13 +134,10 @@ function setRotatedCookies(
 
 // Authenticated users arriving at an auth page with ?redirect=<path> (e.g.
 // from an email CTA) follow that target instead of the /plan default. Only
-// same-origin absolute paths are honored — protocol-relative (`//evil.com`)
-// and backslash forms would be open-redirect phishing vectors.
-function safeRedirectTarget(raw: string | null | undefined): string {
-  if (!raw || !raw.startsWith('/') || raw.startsWith('//') || raw.includes('\\')) {
-    return '/plan';
-  }
-  return raw;
+// same-origin paths are honored (see safeRedirectPath) — anything else would
+// be an open-redirect phishing vector.
+export function safeRedirectTarget(raw: string | null | undefined): string {
+  return safeRedirectPath(raw) ?? '/plan';
 }
 
 export async function proxy(request: NextRequest) {
