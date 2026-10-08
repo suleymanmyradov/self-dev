@@ -39,6 +39,10 @@ export function CheckInStep({
           ))}
         </div>
       </div>
+      <p className="text-xs text-muted-foreground">
+        We&apos;ll email your daily check-in reminder at this time. You can turn
+        it off anytime in Settings → Notifications.
+      </p>
     </div>
   );
 }
