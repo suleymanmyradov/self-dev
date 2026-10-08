@@ -1,16 +1,19 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { listSavedItems, listSavedDetailed, saveItem, removeSavedItem } from '@/api/saved';
-import type { SaveItemRequest, PageParams, ArticlesResponse, ArticleResponse } from '@/api';
+import { ApiError, type SaveItemRequest, type PageParams, type ArticlesResponse, type ArticleResponse } from '@/api';
 import { toast } from 'sonner';
+import { useAuthStore } from '@/store/auth';
 
 const DEFAULT_SAVED_PARAMS: PageParams = { page: 1, limit: 20 };
 
 export function useSavedItems(params: PageParams = DEFAULT_SAVED_PARAMS) {
   const { page, limit } = params;
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['saved', page ?? 1, limit ?? 20],
     queryFn: () => listSavedItems({ page, limit }),
     select: (data) => data.data,
+    enabled: isAuthenticated,
   });
 }
 
@@ -18,10 +21,12 @@ const DEFAULT_SAVED_DETAILED_PARAMS: PageParams = { page: 1, limit: 20 };
 
 export function useSavedItemsDetailed(params: PageParams = DEFAULT_SAVED_DETAILED_PARAMS) {
   const { page, limit } = params;
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   return useQuery({
     queryKey: ['saved', 'detailed', page ?? 1, limit ?? 20],
     queryFn: () => listSavedDetailed({ page, limit }),
     select: (data) => data.data,
+    enabled: isAuthenticated,
   });
 }
 
@@ -74,7 +79,7 @@ export function useSaveItem() {
 
       return { previousSaved, previousArticles, previousArticle };
     },
-    onError: (_err, data, context) => {
+    onError: (err, data, context) => {
       if (context?.previousSaved) {
         context.previousSaved.forEach((value, key) => {
           queryClient.setQueryData(key, value);
@@ -88,7 +93,11 @@ export function useSaveItem() {
       if (context?.previousArticle) {
         queryClient.setQueryData(['article', data.itemId], context.previousArticle);
       }
-      toast.error('Failed to save item. Please try again.');
+      toast.error(
+        err instanceof ApiError && err.status === 401
+          ? 'Log in to save articles.'
+          : 'Failed to save item. Please try again.',
+      );
     },
     onSettled: () => {
       // Only invalidate the saved-items list so the saved-items list stays fresh.

@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { likeArticle } from '@/api/articles';
-import type { ArticlesResponse, ArticleResponse } from '@/api';
+import { ApiError, type ArticlesResponse, type ArticleResponse } from '@/api';
 import { toast } from 'sonner';
 
 export function useLikeArticle() {
@@ -69,7 +69,7 @@ export function useLikeArticle() {
         };
       });
     },
-    onError: (_err, articleId, context) => {
+    onError: (err, articleId, context) => {
       if (context?.previousArticles) {
         context.previousArticles.forEach(([key, data]) => {
           queryClient.setQueryData(key, data);
@@ -78,7 +78,11 @@ export function useLikeArticle() {
       if (context?.previousArticle) {
         queryClient.setQueryData(['article', articleId], context.previousArticle);
       }
-      toast.error('Failed to update like. Please try again.');
+      toast.error(
+        err instanceof ApiError && err.status === 401
+          ? 'Log in to like articles.'
+          : 'Failed to update like. Please try again.',
+      );
     },
   });
 }
