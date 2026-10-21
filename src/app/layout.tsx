@@ -36,6 +36,16 @@ export const metadata: Metadata = {
     title: 'Evolella — Build better habits with an AI coach that keeps you accountable',
     description:
         'Set a goal, get a simple plan, check in daily, and let Evolella adapt your habits when life gets messy.',
+    openGraph: {
+        type: 'website',
+        url: '/',
+        siteName: 'Evolella',
+        title: 'Evolella — Build better habits with an AI coach that keeps you accountable',
+        description:
+            'Set a goal, get a simple plan, check in daily, and let Evolella adapt your habits when life gets messy.',
+        images: [{ url: '/og.png', width: 1200, height: 630, alt: 'Evolella' }],
+    },
+    twitter: { card: 'summary_large_image' },
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
