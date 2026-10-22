@@ -2,10 +2,19 @@
 
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { Switch } from "@/components/ui/switch";
 import { TimezoneCombobox } from "@/components/ui/timezone-combobox";
 import type { NotificationPreferences, Settings } from "@/api";
+
+const HOURS = Array.from({ length: 24 }, (_, i) => String(i).padStart(2, "0"));
+const MINUTE_STEPS = ["00", "05", "10", "15", "20", "25", "30", "35", "40", "45", "50", "55"];
 
 export function RemindersSection({
   notificationPreferences,
@@ -37,6 +46,24 @@ export function RemindersSection({
   const [checkInTime, setCheckInTime] = useState(settings?.checkInTime ?? "21:00");
   const [timezone, setTimezone] = useState(settings?.timezone || undefined);
 
+  // Settings load async — adjust local state during render when the server
+  // value changes (initial load, or saved elsewhere).
+  const [syncedTime, setSyncedTime] = useState(settings?.checkInTime);
+  if (settings?.checkInTime && settings.checkInTime !== syncedTime) {
+    setSyncedTime(settings.checkInTime);
+    setCheckInTime(settings.checkInTime);
+  }
+  const [syncedTz, setSyncedTz] = useState(settings?.timezone);
+  if (settings?.timezone && settings.timezone !== syncedTz) {
+    setSyncedTz(settings.timezone);
+    setTimezone(settings.timezone);
+  }
+
+  const [checkInHour = "21", checkInMinute = "00"] = checkInTime.split(":");
+  const minuteOptions = MINUTE_STEPS.includes(checkInMinute)
+    ? MINUTE_STEPS
+    : [...MINUTE_STEPS, checkInMinute].sort();
+
   const handleSaveTimeSettings = () => {
     const overrides: { timezone?: string; checkInTime?: string } = {};
     if (timezone && timezone !== settings?.timezone) {
@@ -62,13 +89,41 @@ export function RemindersSection({
             <p className="text-xs text-muted-foreground">One notification, at a time you choose</p>
           </div>
           <div className="flex items-center gap-3 shrink-0">
-            <Input
-              type="time"
-              value={checkInTime}
-              onChange={(e) => setCheckInTime(e.target.value)}
-              className="w-[100px] font-mono text-sm tabular-nums"
-              disabled={notifPending}
-            />
+            <div className="flex items-center gap-1 font-mono text-sm tabular-nums">
+              <Select
+                value={checkInHour}
+                onValueChange={(h) => setCheckInTime(`${h}:${checkInMinute}`)}
+                disabled={notifPending}
+              >
+                <SelectTrigger size="sm" className="w-[68px] font-mono tabular-nums">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {HOURS.map((h) => (
+                    <SelectItem key={h} value={h} className="font-mono tabular-nums">
+                      {h}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              <span className="text-muted-foreground">:</span>
+              <Select
+                value={checkInMinute}
+                onValueChange={(m) => setCheckInTime(`${checkInHour}:${m}`)}
+                disabled={notifPending}
+              >
+                <SelectTrigger size="sm" className="w-[68px] font-mono tabular-nums">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {minuteOptions.map((m) => (
+                    <SelectItem key={m} value={m} className="font-mono tabular-nums">
+                      {m}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
             <Switch
               checked={notificationPreferences?.habitRemindersEnabled ?? true}
               onCheckedChange={onHabitRemindersToggle}
