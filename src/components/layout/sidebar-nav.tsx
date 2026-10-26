@@ -30,7 +30,7 @@ const navItems: { href: string; label: string; icon: LucideIcon }[] = [
   { href: '/progress', label: 'Progress', icon: BarChart3 },
   { href: '/coach', label: 'Coach', icon: HandFist },
   { href: '/library', label: 'Library', icon: Compass },
-  { href: '/me', label: 'Me', icon: User },
+  { href: '/me', label: 'Profile', icon: User },
 ];
 
 // Public items for logged-out visitors — only routes that don't require

@@ -61,7 +61,7 @@ interface CenteredSkeletonProps {
  */
 export function CenteredSkeleton({ maxWidth = 'max-w-md', children }: CenteredSkeletonProps) {
   return (
-    <div className="min-h-screen flex items-center justify-center p-4">
+    <div className="min-h-full flex items-center justify-center p-4">
       <div className={`w-full ${maxWidth} space-y-4`}>{children}</div>
     </div>
   );

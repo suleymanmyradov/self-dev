@@ -23,7 +23,7 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 
 export default function PrivacyPolicyPage() {
     return (
-        <main className="mx-auto w-full max-w-2xl px-4 py-12">
+        <div className="mx-auto w-full max-w-2xl px-4 py-12">
             <Link href="/" className="text-sm text-muted-foreground hover:text-foreground">
                 ← Back
             </Link>
@@ -182,6 +182,6 @@ export default function PrivacyPolicyPage() {
                     </p>
                 </Section>
             </div>
-        </main>
+        </div>
     );
 }

@@ -27,6 +27,33 @@ import { AppearanceSection } from "@/components/profile/appearance-section";
 import { PlanSection } from "@/components/profile/plan-section";
 import { DataSection } from "@/components/profile/data-section";
 
+function ProfileIdentity({
+  avatarUrl,
+  name,
+  initials,
+  isPro,
+}: {
+  avatarUrl: string;
+  name: string;
+  initials: string;
+  isPro: boolean;
+}) {
+  return (
+    <div className="flex min-w-0 items-center gap-2.5">
+      <Avatar className="h-[38px] w-[38px] shrink-0 rounded-full bg-secondary">
+        <AvatarImage src={avatarUrl || undefined} alt={name || "Avatar"} />
+        <AvatarFallback className="bg-secondary text-xs text-secondary-foreground">
+          {initials}
+        </AvatarFallback>
+      </Avatar>
+      <div className="min-w-0">
+        <p className="truncate text-sm font-medium">{name}</p>
+        <p className="text-xs text-muted-foreground">{isPro ? "Pro" : "Free"}</p>
+      </div>
+    </div>
+  );
+}
+
 export function ProfileClient({
   profile,
   settings,
@@ -186,6 +213,7 @@ export function ProfileClient({
   const handleDeleteAccountClick = useCallback(() => {
     setActiveSection("data");
   }, []);
+  const mobileNavRef = useRef<HTMLElement>(null);
 
   // Listen for navigation events from child sections (e.g. profile footer
   // "Export everything" link → switch to the data section).
@@ -197,6 +225,12 @@ export function ProfileClient({
     window.addEventListener("profile:navigate", handler);
     return () => window.removeEventListener("profile:navigate", handler);
   }, []);
+
+  useEffect(() => {
+    mobileNavRef.current
+      ?.querySelector<HTMLElement>('[aria-current="page"]')
+      ?.scrollIntoView?.({ inline: "nearest", block: "nearest" });
+  }, [activeSection]);
 
   const initials = profile.fullName
     ? profile.fullName
@@ -232,24 +266,16 @@ export function ProfileClient({
   }
 
   return (
-    <div className="flex h-full">
+    <div className="flex h-full flex-col md:flex-row">
       {/* ─── Section nav sidebar ─────────────────────────────────────────── */}
-      <aside className="w-[212px] shrink-0 border-r border-border bg-card flex flex-col">
+      <aside className="hidden w-[212px] shrink-0 flex-col border-r border-border bg-card md:flex">
         <div className="px-4 py-5 border-b border-border">
-          <div className="flex items-center gap-2.5">
-            <Avatar className="h-[38px] w-[38px] rounded-full bg-secondary">
-              <AvatarImage src={avatarUrl || undefined} alt={profile.fullName || "Avatar"} />
-              <AvatarFallback className="text-xs bg-secondary text-secondary-foreground">
-                {initials}
-              </AvatarFallback>
-            </Avatar>
-            <div className="min-w-0">
-              <p className="font-medium text-sm truncate">{profile.fullName || profile.username}</p>
-              <p className="text-xs text-muted-foreground">
-                {isPro ? "Pro" : "Free"}
-              </p>
-            </div>
-          </div>
+          <ProfileIdentity
+            avatarUrl={avatarUrl}
+            name={profile.fullName || profile.username}
+            initials={initials}
+            isPro={isPro}
+          />
         </div>
 
         <nav className="flex-1 px-2 py-3 space-y-0.5">
@@ -272,8 +298,42 @@ export function ProfileClient({
       </aside>
 
       {/* ─── Main content ────────────────────────────────────────────────── */}
-      <div className="flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
-        <div className="mx-auto w-full max-w-2xl px-6 py-8 md:py-10">
+      <div className="min-h-0 flex-1 overflow-y-auto overflow-x-hidden no-scrollbar">
+        <div className="md:hidden">
+          <div className="border-b border-border bg-card px-4 py-4">
+            <ProfileIdentity
+              avatarUrl={avatarUrl}
+              name={profile.fullName || profile.username}
+              initials={initials}
+              isPro={isPro}
+            />
+          </div>
+          <nav
+            ref={mobileNavRef}
+            aria-label="Profile sections"
+            className="sticky top-0 z-10 border-b bg-background/95 backdrop-blur"
+          >
+            <div className="flex gap-2 overflow-x-auto no-scrollbar px-4 py-2">
+              {NAV_ITEMS.map((item) => (
+                <button
+                  key={item.id}
+                  type="button"
+                  aria-current={activeSection === item.id ? "page" : undefined}
+                  onClick={() => setActiveSection(item.id)}
+                  className={cn(
+                    "shrink-0 whitespace-nowrap rounded-full px-3 py-1.5 text-sm",
+                    activeSection === item.id
+                      ? "bg-secondary text-secondary-foreground font-medium"
+                      : "text-muted-foreground"
+                  )}
+                >
+                  {item.label}
+                </button>
+              ))}
+            </div>
+          </nav>
+        </div>
+        <div className="mx-auto w-full max-w-2xl px-4 py-6 md:px-6 md:py-10">
           {activeSection === "profile" && (
             <ProfileSection
               profile={profile}

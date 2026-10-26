@@ -66,7 +66,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
                             <StoreHydrator />
                         </Suspense>
                         <ViewportWatcher />
-                        <div className="flex min-h-screen w-full flex-col overflow-x-hidden">
+                        <div className="flex min-h-dvh w-full flex-col overflow-x-clip">
                             <MobileTopBar />
                             <Suspense fallback={null}>
                                 <LayoutFrame>

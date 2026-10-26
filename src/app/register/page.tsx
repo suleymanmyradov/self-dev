@@ -9,7 +9,7 @@ const BENEFITS = [
 
 export default function RegisterPage() {
   return (
-    <div className="flex min-h-svh">
+    <div className="flex min-h-full">
       {/* Form panel */}
       <div className="flex-1 flex flex-col items-center justify-center bg-card p-6 md:p-10">
         <div className="w-full max-w-sm space-y-8">

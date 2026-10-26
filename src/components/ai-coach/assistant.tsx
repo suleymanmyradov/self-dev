@@ -136,7 +136,7 @@ export const Assistant = ({
                     isPro={isPro}
                 />
 
-                <main className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
+                <div className="relative flex min-h-0 min-w-0 flex-1 flex-col overflow-hidden">
                     <ConversationHeader
                         title={activeConversation?.title}
                         onOpenConversations={() => setIsMobileSidebarOpen(true)}
@@ -172,7 +172,7 @@ export const Assistant = ({
                     ) : (
                         <Thread />
                     )}
-                </main>
+                </div>
             </div>
 
             {isVoiceMode && (

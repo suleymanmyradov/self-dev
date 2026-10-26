@@ -122,9 +122,9 @@ export function MemorySection() {
           className="min-h-[72px] resize-none"
           maxLength={500}
         />
-        <div className="flex items-center gap-3">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <Select value={newCategory} onValueChange={(v) => setNewCategory(v as MemoryFactCategory)}>
-            <SelectTrigger className="w-[180px]">
+            <SelectTrigger className="w-full sm:w-[180px]">
               <SelectValue />
             </SelectTrigger>
             <SelectContent>
@@ -137,6 +137,7 @@ export function MemorySection() {
           </Select>
           <Button
             size="sm"
+            className="w-full sm:w-auto"
             onClick={handleAdd}
             disabled={addMutation.isPending || !newFact.trim()}
           >

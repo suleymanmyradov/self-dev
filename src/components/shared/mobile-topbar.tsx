@@ -10,11 +10,12 @@ import {
   SheetTitle,
   SheetDescription,
 } from '@/components/ui/sheet';
-import { Bell, Leaf } from 'lucide-react';
+import { Bell, Leaf, Menu } from 'lucide-react';
 import { useUnreadCount } from '@/hooks';
 import { useAuthStore } from '@/store/auth';
 import { useShallow } from 'zustand/react/shallow';
 import { NotificationsList } from '@/components/layout/left-nested-panel';
+import { getMenuEntries } from '@/components/layout/more-menu';
 
 export const MobileTopBar = memo(function MobileTopBar() {
   const unreadCount = useUnreadCount();
@@ -23,6 +24,7 @@ export const MobileTopBar = memo(function MobileTopBar() {
   );
   const isLoggedIn = hasHydrated && !!user;
   const [notificationsOpen, setNotificationsOpen] = useState(false);
+  const [menuOpen, setMenuOpen] = useState(false);
 
   return (
     <header
@@ -37,8 +39,8 @@ export const MobileTopBar = memo(function MobileTopBar() {
           <span className="text-base font-semibold tracking-tight">Evolella</span>
         </Link>
 
-        {isLoggedIn && (
-          <div className="ml-auto">
+        <div className="ml-auto flex items-center gap-2">
+          {isLoggedIn && (
             <Button
               variant="ghost"
               size="icon"
@@ -54,8 +56,17 @@ export const MobileTopBar = memo(function MobileTopBar() {
                 />
               )}
             </Button>
-          </div>
-        )}
+          )}
+          <Button
+            variant="ghost"
+            size="icon"
+            className="relative border border-border/60 bg-background/80 shadow-sm hover:bg-muted/50"
+            aria-label="Open menu"
+            onClick={() => setMenuOpen(true)}
+          >
+            <Menu className="h-5 w-5" />
+          </Button>
+        </div>
       </div>
 
       {/* Notifications sheet — slides in from the right */}
@@ -70,6 +81,40 @@ export const MobileTopBar = memo(function MobileTopBar() {
           <div className="flex-1 overflow-y-auto">
             <NotificationsList onClose={() => setNotificationsOpen(false)} />
           </div>
+        </SheetContent>
+      </Sheet>
+
+      <Sheet open={menuOpen} onOpenChange={setMenuOpen}>
+        <SheetContent side="right" className="flex w-[300px] max-w-[85vw] flex-col p-0">
+          <SheetHeader className="shrink-0 border-b border-border/40 px-4 py-3">
+            <SheetTitle>Menu</SheetTitle>
+            <SheetDescription className="sr-only">Site navigation</SheetDescription>
+          </SheetHeader>
+          <nav className="flex-1 overflow-y-auto px-3 py-2" aria-label="Menu">
+            {getMenuEntries(isLoggedIn).map((entry, index) =>
+              entry.type === 'separator' ? (
+                <div key={`sep-${index}`} className="my-2 h-px bg-border/60" />
+              ) : entry.href.startsWith('mailto:') ? (
+                <a
+                  key={entry.label}
+                  href={entry.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full rounded-lg px-3 py-2.5 text-sm hover:bg-muted/60"
+                >
+                  {entry.label}
+                </a>
+              ) : (
+                <Link
+                  key={entry.label}
+                  href={entry.href}
+                  onClick={() => setMenuOpen(false)}
+                  className="block w-full rounded-lg px-3 py-2.5 text-sm hover:bg-muted/60"
+                >
+                  {entry.label}
+                </Link>
+              )
+            )}
+          </nav>
         </SheetContent>
       </Sheet>
     </header>

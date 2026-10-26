@@ -36,7 +36,7 @@ function ResetPasswordContent() {
 
   if (state.success) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
+      <div className="flex min-h-full flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
         <div className="flex w-full max-w-md flex-col gap-6">
           <Link href="/" className="flex items-center gap-2 self-center font-medium">
             <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -62,7 +62,7 @@ function ResetPasswordContent() {
 
   if (!token) {
     return (
-      <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
+      <div className="flex min-h-full flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
         <div className="flex w-full max-w-md flex-col gap-6">
           <Link href="/" className="flex items-center gap-2 self-center font-medium">
             <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">
@@ -87,7 +87,7 @@ function ResetPasswordContent() {
   }
 
   return (
-    <div className="flex min-h-svh flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
+    <div className="flex min-h-full flex-col items-center justify-center gap-6 bg-background p-6 md:p-10">
       <div className="flex w-full max-w-md flex-col gap-6">
         <Link href="/" className="flex items-center gap-2 self-center font-medium">
           <div className="flex size-6 items-center justify-center rounded-md bg-primary text-primary-foreground">

@@ -183,6 +183,7 @@
     html,
     body {
         @apply bg-background text-foreground h-full;
+        overflow-x: clip;
     }
 
     /* Improved focus states for accessibility */

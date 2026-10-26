@@ -70,7 +70,7 @@ export function OnboardingClient() {
   // ─── Render steps ─────────────────────────────────────────────────────────
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-4 bg-background">
+    <div className="min-h-full flex items-center justify-center p-4 bg-background">
       <div className="relative w-full max-w-lg">
         <StepHeader step={step} total={TOTAL_STEPS} />
 

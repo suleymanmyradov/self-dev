@@ -13,12 +13,12 @@ import { Menu } from "lucide-react";
 import { useAuthStore } from "@/store/auth";
 import { useShallow } from "zustand/react/shallow";
 
-type MenuEntry =
+export type MenuEntry =
   | { type: "item"; label: string; href: string }
   | { type: "separator" };
 
 const items: MenuEntry[] = [
-  { type: "item", label: "Settings", href: "/me" },
+  { type: "item", label: "Profile & settings", href: "/me" },
   { type: "item", label: "Saved", href: "/library" },
   { type: "separator" },
   { type: "item", label: "Pricing", href: "/pricing" },
@@ -50,11 +50,15 @@ const publicItems: MenuEntry[] = [
   { type: "item", label: "Get started", href: "/register" },
 ];
 
+export function getMenuEntries(isLoggedIn: boolean): MenuEntry[] {
+  return isLoggedIn ? items : publicItems;
+}
+
 export function MoreMenu() {
   const { user, hasHydrated } = useAuthStore(
     useShallow((s) => ({ user: s.user, hasHydrated: s.hasHydrated }))
   );
-  const menuItems = hasHydrated && user ? items : publicItems;
+  const menuItems = getMenuEntries(hasHydrated && !!user);
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
